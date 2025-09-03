@@ -15,6 +15,9 @@ extern float RSM_FLY_Y_SPEED;
 extern float RSM_FLY_Z_SPEED;
 
 extern float RSM_MOUSE_SENSITIVITY;
+
 extern float RSM_FOV;
+extern float RENDER_DISTANCE_FAR;
+extern float RENDER_DISTANCE_NEAR;
 
 #endif

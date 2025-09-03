@@ -16,4 +16,7 @@ float RSM_FLY_Y_SPEED = 2.5f;
 float RSM_FLY_Z_SPEED = 2.5f;
 
 float RSM_MOUSE_SENSITIVITY = 0.1f;
+
 float RSM_FOV = 120.0f;
+float RENDER_DISTANCE_FAR = 100.0f;
+float RENDER_DISTANCE_NEAR = 0.1f;
