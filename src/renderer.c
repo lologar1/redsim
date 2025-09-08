@@ -1,9 +1,5 @@
 #include "renderer.h"
 
-#define WINDOW_NAME "Redsim V0.1"
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
-
 #define ACCUM_CLEAR (float []) {0.0f, 0.0f, 0.0f, 0.0f}
 #define REVEAL_CLEAR (float []) {1.0f}
 
@@ -19,39 +15,13 @@ float compositionQuad[] = {
 
 unsigned int screenWidth = WINDOW_WIDTH, screenHeight = WINDOW_HEIGHT;
 
-int render() {
-	glfwInit();
+int render(GLFWwindow* window) {
+	/* Setup renderer within window window and start rendering loop */
 
-	/* Set OpenGL version 4.6 */
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-
-	/* Use OpenGL core-profile */
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	/* Create window */
-	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME, NULL, NULL);
-
-	if (window == NULL) {
-		fprintf(stderr, "Fatal error creating GLFW window, exiting.\n");
-		glfwTerminate();
-		return -1;
-	}
-
-	glfwMakeContextCurrent(window);
-	glfwSwapInterval(0); /* Disable VSync to avoid stuttering, FPS cap is set elsewhere */
-
-	/* Callback functions */
+	/* Set callback functions */
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, client_mouseEvent);
 	glfwSetKeyCallback(window, client_keyboardEvent);
-
-	/* Initialize GLAD */
-	if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-		fprintf(stderr, "Fatal error initializing GLAD, exiting.\n");
-		glfwTerminate();
-		return -1;
-	}
 
 	/* Compile shaders from GLSL programs and link them */
 	GLuint vertexShader = createShader(GL_VERTEX_SHADER, "shaders/vertexshader.glsl");
@@ -70,7 +40,7 @@ int render() {
 	 * automatically updated.
 	 * The last two unsigned ints hold the number of elements for their
 	 * respective chunks. */
-	GLuint (*chunks)[4];
+	GLuint **chunks;
 	int nchunks;
 
 	/* To render composition quad at the end of rendering */
@@ -168,7 +138,7 @@ int render() {
 
 	glBlendEquation(GL_FUNC_ADD);
 	glClearColor(0.098f, 0.098f, 0.098f, 1.0f); /* This is my terminal background color */
-	//glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
 
 	/* Rendering variables */
 	float time, lastTime = 0.0f;
@@ -184,8 +154,10 @@ int render() {
 	while (!glfwWindowShouldClose(window)) {
 		/* Game loop */
 
-		if ((glError = glGetError()))
+		if ((glError = glGetError())) {
 			fprintf(stderr, "OpenGL Error %d\n", glError);
+			return 1;
+		}
 
 		/* Framerate cap */
 		time = glfwGetTime();
@@ -208,7 +180,7 @@ int render() {
 
 		/* Perspective projection matrix */
 		glm_perspective(glm_rad(RSM_FOV), (float) WINDOW_WIDTH / (float) WINDOW_HEIGHT,
-				RENDER_DISTANCE_NEAR, RENDER_DISTANCE_FAR, perspective);
+				RENDER_DISTANCE_NEAR, (float) RENDER_DISTANCE * CHUNKSIZE + 10000, perspective);
 
 		/* Rendering */
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);

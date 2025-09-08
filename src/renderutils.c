@@ -9,12 +9,12 @@ GLuint createShader(GLenum shaderType, char *shaderSource) {
 
 	int success;
 	char infoLog[INFOLOG_LENGTH];
-	const char *src;
+	char *src;
 	GLuint shaderID;
 
 	shaderID = glCreateShader(shaderType); /* Create gl shader of proper type */
-	src = (const char *) usf_ftos(shaderSource, "r", NULL); /* Read shader source file as a single string */
-	glShaderSource(shaderID, 1, &src, NULL); /* Set source to file */
+	src = usf_ftos(shaderSource, "r", NULL); /* Read shader source file as a single string */
+	glShaderSource(shaderID, 1, (const char **) &src, NULL); /* Set source to file */
 	glCompileShader(shaderID); /* Compile */
 	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success); /* Check compilation status */
 
@@ -22,6 +22,8 @@ GLuint createShader(GLenum shaderType, char *shaderSource) {
 		glGetShaderInfoLog(shaderID, INFOLOG_LENGTH, NULL, infoLog); /* Get log */
 		fprintf(stderr, "Error compiling shader at %s, see log:\n%s", shaderSource, infoLog);
 	}
+
+	free(src); /* Free source file memory */
 
 	return shaderID;
 }

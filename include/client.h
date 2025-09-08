@@ -3,12 +3,18 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "cglm/cglm.h"
+#include <cglm/cglm.h>
+#include <math.h>
 #include "rsmlayout.h"
+#include "chunkutils.h"
+
 #define upvector (vec3) {0.0f, 1.0f, 0.0f}
 
+/* Client procedures */
+void client_init(void);
+
 /* Renderer communication */
-void client_getChunks(GLuint (**chunks)[4], int *nchunks);
+void client_getChunks(GLuint ***chunks, int *nchunks);
 
 void client_frameEvent(GLFWwindow *window);
 void client_mouseEvent(GLFWwindow *window, double xpos, double ypos);
