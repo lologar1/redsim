@@ -1,2 +1,9 @@
-obj/
-usflib2/obj/
+*
+
+!documentation.txt
+!Makefile
+!include/
+!redsim
+!shaders/
+!src/
+!textures/
