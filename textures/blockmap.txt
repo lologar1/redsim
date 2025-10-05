@@ -1,0 +1,3 @@
+air
+stone transstone
+concrete
