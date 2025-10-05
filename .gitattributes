@@ -1,0 +1,2 @@
+# Treat all header files as C (not C++)
+*.h linguist-language=C
