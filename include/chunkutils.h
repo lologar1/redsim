@@ -7,7 +7,7 @@
 #include "rsmlayout.h"
 #include "usfhashmap.h"
 
-#define CHUNKSIZE 12
+#define CHUNKSIZE 32
 #define upvector (vec3) {0.0f, 1.0f, 0.0f}
 #define rightvector (vec3) {1.0f, 0.0f, 0.0f}
 #define meshcenter (vec3) {0.5f, 0.5f, 0.5f}

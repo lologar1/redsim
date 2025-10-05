@@ -212,8 +212,8 @@ void generateMeshlist(void) {
 	/* Cleanup old meshlist ; on startup it is null but free(NULL) is safe */
     free(meshes); /* OK since all mesh chunks are stored in meshmap */
 
-	chunkvolume = pow(RENDER_DISTANCE * 2 + 1, 3) * sizeof(GLuint *);
-    meshes = (GLuint **) malloc(chunkvolume); /* Store meshes for all chunks */
+	chunkvolume = pow(RENDER_DISTANCE * 2 + 1, 3);
+    meshes = malloc(chunkvolume * sizeof(GLuint *)); /* Store meshes for all chunks */
 
 	updateMeshlist();
 }
