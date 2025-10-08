@@ -9,6 +9,7 @@
 #include "chunkutils.h"
 #include "renderutils.h"
 #include "redsim.h"
+#include "userio.h"
 
 extern float (**boundingboxes)[6];
 

@@ -1,7 +1,70 @@
 #include "redsim.h"
 
-void rsm_move(vec3 position, vec3 momentum) {
-	/* Add momentum to position while checking for collisions and other variables */
+Gamestate gamestate;
+
+void rsm_move(vec3 position, vec3 orientation) {
+	/* Change player position each frame according to movement) */
+
+	/* Persistent momentum across multiple frames */
+	static float momentumX = 0.0f, momentumY = 0.0f, momentumZ = 0.0f;
+
+	/* Keep track of delta time passed since last frame */
+	static float lastTime = 0.0f; /* OK since glfwGetTime() is seconds since init. */
+	float deltaTime;
+
+	deltaTime = glfwGetTime() - lastTime;
+	lastTime = glfwGetTime();
+
+	/* Get current speed */
+	float cameraSpeedX, cameraSpeedY, cameraSpeedZ;
+	cameraSpeedX = momentumX * deltaTime;
+	cameraSpeedY = momentumY * deltaTime;
+	cameraSpeedZ = momentumZ * deltaTime;
+
+	/* Deltas to travel this frame */
+	vec3 zMovement, xMovement, yMovement, momentum;
+
+	/* Now update speed for next frame */
+
+	/* X movement */
+	if (RSM_RIGHT) momentumX = fmin(momentumX + RSM_FLY_X_ACCELERATION * deltaTime, RSM_FLY_X_CAP);
+	if (RSM_LEFT) momentumX = fmax(momentumX - RSM_FLY_X_ACCELERATION * deltaTime, -RSM_FLY_X_CAP);
+	if (!(RSM_RIGHT && RSM_LEFT)) momentumX = momentumX < 0.0f ?
+		fmin(0.0f, momentumX + RSM_FLY_X_DECELERATION * deltaTime) :
+		fmax(0.0f, momentumX - RSM_FLY_X_DECELERATION * deltaTime);
+
+	/* Y movement */
+	if (RSM_UP) momentumY = fmin(momentumY + RSM_FLY_Y_ACCELERATION * deltaTime, RSM_FLY_Y_CAP);
+	if (RSM_DOWN) momentumY = fmax(momentumY - RSM_FLY_Y_ACCELERATION * deltaTime, -RSM_FLY_Y_CAP);
+	if (!(RSM_UP && RSM_DOWN)) momentumY = momentumY < 0.0f ?
+		fmin(0.0f, momentumY + RSM_FLY_Y_DECELERATION * deltaTime) :
+		fmax(0.0f, momentumY - RSM_FLY_Y_DECELERATION * deltaTime);
+
+
+	/* Z movement */
+	if (RSM_FORWARD) momentumZ = fmin(momentumZ + RSM_FLY_Z_ACCELERATION * deltaTime, RSM_FLY_Z_CAP);
+	if (RSM_BACKWARD) momentumZ = fmax(momentumZ - RSM_FLY_Z_ACCELERATION * deltaTime, -RSM_FLY_Z_CAP);
+	if (!(RSM_FORWARD && RSM_BACKWARD)) momentumZ = momentumZ < 0.0f ?
+		fmin(0.0f, momentumZ + RSM_FLY_Z_DECELERATION * deltaTime) :
+		fmax(0.0f, momentumZ - RSM_FLY_Z_DECELERATION * deltaTime);
+
+	/* Convert movement to momentum vector */
+	glm_vec3_cross(orientation, upvector, xMovement); /* Get relative right vector */
+	glm_vec3_normalize(xMovement);
+	glm_vec3_scale(xMovement, cameraSpeedX, xMovement);
+
+	glm_vec3_scale(upvector, cameraSpeedY, yMovement);
+
+	glm_vec3_copy(orientation, zMovement);
+	zMovement[1] = 0.0f; /* Lock vertical movement because template is orientation */
+	glm_vec3_normalize(zMovement);
+	glm_vec3_scale(zMovement, cameraSpeedZ, zMovement);
+
+	/* Create combined movement vector */
+	glm_vec3_copy(xMovement, momentum);
+	glm_vec3_addadd(yMovement, zMovement, momentum);
+
+	/* Collision handling */
 	Chunkdata *chunkdata;
 	Blockdata *blockdata;
 	float boundingbox[6];

@@ -1,14 +1,6 @@
 #include "rsmlayout.h"
 
 /* Default layout */
-int RSM_KEY_ESCAPE = GLFW_KEY_ESCAPE;
-int RSM_KEY_FORWARD = GLFW_KEY_W;
-int RSM_KEY_BACKWARD = GLFW_KEY_S;
-int RSM_KEY_RIGHT = GLFW_KEY_D;
-int RSM_KEY_LEFT = GLFW_KEY_A;
-int RSM_KEY_DOWN = GLFW_KEY_LEFT_SHIFT;
-int RSM_KEY_UP = GLFW_KEY_SPACE;
-
 float RSM_FLY_X_ACCELERATION = 125.0f;
 float RSM_FLY_Y_ACCELERATION = 130.0f;
 float RSM_FLY_Z_ACCELERATION = 125.0f;
@@ -18,6 +10,8 @@ float RSM_FLY_Z_DECELERATION = 100.0f;
 float RSM_FLY_X_CAP = 13.0f;
 float RSM_FLY_Y_CAP = 10.0f;
 float RSM_FLY_Z_CAP = 13.0f;
+
+//Keybinds defined in header file for fast switch statements
 
 float RSM_MOUSE_SENSITIVITY = 0.1f;
 
@@ -35,9 +29,7 @@ unsigned int RSM_MAX_BLOCKMESH_INDICES = 30000;
 unsigned int RSM_MAX_MESHDATA_NAME_LENGTH = 512;
 unsigned int RSM_MAX_SHADER_INFOLOG_LENGTH = 512;
 
-/* Bitmasks for block metadata */
-uint64_t RSM_BIT_COLLISION = 1UL << 0; /* Player hitbox will collide */
-uint64_t RSM_BIT_CONDUCTIVE = 1UL << 1; /* Can conduct power */
+//Bitmasks for block metadata defined in the header file
 
 /* Attention! Make sure to set constant sizes in rsmlayout.h otherwise compiler will complain */
 char textureBasePath[] = "textures/";

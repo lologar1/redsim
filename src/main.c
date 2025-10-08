@@ -35,11 +35,11 @@ int main() {
 	}
 
 	/* Start rendering and gameloop */
-	printf("Starting RedsimV0.1\n");
+	fprintf(stderr, "Starting RedsimV0.1\n");
 	client_init();
 	int returnCode = render(window);
 
-	printf("Process ended with code %d\n", returnCode);
+	fprintf(stderr, "Process ended with code %d\n", returnCode);
 
 	return returnCode;
 }

@@ -4,14 +4,6 @@
 #include <GLFW/glfw3.h>
 #include <stdint.h>
 
-extern int RSM_KEY_ESCAPE;
-extern int RSM_KEY_FORWARD;
-extern int RSM_KEY_BACKWARD;
-extern int RSM_KEY_RIGHT;
-extern int RSM_KEY_LEFT;
-extern int RSM_KEY_DOWN;
-extern int RSM_KEY_UP;
-
 extern float RSM_FLY_X_ACCELERATION;
 extern float RSM_FLY_Y_ACCELERATION;
 extern float RSM_FLY_Z_ACCELERATION;
@@ -21,6 +13,16 @@ extern float RSM_FLY_Z_DECELERATION;
 extern float RSM_FLY_X_CAP;
 extern float RSM_FLY_Y_CAP;
 extern float RSM_FLY_Z_CAP;
+
+#define RSM_KEY_MENU GLFW_KEY_ESCAPE
+#define RSM_KEY_INVENTORY GLFW_KEY_E
+#define RSM_KEY_COMMAND GLFW_KEY_T
+#define RSM_KEY_FORWARD GLFW_KEY_W
+#define RSM_KEY_BACKWARD GLFW_KEY_S
+#define RSM_KEY_RIGHT GLFW_KEY_D
+#define RSM_KEY_LEFT GLFW_KEY_A
+#define RSM_KEY_DOWN GLFW_KEY_LEFT_SHIFT
+#define RSM_KEY_UP GLFW_KEY_SPACE
 
 extern float RSM_MOUSE_SENSITIVITY;
 
@@ -38,8 +40,7 @@ extern unsigned int RSM_MAX_BLOCKMESH_INDICES;
 extern unsigned int RSM_MAX_MESHDATA_NAME_LENGTH;
 extern unsigned int RSM_MAX_SHADER_INFOLOG_LENGTH;
 
-extern uint64_t RSM_BIT_COLLISION;
-extern uint64_t RSM_BIT_CONDUCTIVE;
+#define RSM_BIT_COLLISION (1UL << 0) /* Collidable */
 
 extern char textureBasePath[10];
 extern char textureBlockPath[8];

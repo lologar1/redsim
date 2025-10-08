@@ -125,10 +125,10 @@ void client_getChunks(GLuint ***chunks, int *nchunks) {
 /* View stuff */
 void client_frameEvent(GLFWwindow *window) {
 	/* Called each frame */
+	(void) window;
 
 	/* Meshlist maintenance */
 	static unsigned int lastRenderDistance = 0;
-
 	if (lastRenderDistance != RENDER_DISTANCE) {
 		/* Whenever user changes render distance or world is first
 		 * loaded, regenerate whole meshlist */
@@ -138,7 +138,6 @@ void client_frameEvent(GLFWwindow *window) {
 
 	/* Keep last position since chunk border crossing ; update meshlist on border crossing */
 	static vec3 lastPosition = {0.0f, 0.0f, 0.0f};
-
 	if ((int) floor(lastPosition[0] / CHUNKSIZE) != (int) floor(position[0] / CHUNKSIZE)
 			|| (int) floor(lastPosition[1] / CHUNKSIZE) != (int) floor(position[1] / CHUNKSIZE)
 			|| (int) floor(lastPosition[2] / CHUNKSIZE) != (int) floor(position[2] / CHUNKSIZE)) {
@@ -155,67 +154,7 @@ void client_frameEvent(GLFWwindow *window) {
 	orientation[2] = sin(glm_rad(yaw)) * cos(glm_rad(pitch));
 	glm_vec3_normalize(orientation);
 
-	/* Movement handling */
-	static float lastTime = 0.0f;
-	static float momentumX = 0.0f, momentumY = 0.0f, momentumZ = 0.0f;
-
-	float deltaTime, cameraSpeedX, cameraSpeedY, cameraSpeedZ;
-
-	deltaTime = glfwGetTime() - lastTime;
-	lastTime = glfwGetTime();
-
-	cameraSpeedX = momentumX * deltaTime;
-	cameraSpeedY = momentumY * deltaTime;
-	cameraSpeedZ = momentumZ * deltaTime;
-
-	vec3 zMovement, xMovement, yMovement;
-
-	/* Movement key polling */
-	bool forward, backward, right, left, up, down;
-	forward = glfwGetKey(window, RSM_KEY_FORWARD) == GLFW_PRESS;
-	backward = glfwGetKey(window, RSM_KEY_BACKWARD) == GLFW_PRESS;
-	right = glfwGetKey(window, RSM_KEY_RIGHT) == GLFW_PRESS;
-	left = glfwGetKey(window, RSM_KEY_LEFT) == GLFW_PRESS;
-	up = glfwGetKey(window, RSM_KEY_UP) == GLFW_PRESS;
-	down = glfwGetKey(window, RSM_KEY_DOWN) == GLFW_PRESS;
-
-	/* Movement; orientation should always be normalized */
-	if (forward) momentumZ = fmin(momentumZ + RSM_FLY_Z_ACCELERATION * deltaTime, RSM_FLY_Z_CAP);
-	if (backward) momentumZ = fmax(momentumZ - RSM_FLY_Z_ACCELERATION * deltaTime, -RSM_FLY_Z_CAP);
-	if (!(forward && backward)) momentumZ = momentumZ < 0.0f ?
-		fmin(0.0f, momentumZ + RSM_FLY_Z_DECELERATION * deltaTime) :
-		fmax(0.0f, momentumZ - RSM_FLY_Z_DECELERATION * deltaTime);
-
-	/* Z movement */
-	glm_vec3_copy(orientation, zMovement);
-	zMovement[1] = 0.0f; /* Lock vertical movement */
-	glm_vec3_normalize(zMovement);
-	glm_vec3_scale(zMovement, cameraSpeedZ, zMovement);
-
-	if (right) momentumX = fmin(momentumX + RSM_FLY_X_ACCELERATION * deltaTime, RSM_FLY_X_CAP);
-	if (left) momentumX = fmax(momentumX - RSM_FLY_X_ACCELERATION * deltaTime, -RSM_FLY_X_CAP);
-	if (!(right && left)) momentumX = momentumX < 0.0f ?
-		fmin(0.0f, momentumX + RSM_FLY_X_DECELERATION * deltaTime) :
-		fmax(0.0f, momentumX - RSM_FLY_X_DECELERATION * deltaTime);
-
-	/* X movement */
-	glm_vec3_cross(orientation, upvector, xMovement);
-	glm_vec3_normalize(xMovement);
-	glm_vec3_scale(xMovement, cameraSpeedX, xMovement);
-
-	if (up) momentumY = fmin(momentumY + RSM_FLY_Y_ACCELERATION * deltaTime, RSM_FLY_Y_CAP);
-	if (down) momentumY = fmax(momentumY - RSM_FLY_Y_ACCELERATION * deltaTime, -RSM_FLY_Y_CAP);
-	if (!(up && down)) momentumY = momentumY < 0.0f ?
-		fmin(0.0f, momentumY + RSM_FLY_Y_DECELERATION * deltaTime) :
-		fmax(0.0f, momentumY - RSM_FLY_Y_DECELERATION * deltaTime);
-
-	/* Y movement */
-	glm_vec3_scale(upvector, cameraSpeedY, yMovement);
-
-	glm_vec3_addadd(xMovement, yMovement, zMovement); /* zMovement used for final position change */
-
-	/* Move with collision checks and all */
-	rsm_move(position, zMovement);
+	rsm_move(position, orientation);
 }
 
 void client_mouseEvent(GLFWwindow *window, double xpos, double ypos) {
@@ -244,17 +183,9 @@ void client_mouseEvent(GLFWwindow *window, double xpos, double ypos) {
 }
 
 void client_keyboardEvent(GLFWwindow *window, int key, int scancode, int action, int mods) {
-	 /* Called whenever a key is first pressed */
-
-	(void) scancode;
-	(void) mods;
-
-	if (key == RSM_KEY_ESCAPE && action == GLFW_PRESS) {
-		if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); /* Release cursor */
-		else
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); /* Capture cursor */
-	}
+	 /* Called whenever a key is pressed, released or held. This function really is a wrapper for
+	  * the processKey event which lives in userio and handles updating all user I/O variables */
+	processKey(window, key, scancode, action, mods);
 }
 
 void client_getOrientationVector(vec3 ori) {
