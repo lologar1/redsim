@@ -250,9 +250,40 @@ void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, R
 	mat4 adjust, rotAdjust;
 	vec3 posAdjust = {(float) x, (float) y, (float) z};
 
-	glm_mat4_identity(adjust);
+	translocationMatrix(adjust, posAdjust, rotation);
+	rotationMatrix(rotAdjust, rotation); /* Needed for normal adjustment */
+
+	float *vertexPos;
+
+	/* Rotate, translate and adjust vertex coords (and normals for rotation) for opaque vertices */
+	for (i = 0; i < template->count[0] / 8; i++) {
+		vertexPos = blockmesh->opaqueVertices + i * 8;
+		glm_mat4_mulv3(adjust, vertexPos, 1.0f, vertexPos);
+		glm_mat4_mulv3(rotAdjust, vertexPos + 3, 1.0f, vertexPos + 3); /* Rotate normals */
+	}
+
+	/* Now trans */
+	for (i = 0; i < template->count[1] / 8; i++) {
+		vertexPos = blockmesh->transVertices + i * 8;
+		glm_mat4_mulv3(adjust, vertexPos, 1.0f, vertexPos);
+		glm_mat4_mulv3(rotAdjust, vertexPos + 3, 1.0f, vertexPos + 3); /* Rotate normals */
+	}
+}
+
+void translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation) {
+	/* Makes an appropriate translocation (translation + rotation) matrix given
+	 * a translation vector (position) and a rotation */
+	mat4 rotAdjust;
+	rotationMatrix(rotAdjust, rotation);
+
+	glm_mat4_identity(translocation);
+	glm_translate(translocation, translation);
+	glm_mat4_mul(translocation, rotAdjust, translocation);
+}
+
+void rotationMatrix(mat4 rotAdjust, Rotation rotation) {
+	/* Makes an appropriate rotation matrix for a given rotation */
 	glm_mat4_identity(rotAdjust);
-	glm_translate(adjust, posAdjust);
 
 	switch (rotation) {
 		case EAST:
@@ -275,24 +306,6 @@ void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, R
 		case COMPLEX:
 			/* A block is defined as NORTH by default. Complex is TODO */
 			break;
-	}
-
-	glm_mat4_mul(adjust, rotAdjust, adjust);
-
-	float *vertexPos;
-
-	/* Rotate, translate and adjust vertex coords (and normals for rotation) for opaque vertices */
-	for (i = 0; i < template->count[0] / 8; i++) {
-		vertexPos = blockmesh->opaqueVertices + i * 8;
-		glm_mat4_mulv3(adjust, vertexPos, 1.0f, vertexPos);
-		glm_mat4_mulv3(rotAdjust, vertexPos + 3, 1.0f, vertexPos + 3); /* Rotate normals */
-	}
-
-	/* Now trans */
-	for (i = 0; i < template->count[1] / 8; i++) {
-		vertexPos = blockmesh->transVertices + i * 8;
-		glm_mat4_mulv3(adjust, vertexPos, 1.0f, vertexPos);
-		glm_mat4_mulv3(rotAdjust, vertexPos + 3, 1.0f, vertexPos + 3); /* Rotate normals */
 	}
 }
 

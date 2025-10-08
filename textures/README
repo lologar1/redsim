@@ -1,21 +1,33 @@
 === Block texture mapping documentation ===
-- Each line in blockmap.txt maps a unique block ID (starting from 0) to its block handle.
-- Variants live on the same line and are separated by a single space character, without a terminating space.
+Each line in blockmap.txt maps a unique block ID (starting from 0) to its block handle.
+Variants live on the same line and are separated by a single space character, without a terminating space.
 The handle is used to retrieve the corresponding texture files only. This is to make textures more human-readable and explicit instead of relying on knowing block IDs for each texture.
 
-- Inside blocks/ lives two files per texture, named [handle].png and [handle].mesh.
+Inside blocks/ lives two or three files per texture, named [handle].png, [handle].mesh and [handle].boundingbox.
+
 The first may be any size .png file containing the image data for the texture.
-The second is actually a text file containing the mesh data and how it associates with the texture data in the following format:
-Each line must start with either 'o' (opaque vertex data), 't' (transparent vertex data), 'i' (opaque index data) or 'e' (transparent index data)
 
-Following a 'v' or 't', eight space-separated float values are required, not terminating with a space :
-3 describing the XYZ position of the vertex in space, relative to a 1x1x1 box whose corner sits at 0.0, 0.0, 0.0. **By convention, North-West-Up is +Z, +X, +Y**.
-3 describing the normal vector of this vertex
-2 describing the relative texture coordinates of the vertex
+The second is actually a text file containing the mesh data and how it associates with the texture data
+in the following format:
+	Each line must start with either 'o' (opaque vertex data), 't' (transparent vertex data),
+	'i' (opaque index data) or 'e' (transparent index data)
 
-Following an 'i', any number of space-separated indices to a vertices are required to describe the block mesh.
+	Following a 'v' or 't', eight space-separated float values are required, not terminating with a space :
+	3 describing the XYZ position of the vertex in space, relative to a 1x1x1 box whose corner sits at
+	0.0, 0.0, 0.0. **By convention, West-Up-North is +X, +Y, +Z**.
+	3 describing the normal vector of this vertex
+	2 describing the relative texture coordinates of the vertex
 
-Note that index triplets (triangles) must be stated in clockwise order if an observer were to be looking at them in the inverse direction of their normal. This is needed for face culling.
+	Following an 'i', any number of space-separated indices to a vertices are required to describe
+	the block mesh.
+
+	Note that index triplets (triangles) must be stated in clockwise order if an observer were to be
+	looking at them in the inverse direction of their normal. This is needed for face culling.
+
+The third is optional and only required of blocks which have collision with the player.
+	It consists of three float values representing the corner of the bounding box facing North,
+	at relative 0.0 0.0 0.0 and three float values representing its width, depth and height (x, y, z).
+	As always, they extend in the plus directions (West, Up, North).
 
 GUI texture mapping documentation
 (TODO)

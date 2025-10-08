@@ -2,12 +2,15 @@
 #define CLIENT_H
 
 #include <glad/glad.h>
+#include <math.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
-#include <math.h>
 #include "rsmlayout.h"
 #include "chunkutils.h"
 #include "renderutils.h"
+#include "redsim.h"
+
+extern float (**boundingboxes)[6];
 
 /* Client procedures */
 void client_init(void);

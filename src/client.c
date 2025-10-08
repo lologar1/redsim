@@ -14,10 +14,10 @@ int nmesh; /* How many meshes to render */
 
 void client_init(void) {
 	fprintf(stderr, "Initializing client...\n");
+
+	/* Generate template blockmeshes from disk and parse bounding boxes */
 	chunkmap = usf_newhm();
 	meshmap = usf_newhm();
-
-	/* Generate template blockmeshes from disk */
 	parseBlockmeshes();
 
 	/* TODO: Retrieve data from disk
@@ -30,7 +30,7 @@ void client_init(void) {
 		.id = 1,
 		.variant = 0,
 		.rotation = NONE,
-		.metadata = 0
+		.metadata = 1
 	};
 
 	Blockdata t0 = {
@@ -81,6 +81,7 @@ void client_init(void) {
 	Chunkdata *c2 = calloc(1, sizeof(Chunkdata));
 
 	(*c0)[0][0][0] = t0;
+	(*c0)[5][5][5] = b0;
 	(*c0)[1][0][0] = t6;
 	(*c0)[1][1][1] = b0;
 	(*c0)[CHUNKSIZE-1][CHUNKSIZE-1][CHUNKSIZE-1] = t0;
@@ -135,11 +136,12 @@ void client_frameEvent(GLFWwindow *window) {
 		lastRenderDistance = RENDER_DISTANCE;
 	}
 
+	/* Keep last position since chunk border crossing ; update meshlist on border crossing */
 	static vec3 lastPosition = {0.0f, 0.0f, 0.0f};
 
-	if ((int) lastPosition[0] / CHUNKSIZE != (int) position[0] / CHUNKSIZE
-			|| (int) lastPosition[1] / CHUNKSIZE != (int) position[1] / CHUNKSIZE
-			|| (int) lastPosition[2] / CHUNKSIZE != (int) position[2] / CHUNKSIZE) {
+	if ((int) floor(lastPosition[0] / CHUNKSIZE) != (int) floor(position[0] / CHUNKSIZE)
+			|| (int) floor(lastPosition[1] / CHUNKSIZE) != (int) floor(position[1] / CHUNKSIZE)
+			|| (int) floor(lastPosition[2] / CHUNKSIZE) != (int) floor(position[2] / CHUNKSIZE)) {
 		/* If position changed by at least a chunk, add new meshes and
 		 * remove old ones */
 
@@ -211,7 +213,9 @@ void client_frameEvent(GLFWwindow *window) {
 	glm_vec3_scale(upvector, cameraSpeedY, yMovement);
 
 	glm_vec3_addadd(xMovement, yMovement, zMovement); /* zMovement used for final position change */
-	glm_vec3_add(position, zMovement, position);
+
+	/* Move with collision checks and all */
+	rsm_move(position, zMovement);
 }
 
 void client_mouseEvent(GLFWwindow *window, double xpos, double ypos) {

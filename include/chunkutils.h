@@ -7,13 +7,12 @@
 #include "rsmlayout.h"
 #include "usfhashmap.h"
 
-#define CHUNKSIZE 32
-#define upvector (vec3) {0.0f, 1.0f, 0.0f}
-#define rightvector (vec3) {1.0f, 0.0f, 0.0f}
-#define meshcenter (vec3) {0.5f, 0.5f, 0.5f}
+#define upvector ((vec3) {0.0f, 1.0f, 0.0f})
+#define rightvector ((vec3) {1.0f, 0.0f, 0.0f})
+#define meshcenter ((vec3) {0.5f, 0.5f, 0.5f})
 
 #define CHUNKCOORDMASK (0x1FFFFF)
-#define TOCHUNKINDEX(x, y, z) ((uint64_t) (x & CHUNKCOORDMASK) << 42 | (uint64_t) (y & CHUNKCOORDMASK) << 21 | (uint64_t) (z & CHUNKCOORDMASK))
+#define TOCHUNKINDEX(x, y, z) ((uint64_t) ((x) & CHUNKCOORDMASK) << 42 | (uint64_t) ((y) & CHUNKCOORDMASK) << 21 | (uint64_t) ((z) & CHUNKCOORDMASK))
 
 extern vec3 position;
 
@@ -56,5 +55,10 @@ void remeshChunk(int64_t x, int64_t y, int64_t z);
 void updateMeshlist(void);
 void generateMeshlist(void);
 void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, Rotation rotation, int64_t x, int64_t y, int64_t z);
+void translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation);
+void rotationMatrix(mat4 rotAdjust, Rotation rotation);
+
+void checkAndAddBlockmeshDataFloat(unsigned int basecount, unsigned int increment, unsigned int *buffersize, float **buffer, float *data, float **basebuffer);
+void checkAndAddBlockmeshDataInteger(unsigned int basecount, unsigned int increment, unsigned int *buffersize, unsigned int **buffer, unsigned int *data, unsigned int **basebuffer);
 
 #endif

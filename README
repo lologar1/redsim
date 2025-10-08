@@ -131,8 +131,8 @@ Renderer
 		framebuffer, then rendered (squashed, if proportions do not fit) to the composition framebuffer.
 
 RSMLAYOUT
-	Holds most configuration variables for RSM. Exceptions are ones which shouldn't be modified outside of
-	testing or experimental changes, like CHUNKSIZE (changing this would corrupt reading chunk data from disk)
+	Holds most configuration variables for RSM. Exceptions are ones which shouldn't be modified for normal
+	program execution, like CHUNKCOORDMASK which is used to transform x, y, z coords to a chunk index.
 
 	RSM_KEY_*
 		Input keys. RSM_KEY_FORWARD for example will move you forward in the world. This is for easy key config.

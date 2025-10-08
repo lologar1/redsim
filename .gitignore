@@ -2,7 +2,7 @@
 *.swp
 
 # Ignore the soft linked library
-usflib2
+usflib2/
 
 # Ignore object files directory
 obj/

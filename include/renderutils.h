@@ -6,14 +6,13 @@
 #include "usfstring.h"
 #include "usfio.h"
 
-#define INFOLOG_LENGTH 512
-
 typedef float Vertex[8];
 
 GLuint createShader(GLenum shaderType, char *shaderSource);
 GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader);
-void atlasAppend(char *meshname);
+void atlasAppend(char *meshname, unsigned char **atlasptr, GLsizei *atlassize);
 void parseBlockmeshes(void); /* Create texture atlas and blockmeshes */
 void loadVertexData(Vertex vertex, char *vector);
+void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant);
 
 #endif

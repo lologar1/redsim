@@ -1,8 +1,8 @@
-#define STB_IMAGE_IMPLEMENTATION /* Init stb_image library once */
 #include "stb_image.h"
 
 #include "renderutils.h"
 
+float (**boundingboxes)[6];
 GLuint textureAtlas;
 Blockmesh ***blockmeshes;
 
@@ -13,7 +13,7 @@ GLuint createShader(GLenum shaderType, char *shaderSource) {
 	 * it, logging errors to stderr and returning the shader ID */
 
 	int success;
-	char infoLog[INFOLOG_LENGTH];
+	char infoLog[RSM_MAX_SHADER_INFOLOG_LENGTH];
 	char *src;
 	GLuint shaderID;
 
@@ -24,7 +24,7 @@ GLuint createShader(GLenum shaderType, char *shaderSource) {
 	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success); /* Check compilation status */
 
 	if (!success) {
-		glGetShaderInfoLog(shaderID, INFOLOG_LENGTH, NULL, infoLog); /* Get log */
+		glGetShaderInfoLog(shaderID, RSM_MAX_SHADER_INFOLOG_LENGTH, NULL, infoLog); /* Get log */
 		fprintf(stderr, "Error compiling shader at %s, see log:\n%s", shaderSource, infoLog);
 	}
 
@@ -39,7 +39,7 @@ GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	 * objects are then deleted as they are no longer needed ! */
 
 	int success;
-	char infoLog[INFOLOG_LENGTH];
+	char infoLog[RSM_MAX_SHADER_INFOLOG_LENGTH];
 	GLuint programID;
 
 	programID = glCreateProgram(); /* Create program */
@@ -49,7 +49,7 @@ GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	glGetProgramiv(programID, GL_LINK_STATUS, &success); /* Check linking success */
 
 	if (!success) {
-		glGetProgramInfoLog(programID, INFOLOG_LENGTH, NULL, infoLog); /* Get log */
+		glGetProgramInfoLog(programID, RSM_MAX_SHADER_INFOLOG_LENGTH, NULL, infoLog); /* Get log */
 		fprintf(stderr, "Error linking shader program, see log:\n%s", infoLog);
 	} else { /* Delete shaders as they are no longer needed if the program exists */
 		glDeleteShader(vertexShader);
@@ -59,11 +59,8 @@ GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	return programID;
 }
 
-unsigned char *atlasdata, *currentimage; /* Temporary buffer */
-GLsizei atlassz;
-
-void atlasAppend(char *meshname) {
-	/* Creates a texture atlas (in the atlasdata temporary buffer)
+void atlasAppend(char *meshname, unsigned char **atlasptr, GLsizei *atlassize) {
+	/* Creates a texture atlas (in the texAtlasData temporary buffer)
 	 * and dynamically adjust both the buffer and atlas dimension variables. */
 
 	stbi_set_flip_vertically_on_load(1); /* Right images */
@@ -98,11 +95,10 @@ void atlasAppend(char *meshname) {
 	 * We can avoid storing which image maps to where by assuming a linear
 	 * strip of RSM_TEXTURE_SIZE_PIXELS by RSM_TEXTURE_SIZE_PIXELS  */
 	unsigned int texsz = RSM_TEXTURE_SIZE_PIXELS * RSM_TEXTURE_SIZE_PIXELS * 4;
-	atlasdata = realloc(atlasdata, atlassz + texsz);
-	currentimage = atlasdata + atlassz;
-	atlassz += texsz;
+	*atlasptr = realloc(*atlasptr, *atlassize + texsz);
+	memcpy(*atlasptr + *atlassize, imagedata, texsz);
+	*atlassize += texsz;
 
-	memcpy(currentimage, imagedata, texsz);
 	stbi_image_free(imagedata);
 }
 
@@ -111,15 +107,14 @@ void parseBlockmeshes(void) {
 	 * corresponds neatly with adjusted coordinates of meshes, which should then be set as templates
 	 * in blockmeshes (indirection is id, then variant, which gives a pointer to the template itself) */
 
-	char *texMeshPath, *blockmapPath;
-
-	/* Allocs one byte extra since there are two \0 chars
+	/* Allocs one byte extra since there are two \0 chars, but that's fine.
 	 * Concatenate base path (textures/) with subpaths */
-	texMeshPath = malloc(sizeof(textureBasePath) + sizeof(textureBlockPath));
+	char texMeshPath[sizeof(textureBasePath) + sizeof(textureBlockPath)];
+	char blockmapPath[sizeof(textureBasePath) + sizeof(textureBlockmapPath)];
+
 	strcpy(texMeshPath, textureBasePath);
 	strcat(texMeshPath, textureBlockPath);
 
-	blockmapPath = malloc(sizeof(textureBasePath) + sizeof(textureBlockmapPath));
 	strcpy(blockmapPath, textureBasePath);
 	strcat(blockmapPath, textureBlockmapPath);
 
@@ -138,6 +133,7 @@ void parseBlockmeshes(void) {
 
 	/* Alloc ID indirection layer (equivalent to number of defined meshes (lines) in blockmap */
 	blockmeshes = malloc(nblocks * sizeof(Blockmesh **));
+	boundingboxes = malloc(nblocks * sizeof(float (*)[6]));
 
 	/* Iterate through ids and variants and create appropriate blockmesh templates */
 	uint64_t id, nvariants, nvariant;
@@ -153,18 +149,32 @@ void parseBlockmeshes(void) {
 	for (ntextures = id = 0; id < nblocks; id++)
 		ntextures += usf_scount(blockmap[id], ' ') + 1;
 
+	unsigned char *texAtlasData = NULL; /* Temporary buffer */
+	GLsizei texAtlasSize = 0; /* Buffer size in bytes */
+
 	/* Now load mesh data */
 	for (texid = id = 0; id < nblocks; id++) {
+		/* Read specifications from file */
 		blockmap[id][strlen(blockmap[id]) - 1] = '\0'; /* Remove trailing \n */
 		variants = usf_scsplit(blockmap[id], ' ', &nvariants);
+
 		blockmeshes[id] = malloc(nvariants * sizeof(Blockmesh *));
 
+		/* calloc as no-collision blocks have bounding box of 0 0 0 0 0 0 (no volume, special case) */
+		boundingboxes[id] = calloc(1, nvariants * sizeof(float [6]));
+
 		for (nvariant = 0; nvariant < nvariants; nvariant++, texid++) {
-			blockmeshes[id][nvariant] = template = calloc(1, sizeof(Blockmesh));
+			/* If it exists, parse this block's bounding box to boundingboxes */
 			variant = variants[nvariant];
 
+			parseBoundingBox(variant, id, nvariant);
+			blockmeshes[id][nvariant] = template = calloc(1, sizeof(Blockmesh));
+
+			/* TODO: permit multiple textures per variant with some form like $[num]variantname and
+			 * out-of-bounds UV values */
+
 			/* Append texture for this mesh to the atlas */
-			atlasAppend(variant);
+			atlasAppend(variant, &texAtlasData, &texAtlasSize);
 
 			if (sizeof(textureBasePath) + sizeof(textureBlockPath) + strlen(variant) +
 					sizeof(meshFormatExtension) > RSM_MAX_MESHDATA_NAME_LENGTH) {
@@ -256,8 +266,8 @@ void parseBlockmeshes(void) {
 	/* Generate and bind atlas to OpenGL renderer */
 	glGenTextures(1, &textureAtlas);
 	glBindTexture(GL_TEXTURE_2D, textureAtlas);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RSM_TEXTURE_SIZE_PIXELS, atlassz/(4 * RSM_TEXTURE_SIZE_PIXELS), 0,
-			GL_RGBA, GL_UNSIGNED_BYTE, atlasdata);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RSM_TEXTURE_SIZE_PIXELS, texAtlasSize	/(4 * RSM_TEXTURE_SIZE_PIXELS), 0,
+			GL_RGBA, GL_UNSIGNED_BYTE, texAtlasData);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -265,10 +275,8 @@ void parseBlockmeshes(void) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	/* Cleanup */
-	free(atlasdata);
+	free(texAtlasData);
 	usf_freetxt(blockmap, nblocks);
-	free(texMeshPath);
-	free(blockmapPath);
 }
 
 void loadVertexData(Vertex vertex, char *vector) {
@@ -279,4 +287,38 @@ void loadVertexData(Vertex vertex, char *vector) {
 		fprintf(stderr, "Error parsing vertex data for line %s, aborting.\n", vector);
 		exit(RSM_EXIT_BADVERTEXDATA);
 	}
+}
+
+void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant) {
+	/* If it exists, parse the bounding box for this block and load it to
+	 * boundingboxes */
+
+	char boundingboxpath[RSM_MAX_MESHDATA_NAME_LENGTH];
+
+	if (sizeof(textureBasePath) + sizeof(textureBlockPath) + strlen(boxname) +
+			sizeof(boundingboxFormatExtension) > RSM_MAX_MESHDATA_NAME_LENGTH) {
+		fprintf(stderr, "Bounding box format name too long at %s exceeding %u (with extensions), aborting.\n",
+				boxname, RSM_MAX_MESHDATA_NAME_LENGTH);
+		exit(RSM_EXIT_EXCBUF);
+	}
+
+	strcpy(boundingboxpath, textureBasePath);
+	strcat(boundingboxpath, textureBlockPath);
+	strcat(boundingboxpath, boxname);
+	strcat(boundingboxpath, boundingboxFormatExtension);
+
+	char *boundingbox;
+	boundingbox = usf_ftos(boundingboxpath, "r", NULL);
+
+	if (boundingbox == NULL) return; /* Block must be passthrough, no bounding box */
+
+	float *bb = boundingboxes[id][variant];
+
+	if (sscanf(boundingbox, "%f %f %f %f %f %f\n",
+				&bb[0], &bb[1], &bb[2], &bb[3], &bb[4], &bb[5]) == EOF) {
+		fprintf(stderr, "Error parsing bounding box data for line %s, aborting.\n", boundingbox);
+		exit(RSM_EXIT_BADBOUNDINGBOXDATA);
+	}
+
+	free(boundingbox); /* Cleanup disk file */
 }

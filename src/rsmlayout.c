@@ -1,5 +1,4 @@
 #include "rsmlayout.h"
-#include <GLFW/glfw3.h>
 
 /* Default layout */
 int RSM_KEY_ESCAPE = GLFW_KEY_ESCAPE;
@@ -26,11 +25,19 @@ float RSM_FPS = 240.0f;
 float RSM_FOV = 120.0f;
 unsigned int RENDER_DISTANCE = 8;
 float RENDER_DISTANCE_NEAR = 0.1f;
+//define CHUNKSIZE
+//define PLAYER_BOUNDINGBOX_RELATIVE_CORNER
+//define PLAYER_BOUNDINGBOX_DIMENSIONS
 
 unsigned int RSM_TEXTURE_SIZE_PIXELS = 32;
 unsigned int RSM_MAX_BLOCKMESH_VERTICES = 10000;
 unsigned int RSM_MAX_BLOCKMESH_INDICES = 30000;
 unsigned int RSM_MAX_MESHDATA_NAME_LENGTH = 512;
+unsigned int RSM_MAX_SHADER_INFOLOG_LENGTH = 512;
+
+/* Bitmasks for block metadata */
+uint64_t RSM_BIT_COLLISION = 1UL << 0; /* Player hitbox will collide */
+uint64_t RSM_BIT_CONDUCTIVE = 1UL << 1; /* Can conduct power */
 
 /* Attention! Make sure to set constant sizes in rsmlayout.h otherwise compiler will complain */
 char textureBasePath[] = "textures/";
@@ -39,3 +46,4 @@ char textureGuiPath[] = "gui/";
 char textureBlockmapPath[] = "blockmap.txt";
 char meshFormatExtension[] = ".mesh";
 char textureFormatExtension[] = ".png";
+char boundingboxFormatExtension[] = ".boundingbox";
