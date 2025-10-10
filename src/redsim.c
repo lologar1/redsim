@@ -1,12 +1,12 @@
 #include "redsim.h"
 
-Gamestate gamestate;
+Gamestate gamestate = NORMAL;
 
-void rsm_move(vec3 position, vec3 orientation) {
+void rsm_move(vec3 position) {
 	/* Change player position each frame according to movement) */
 
 	/* Persistent momentum across multiple frames */
-	static float momentumX = 0.0f, momentumY = 0.0f, momentumZ = 0.0f;
+	static vec3 speed = {0.0f, 0.0f, 0.0f};
 
 	/* Keep track of delta time passed since last frame */
 	static float lastTime = 0.0f; /* OK since glfwGetTime() is seconds since init. */
@@ -15,60 +15,32 @@ void rsm_move(vec3 position, vec3 orientation) {
 	deltaTime = glfwGetTime() - lastTime;
 	lastTime = glfwGetTime();
 
-	/* Get current speed */
-	float cameraSpeedX, cameraSpeedY, cameraSpeedZ;
-	cameraSpeedX = momentumX * deltaTime;
-	cameraSpeedY = momentumY * deltaTime;
-	cameraSpeedZ = momentumZ * deltaTime;
-
 	/* Deltas to travel this frame */
-	vec3 zMovement, xMovement, yMovement, momentum;
+	vec3 momentum;
 
 	/* Now update speed for next frame */
+	if (RSM_RIGHT) speed[0] += RSM_FLY_X_ACCELERATION * deltaTime;
+	if (RSM_LEFT) speed[0] -= RSM_FLY_X_ACCELERATION * deltaTime;
+	if (RSM_UP) speed[1] += RSM_FLY_Y_ACCELERATION * deltaTime;
+	if (RSM_DOWN) speed[1] -= RSM_FLY_Y_ACCELERATION * deltaTime;
+	if (RSM_BACKWARD) speed[2] += RSM_FLY_Z_ACCELERATION * deltaTime;
+	if (RSM_FORWARD) speed[2] -= RSM_FLY_Z_ACCELERATION * deltaTime;
 
-	/* X movement */
-	if (RSM_RIGHT) momentumX = fmin(momentumX + RSM_FLY_X_ACCELERATION * deltaTime, RSM_FLY_X_CAP);
-	if (RSM_LEFT) momentumX = fmax(momentumX - RSM_FLY_X_ACCELERATION * deltaTime, -RSM_FLY_X_CAP);
-	if (!(RSM_RIGHT && RSM_LEFT)) momentumX = momentumX < 0.0f ?
-		fmin(0.0f, momentumX + RSM_FLY_X_DECELERATION * deltaTime) :
-		fmax(0.0f, momentumX - RSM_FLY_X_DECELERATION * deltaTime);
+	/* Cap speed */
+	if (glm_vec3_norm(speed) > RSM_FLY_SPEED_CAP) glm_vec3_scale_as(speed, RSM_FLY_SPEED_CAP, speed);
 
-	/* Y movement */
-	if (RSM_UP) momentumY = fmin(momentumY + RSM_FLY_Y_ACCELERATION * deltaTime, RSM_FLY_Y_CAP);
-	if (RSM_DOWN) momentumY = fmax(momentumY - RSM_FLY_Y_ACCELERATION * deltaTime, -RSM_FLY_Y_CAP);
-	if (!(RSM_UP && RSM_DOWN)) momentumY = momentumY < 0.0f ?
-		fmin(0.0f, momentumY + RSM_FLY_Y_DECELERATION * deltaTime) :
-		fmax(0.0f, momentumY - RSM_FLY_Y_DECELERATION * deltaTime);
+	/* Air deceleration */
+	glm_vec3_scale_as(speed, glm_vec3_norm(speed) * powf(RSM_FLY_FRICTION, deltaTime), speed);
 
-
-	/* Z movement */
-	if (RSM_FORWARD) momentumZ = fmin(momentumZ + RSM_FLY_Z_ACCELERATION * deltaTime, RSM_FLY_Z_CAP);
-	if (RSM_BACKWARD) momentumZ = fmax(momentumZ - RSM_FLY_Z_ACCELERATION * deltaTime, -RSM_FLY_Z_CAP);
-	if (!(RSM_FORWARD && RSM_BACKWARD)) momentumZ = momentumZ < 0.0f ?
-		fmin(0.0f, momentumZ + RSM_FLY_Z_DECELERATION * deltaTime) :
-		fmax(0.0f, momentumZ - RSM_FLY_Z_DECELERATION * deltaTime);
-
-	/* Convert movement to momentum vector */
-	glm_vec3_cross(orientation, upvector, xMovement); /* Get relative right vector */
-	glm_vec3_normalize(xMovement);
-	glm_vec3_scale(xMovement, cameraSpeedX, xMovement);
-
-	glm_vec3_scale(upvector, cameraSpeedY, yMovement);
-
-	glm_vec3_copy(orientation, zMovement);
-	zMovement[1] = 0.0f; /* Lock vertical movement because template is orientation */
-	glm_vec3_normalize(zMovement);
-	glm_vec3_scale(zMovement, cameraSpeedZ, zMovement);
-
-	/* Create combined movement vector */
-	glm_vec3_copy(xMovement, momentum);
-	glm_vec3_addadd(yMovement, zMovement, momentum);
+	glm_vec3_copy(speed, momentum);
+	glm_vec3_scale(momentum, deltaTime, momentum);
+	glm_vec3_rotate(momentum, -glm_rad(yaw), upvector);
 
 	/* Collision handling */
 	Chunkdata *chunkdata;
 	Blockdata *blockdata;
 	float boundingbox[6];
-	vec3 blockposition, offset, newPosition, playerCornerNew, playerCornerOld, mask;
+	vec3 blockposition, offset, newPosition, playerCornerNew, playerCornerOld;
 	mat4 rotation;
 
 	/* Future position of the player */
@@ -107,10 +79,9 @@ void rsm_move(vec3 position, vec3 orientation) {
 
 				/* Get bounding box data and check it against player bounding box */
 				memcpy(boundingbox, boundingboxes[blockdata->id][blockdata->variant], sizeof(float [6]));
-				mask[0] = floor(blockposition[0]); /* Temporary buffer to snap boundingbox to grid */
-				mask[1] = floor(blockposition[1]);
-				mask[2] = floor(blockposition[2]);
-				glm_vec3_add(boundingbox, mask, boundingbox);
+				boundingbox[0] += floor(blockposition[0]);
+				boundingbox[1] += floor(blockposition[1]);
+				boundingbox[2] += floor(blockposition[2]);
 
 				if (blockdata->rotation != NONE) {
 					/* Bounding boxes may be asymmetric */
@@ -118,12 +89,34 @@ void rsm_move(vec3 position, vec3 orientation) {
 					glm_mat4_mulv3(rotation, boundingbox, 1.0f, boundingbox);
 				}
 
-				AABBIntersect(boundingbox, boundingbox+3, playerCornerNew, PLAYER_BOUNDINGBOX_DIMENSIONS, mask);
+				if (AABBIntersect(boundingbox, boundingbox+3, playerCornerNew,
+							PLAYER_BOUNDINGBOX_DIMENSIONS) != -1) /* If all axes intersect */
+					continue;
 
-				if (!(mask[0] == 1.0f && mask[1] == 1.0f && mask[2] == 1.0f)) continue; /* No collision */
+				/* Axis which will intersect in the future. Note that a perfect 45 degree angle can
+				 * enable a player to phase through a box as only one axis is checked, but that is either
+				 * too unlikely (and the player can get out safely) or simply not permitted as pitch/yaw are
+				 * ultimately decoded from discrete mouse inputs, which, due to float precision,
+				 * may not be able to produce this effect */
+				int miss = AABBIntersect(boundingbox, boundingbox+3, playerCornerOld,
+						PLAYER_BOUNDINGBOX_DIMENSIONS);
 
-				AABBIntersect(boundingbox, boundingbox+3, playerCornerOld, PLAYER_BOUNDINGBOX_DIMENSIONS, mask);
-				glm_vec3_mul(momentum, mask, momentum); /* Filter */
+				if (miss == -1) continue; /* Moving inside a block ; let the player escape! */
+
+				if (boundingbox[miss] + boundingbox[miss+3] < playerCornerOld[miss]) {
+					/* Player is "above" */
+					momentum[miss] = -(playerCornerOld[miss] - (boundingbox[miss] + boundingbox[miss+3]))
+						+ BLOCK_BOUNDINGBOX_SAFE_DISTANCE;
+				}
+				else
+					/* Player is "under */
+					momentum[miss] = boundingbox[miss] - (playerCornerOld[miss] +
+						PLAYER_BOUNDINGBOX_DIMENSIONS[miss]) - BLOCK_BOUNDINGBOX_SAFE_DISTANCE;
+
+				/* Match speed to orientation, kill component and replace it */
+				glm_vec3_rotate(speed, -glm_rad(yaw), upvector);
+				speed[miss] = 0.0f; /* Kill speed for that component */
+				glm_vec3_rotate(speed, glm_rad(yaw), upvector);
 			}
 		}
 	}
@@ -131,10 +124,13 @@ void rsm_move(vec3 position, vec3 orientation) {
 	glm_vec3_add(position, momentum, position); /* This affects player position */
 }
 
-void AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2, vec3 mask) {
-    mask[0] = !((corner1[0] + dim1[0] < corner2[0]) || (corner1[0] > corner2[0] + dim2[0])) ? 1.0f : 0.0f;
-    mask[1] = !((corner1[1] + dim1[1] < corner2[1]) || (corner1[1] > corner2[1] + dim2[1])) ? 1.0f : 0.0f;
-    mask[2] = !((corner1[2] + dim1[2] < corner2[2]) || (corner1[2] > corner2[2] + dim2[2])) ? 1.0f : 0.0f;
+int AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2) {
+	/* Returns either the axis which a bounding box doesn't intersect another (prio xyz)
+	 * Or -1 if all axes intersect */
+	if (corner1[0] + dim1[0] < corner2[0] || corner1[0] > corner2[0] + dim2[0]) return 0;
+	if (corner1[1] + dim1[1] < corner2[1] || corner1[1] > corner2[1] + dim2[1]) return 1;
+	if (corner1[2] + dim1[2] < corner2[2] || corner1[2] > corner2[2] + dim2[2]) return 2;
+	return -1; /* Does intersect */
 }
 
 int64_t chunkOffsetConvertFloat(float absoluteComponent) {

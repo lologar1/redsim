@@ -1,15 +1,11 @@
 #include "rsmlayout.h"
 
 /* Default layout */
-float RSM_FLY_X_ACCELERATION = 125.0f;
-float RSM_FLY_Y_ACCELERATION = 130.0f;
-float RSM_FLY_Z_ACCELERATION = 125.0f;
-float RSM_FLY_X_DECELERATION = 100.0f;
-float RSM_FLY_Y_DECELERATION = 100.0f;
-float RSM_FLY_Z_DECELERATION = 100.0f;
-float RSM_FLY_X_CAP = 13.0f;
-float RSM_FLY_Y_CAP = 10.0f;
-float RSM_FLY_Z_CAP = 13.0f;
+float RSM_FLY_X_ACCELERATION = 30.0f;
+float RSM_FLY_Y_ACCELERATION = 30.0f;
+float RSM_FLY_Z_ACCELERATION = 30.0f;
+float RSM_FLY_FRICTION = 0.01f;
+float RSM_FLY_SPEED_CAP = 10.0f;
 
 //Keybinds defined in header file for fast switch statements
 
@@ -22,12 +18,6 @@ float RENDER_DISTANCE_NEAR = 0.1f;
 //define CHUNKSIZE
 //define PLAYER_BOUNDINGBOX_RELATIVE_CORNER
 //define PLAYER_BOUNDINGBOX_DIMENSIONS
-
-unsigned int RSM_TEXTURE_SIZE_PIXELS = 32;
-unsigned int RSM_MAX_BLOCKMESH_VERTICES = 10000;
-unsigned int RSM_MAX_BLOCKMESH_INDICES = 30000;
-unsigned int RSM_MAX_MESHDATA_NAME_LENGTH = 512;
-unsigned int RSM_MAX_SHADER_INFOLOG_LENGTH = 512;
 
 //Bitmasks for block metadata defined in the header file
 

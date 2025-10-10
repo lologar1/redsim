@@ -6,6 +6,10 @@ int RSM_RIGHT;
 int RSM_LEFT;
 int RSM_DOWN;
 int RSM_UP;
+int RSM_LEFTCLICK;
+int RSM_RIGHTCLICK;
+int RSM_MIDDLECLICK;
+float mouseX, mouseY;
 
 void processKey(GLFWwindow *window, int key, int scancode, int action, int mods) {
 	/* Set appropriate user input variables for keypresses */
@@ -43,4 +47,42 @@ void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 	/* Handle cursor status after a potential gamestate change */
 	if (gamestate == NORMAL) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+void processMouseMovement(GLFWwindow *window, double xpos, double ypos) {
+	/* Handle mouse movements and adjust pitch/yaw accordingly */
+
+	(void) window;
+
+	float xoffset = xpos - mouseX;
+	float yoffset = mouseY - ypos; /* Reversed to account for Y axis swap */
+
+	mouseX = xpos; mouseY = ypos;
+
+	/* Don't update game view if not in normal mode */
+	if (gamestate != NORMAL) return;
+
+	/* Convert to degrees of movement by multiplying with sensitivity */
+	xoffset *= RSM_MOUSE_SENSITIVITY;
+	yoffset *= RSM_MOUSE_SENSITIVITY;
+
+	yaw += xoffset;
+	pitch += yoffset;
+
+	/* Prevent weird angle swaps when cranking the neck too far */
+	if (pitch > 89.0f) pitch = 89.0f;
+	if (pitch < -89.0f) pitch = -89.0f;
+}
+
+void processMouseInput(GLFWwindow *window, int button, int action, int mods) {
+	/* Handle mouse clicks */
+
+	(void) window;
+	(void) mods;
+
+	switch (button) {
+		case RSM_BUTTON_LEFTCLICK: RSM_LEFTCLICK = action == GLFW_PRESS ? 1 : 0; break;
+		case RSM_BUTTON_RIGHTCLICK: RSM_RIGHTCLICK = action == GLFW_PRESS ? 1 : 0; break;
+		case RSM_BUTTON_MIDDLECLICK: RSM_MIDDLECLICK = action == GLFW_PRESS ? 1 : 0; break;
+	}
 }

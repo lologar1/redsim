@@ -149,43 +149,12 @@ void client_frameEvent(GLFWwindow *window) {
 	}
 
 	/* Set camera direction to appropriate pitch/yaw */
-	orientation[0] = cos(glm_rad(yaw)) * cos(glm_rad(pitch));
+	orientation[0] = sin(glm_rad(yaw)) * cos(glm_rad(pitch));
 	orientation[1] = sin(glm_rad(pitch));
-	orientation[2] = sin(glm_rad(yaw)) * cos(glm_rad(pitch));
+	orientation[2] = -cos(glm_rad(yaw)) * cos(glm_rad(pitch));
 	glm_vec3_normalize(orientation);
 
-	rsm_move(position, orientation);
-}
-
-void client_mouseEvent(GLFWwindow *window, double xpos, double ypos) {
-	/* Handle mouse movements and adjust pitch/yaw accordingly */
-
-	(void) window; /* Prototype */
-
-	static float lastX = 0;
-	static float lastY = 0;
-
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos; /* Reversed because Y axis is swapped */
-
-	lastX = xpos;
-	lastY = ypos;
-
-	xoffset *= RSM_MOUSE_SENSITIVITY;
-	yoffset *= RSM_MOUSE_SENSITIVITY;
-
-	yaw += xoffset;
-	pitch += yoffset;
-
-	/* Guardrails to avoid angle swaps */
-	if(pitch > 89.0f) pitch = 89.0f;
-	if(pitch < -89.0f) pitch = -89.0f;
-}
-
-void client_keyboardEvent(GLFWwindow *window, int key, int scancode, int action, int mods) {
-	 /* Called whenever a key is pressed, released or held. This function really is a wrapper for
-	  * the processKey event which lives in userio and handles updating all user I/O variables */
-	processKey(window, key, scancode, action, mods);
+	rsm_move(position);
 }
 
 void client_getOrientationVector(vec3 ori) {

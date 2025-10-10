@@ -20,8 +20,9 @@ int render(GLFWwindow* window) {
 
 	/* Set callback functions */
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetCursorPosCallback(window, client_mouseEvent);
-	glfwSetKeyCallback(window, client_keyboardEvent);
+	glfwSetCursorPosCallback(window, processMouseMovement);
+	glfwSetKeyCallback(window, processKey);
+	glfwSetMouseButtonCallback(window, processMouseInput);
 
 	/* Compile shaders from GLSL programs and link them */
 	GLuint vertexShader = createShader(GL_VERTEX_SHADER, "shaders/vertexshader.glsl");
@@ -154,10 +155,15 @@ int render(GLFWwindow* window) {
 		}
 
 		/* Framerate cap */
+#if FPS_CAP == true
 		time = glfwGetTime();
 		if (time - lastTime < 1.0f/RSM_FPS)
 			glfwWaitEventsTimeout(1.0/RSM_FPS - (time - lastTime));
 		lastTime = glfwGetTime(); /* Finished drawing frame */
+#else
+		(void) time;
+		(void) lastTime;
+#endif
 
 		/* Client communication */
 		client_frameEvent(window);
