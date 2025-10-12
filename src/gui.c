@@ -4,6 +4,8 @@ GLuint guiAtlas;
 GLuint guiVBO, guiEBO, guiVAO;
 unsigned int nGUIIndices;
 
+unsigned int hotbarIndex;
+
 void initGUI(void) {
 	/* Create the appropriate OpenGL structures for the GUI */
 	nGUIIndices = 0;
@@ -141,10 +143,10 @@ void renderCrosshair(float **vertices, unsigned int *sizev, unsigned int **indic
 
 	meshAppend(vertices, sizev, indices, sizei, v, i, sizeof(v), sizeof(i));
 }
-
 void renderHotbar(float **vertices, unsigned int *sizev, unsigned int **indices, unsigned int *sizei) {
 	/* Draw hotbar */
-	float v[(2 * RSM_HOTBAR_SLOTS + 2) * 5];
+	size_t svertices = (2 * RSM_HOTBAR_SLOTS + 2) * 5;
+	float v[svertices + (4 * 5)]; /* Space for all vertices plus slot selection */
 
 	for (int i = 0; i < RSM_HOTBAR_SLOTS + 1; i++) {
 		int offset = i * 10;
@@ -161,12 +163,25 @@ void renderHotbar(float **vertices, unsigned int *sizev, unsigned int **indices,
 		v[offset + 8] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 9] = atlasAdjust(1.0f, pHotbar);
 	}
 
-	unsigned int i[6 * RSM_HOTBAR_SLOTS];
+	/* Slot selection */
+	float selection[] = {
+		WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2) + RSM_GUI_TEXTURE_SIZE_PIXELS * hotbarIndex, 0.0f, pSlotSelection, 0.0f, atlasAdjust(0.0f, pSlotSelection),
+		WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2) + RSM_GUI_TEXTURE_SIZE_PIXELS * hotbarIndex, RSM_GUI_TEXTURE_SIZE_PIXELS, pSlotSelection, 0.0f, atlasAdjust(1.0f, pSlotSelection),
+		WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2) + RSM_GUI_TEXTURE_SIZE_PIXELS * (hotbarIndex + 1), 0.0f, pSlotSelection, 1.0f, atlasAdjust(0.0f, pSlotSelection),
+		WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2) + RSM_GUI_TEXTURE_SIZE_PIXELS * (hotbarIndex + 1), RSM_GUI_TEXTURE_SIZE_PIXELS, pSlotSelection, 1.0f, atlasAdjust(1.0f, pSlotSelection),
+	};
+	memcpy(v + svertices, selection, sizeof(selection));
+
+	size_t sindices = 6 * RSM_HOTBAR_SLOTS;
+	unsigned int i[sindices + 6]; /* Space for all indices plus slot selection */
 
 	for (int j = 0; j < RSM_HOTBAR_SLOTS * 2; j++) {
 		int offset = j * 3;
 		i[offset + 0] = 0 + j; i[offset + 1] = 1 + j; i[offset + 2] = 2 + j;
 	}
 
-	meshAppend(vertices, sizev, indices, sizei, v, i, sizeof(v), sizeof(i));
+	i[sindices + 0] = RSM_HOTBAR_SLOTS * 2 + 2 + 0; i[sindices + 1] = RSM_HOTBAR_SLOTS * 2 + 2 + 1; i[sindices + 2] = RSM_HOTBAR_SLOTS * 2 + 2 + 2;
+	i[sindices + 3] = RSM_HOTBAR_SLOTS * 2 + 2 + 1; i[sindices + 4] = RSM_HOTBAR_SLOTS * 2 + 2 + 2; i[sindices + 5] = RSM_HOTBAR_SLOTS * 2 + 2 + 3;
+
+	meshAppend(vertices, sizev, indices, sizei, v, i, sizeof(v) + sizeof(selection), sizeof(i) + 6 * sizeof(float));
 }

@@ -1,8 +1,8 @@
 #ifndef USERIO_H
 #define USERIO_H
 
+#include "gui.h"
 #include "rsmlayout.h"
-#include <GLFW/glfw3.h>
 
 typedef enum {
 	NORMAL, /* Normal gamestate (mouse captured) */
@@ -29,5 +29,6 @@ extern float yaw;
 void processKey(GLFWwindow *window, int key, int scancode, int action, int mods);
 void processMouseMovement(GLFWwindow *window, double xpos, double ypos);
 void processMouseInput(GLFWwindow *window, int button, int action, int mods);
+void processMouseScroll(GLFWwindow *window, double xoffset, double yoffset);
 
 #endif

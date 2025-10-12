@@ -113,6 +113,7 @@ void client_init(void) {
 	/* END TESTBED */
 
 	generateMeshlist();
+	renderGUI(); /* Subsequently called only on GUI modification (from user input) */
 }
 
 /* RENDERER COMMUNICATION */
@@ -132,9 +133,6 @@ void client_getChunks(GLuint ***chunks, int *nchunks) {
 void client_frameEvent(GLFWwindow *window) {
 	/* Called each frame */
 	(void) window;
-
-	/* Draw GUI TODO: not necessary every frame? */
-	renderGUI();
 
 	/* Meshlist maintenance */
 	static unsigned int lastRenderDistance = 0;

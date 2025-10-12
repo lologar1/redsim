@@ -11,8 +11,6 @@ float RSM_FLY_SPEED_CAP = 14.0f;
 
 float RSM_MOUSE_SENSITIVITY = 0.1f;
 
-unsigned int hotbarIndex = 0;
-
 float RSM_FPS = 240.0f;
 float RSM_FOV = 120.0f;
 unsigned int RENDER_DISTANCE = 8;

@@ -1,6 +1,7 @@
 #ifndef RSMLAYOUT_H
 #define RSMLAYOUT_H
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdint.h>
 
@@ -23,10 +24,20 @@ extern float RSM_FLY_SPEED_CAP;
 #define RSM_BUTTON_RIGHTCLICK GLFW_MOUSE_BUTTON_RIGHT
 #define RSM_BUTTON_MIDDLECLICK GLFW_MOUSE_BUTTON_MIDDLE
 
+#define RSM_KEY_HOTSLOT0 GLFW_KEY_1
+#define RSM_KEY_HOTSLOT1 GLFW_KEY_2
+#define RSM_KEY_HOTSLOT2 GLFW_KEY_3
+#define RSM_KEY_HOTSLOT3 GLFW_KEY_4
+#define RSM_KEY_HOTSLOT4 GLFW_KEY_5
+#define RSM_KEY_HOTSLOT5 GLFW_KEY_6
+#define RSM_KEY_HOTSLOT6 GLFW_KEY_7
+#define RSM_KEY_HOTSLOT7 GLFW_KEY_8
+#define RSM_KEY_HOTSLOT8 GLFW_KEY_9
+#define RSM_KEY_HOTSLOT9 GLFW_KEY_0
+
 extern float RSM_MOUSE_SENSITIVITY;
 
 #define RSM_HOTBAR_SLOTS 10
-extern unsigned int hotbarIndex;
 
 extern float RSM_FPS;
 #define FPS_CAP true

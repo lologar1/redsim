@@ -42,11 +42,23 @@ void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 		case RSM_KEY_COMMAND:
 			if (gamestate == NORMAL) gamestate = COMMAND;
 			break;
+		case RSM_KEY_HOTSLOT0: hotbarIndex = 0; break;
+		case RSM_KEY_HOTSLOT1: hotbarIndex = 1; break;
+		case RSM_KEY_HOTSLOT2: hotbarIndex = 2; break;
+		case RSM_KEY_HOTSLOT3: hotbarIndex = 3; break;
+		case RSM_KEY_HOTSLOT4: hotbarIndex = 4; break;
+		case RSM_KEY_HOTSLOT5: hotbarIndex = 5; break;
+		case RSM_KEY_HOTSLOT6: hotbarIndex = 6; break;
+		case RSM_KEY_HOTSLOT7: hotbarIndex = 7; break;
+		case RSM_KEY_HOTSLOT8: hotbarIndex = 8; break;
+		case RSM_KEY_HOTSLOT9: hotbarIndex = 9; break;
 	}
 
 	/* Handle cursor status after a potential gamestate change */
 	if (gamestate == NORMAL) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+	renderGUI(); /* GUI may have changed */
 }
 
 void processMouseMovement(GLFWwindow *window, double xpos, double ypos) {
@@ -85,4 +97,15 @@ void processMouseInput(GLFWwindow *window, int button, int action, int mods) {
 		case RSM_BUTTON_RIGHTCLICK: RSM_RIGHTCLICK = action == GLFW_PRESS ? 1 : 0; break;
 		case RSM_BUTTON_MIDDLECLICK: RSM_MIDDLECLICK = action == GLFW_PRESS ? 1 : 0; break;
 	}
+}
+
+void processMouseScroll(GLFWwindow *window, double xoffset, double yoffset) {
+	/* Handle mouse scroll */
+
+	(void) window;
+	(void) xoffset;
+
+	hotbarIndex = (hotbarIndex + (yoffset < 0 ? 1 : -1) + RSM_HOTBAR_SLOTS) % RSM_HOTBAR_SLOTS;
+
+	renderGUI();
 }

@@ -23,6 +23,7 @@ int render(GLFWwindow* window) {
 	glfwSetCursorPosCallback(window, processMouseMovement);
 	glfwSetKeyCallback(window, processKey);
 	glfwSetMouseButtonCallback(window, processMouseInput);
+	glfwSetScrollCallback(window, processMouseScroll);
 
 	/* Compile shaders from GLSL programs and link them */
 	GLuint vertexShader = createShader(GL_VERTEX_SHADER, "shaders/vertexshader.glsl");

@@ -4,13 +4,17 @@
 #include "renderer.h"
 #include "renderutils.h"
 
+extern unsigned int hotbarIndex;
+
 void initGUI(void); /* OpenGL stuff for GUI */
 void parseGUIdata(void); /* Create texture atlas and gui elements */
 
 /* Priority list for which GUI elements get drawn in front. This list MUST mimic
- * the order in guimap as indices are also used for texture atlas offsetting */
+ * the order in guimap as indices are also used for texture atlas offsetting
+ * TOP = shown with most priority (smallest Z) */
 typedef enum {
-	pHotbar = 0,
+	pSlotSelection,
+	pHotbar,
 	pCrosshair,
 	MAX_GUI_PRIORITY
 } GUIPriority;
