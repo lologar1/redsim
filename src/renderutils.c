@@ -59,42 +59,31 @@ GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	return programID;
 }
 
-void atlasAppend(char *meshname, unsigned char **atlasptr, GLsizei *atlassize) {
+void atlasAppend(char *meshname, int texSize, unsigned char **atlasptr, GLsizei *atlassize) {
 	/* Creates a texture atlas (in the texAtlasData temporary buffer)
 	 * and dynamically adjust both the buffer and atlas dimension variables. */
 
 	stbi_set_flip_vertically_on_load(1); /* Right images */
 
-	char *texPath;
-	texPath = malloc(sizeof(textureBasePath) + sizeof(textureBlockPath) +
-			strlen(meshname) + 1 + sizeof(textureFormatExtension));
-	strcpy(texPath, textureBasePath);
-	strcat(texPath, textureBlockPath);
-	strcat(texPath, meshname);
-	strcat(texPath, textureFormatExtension);
-
 	int width, height, ncolorchannels;
 	unsigned char *imagedata;
 
-	imagedata = stbi_load(texPath, &width, &height, &ncolorchannels, 4);
+	imagedata = stbi_load(meshname, &width, &height, &ncolorchannels, 4);
 
 	if (imagedata == NULL) {
-		fprintf(stderr, "Error loading texture at %s (does it exist?), aborting.\n", texPath);
+		fprintf(stderr, "Error loading texture at %s (does it exist?), aborting.\n", meshname);
 		exit(RSM_EXIT_NOTEXTURE);
 	}
 
-	if (width != (int) RSM_TEXTURE_SIZE_PIXELS || height != (int) RSM_TEXTURE_SIZE_PIXELS) {
-		fprintf(stderr, "Texture at %s does not match required size %u, aborting.\n", texPath,
-				RSM_TEXTURE_SIZE_PIXELS);
+	if (width != (int) texSize || height != (int) texSize) {
+		fprintf(stderr, "Texture at %s does not match required size %u, aborting.\n", meshname, texSize);
 		exit(RSM_EXIT_BADTEXTURE);
 	}
 
-	free(texPath);
-
 	/* Grow texture atlas by the size of the image and append it.
 	 * We can avoid storing which image maps to where by assuming a linear
-	 * strip of RSM_TEXTURE_SIZE_PIXELS by RSM_TEXTURE_SIZE_PIXELS  */
-	unsigned int texsz = RSM_TEXTURE_SIZE_PIXELS * RSM_TEXTURE_SIZE_PIXELS * 4;
+	 * strip of texSize by texSize  */
+	unsigned int texsz = texSize * texSize * 4;
 	*atlasptr = realloc(*atlasptr, *atlassize + texsz);
 	memcpy(*atlasptr + *atlassize, imagedata, texsz);
 	*atlassize += texsz;
@@ -102,10 +91,11 @@ void atlasAppend(char *meshname, unsigned char **atlasptr, GLsizei *atlassize) {
 	stbi_image_free(imagedata);
 }
 
-void parseBlockmeshes(void) {
+void parseBlockdata(void) {
 	/* Create a texture atlas (and set it to textureAtlas, which is used by the renderer) which
 	 * corresponds neatly with adjusted coordinates of meshes, which should then be set as templates
-	 * in blockmeshes (indirection is id, then variant, which gives a pointer to the template itself) */
+	 * in blockmeshes (indirection is id, then variant, which gives a pointer to the template itself).
+	 * Also handle collision bounding boxes */
 
 	/* Allocs one byte extra since there are two \0 chars, but that's fine.
 	 * Concatenate base path (textures/) with subpaths */
@@ -141,7 +131,8 @@ void parseBlockmeshes(void) {
 	Blockmesh *template;
 	char **variants, *variant;
 
-	char meshdatapath[RSM_MAX_MESHDATA_NAME_LENGTH], **meshdata, *vectordata;
+	char meshdatapath[RSM_MAX_PATH_NAME_LENGTH], **meshdata, *vectordata;
+	char meshtexturepath[RSM_MAX_PATH_NAME_LENGTH];
 	uint64_t meshdatalen, d;
 	Vertex vertexdata; /* Scratchpad for loading raw vertex data from file */
 
@@ -160,7 +151,7 @@ void parseBlockmeshes(void) {
 
 		blockmeshes[id] = malloc(nvariants * sizeof(Blockmesh *));
 
-		/* calloc as no-collision blocks have bounding box of 0 0 0 0 0 0 (no volume, special case) */
+		/* calloc to avoid having uninitialized data in no-collision blocks */
 		boundingboxes[id] = calloc(1, nvariants * sizeof(float [6]));
 
 		for (nvariant = 0; nvariant < nvariants; nvariant++, texid++) {
@@ -174,12 +165,23 @@ void parseBlockmeshes(void) {
 			 * out-of-bounds UV values */
 
 			/* Append texture for this mesh to the atlas */
-			atlasAppend(variant, &texAtlasData, &texAtlasSize);
+			if (sizeof(texMeshPath) + strlen(variant) +
+					sizeof(textureFormatExtension) > RSM_MAX_PATH_NAME_LENGTH) {
+				fprintf(stderr, "Mesh texture name too long at %s exceeding %u (with extensions), abourting.\n",
+						variant, RSM_MAX_PATH_NAME_LENGTH);
+				exit(RSM_EXIT_EXCBUF);
+			}
 
-			if (sizeof(textureBasePath) + sizeof(textureBlockPath) + strlen(variant) +
-					sizeof(meshFormatExtension) > RSM_MAX_MESHDATA_NAME_LENGTH) {
+			strcpy(meshtexturepath, texMeshPath);
+			strcat(meshtexturepath, variant);
+			strcat(meshtexturepath, textureFormatExtension);
+
+			atlasAppend(meshtexturepath, RSM_BLOCK_TEXTURE_SIZE_PIXELS, &texAtlasData, &texAtlasSize);
+
+			/* Now build the template using raw mesh data from the text file */
+			if (sizeof(texMeshPath) + strlen(variant) + sizeof(meshFormatExtension) > RSM_MAX_PATH_NAME_LENGTH) {
 				fprintf(stderr, "Mesh format name too long at %s exceeding %u (with extensions), aborting.\n",
-						variant, RSM_MAX_MESHDATA_NAME_LENGTH);
+						variant, RSM_MAX_PATH_NAME_LENGTH);
 				exit(RSM_EXIT_EXCBUF);
 			}
 
@@ -187,7 +189,6 @@ void parseBlockmeshes(void) {
 			strcat(meshdatapath, variant);
 			strcat(meshdatapath, meshFormatExtension);
 
-			/* Now build the template using raw mesh data from the text file */
 			meshdata = usf_ftot(meshdatapath, "r", &meshdatalen);
 			if (meshdata == NULL) {
 				fprintf(stderr, "Error reading raw mesh data at %s (Does it exist?), aborting.\n", meshdatapath);
@@ -203,9 +204,9 @@ void parseBlockmeshes(void) {
 				switch (vectordata[0]) {
 					case 'o':
 						loadVertexData(vertexdata, vectordata + 1);
-						vertexdata[7] = (vertexdata[7] * RSM_TEXTURE_SIZE_PIXELS
-							+ RSM_TEXTURE_SIZE_PIXELS * texid)
-							/ (ntextures * RSM_TEXTURE_SIZE_PIXELS); /* Adjust to atlas UV coords */
+						vertexdata[7] = (vertexdata[7] * RSM_BLOCK_TEXTURE_SIZE_PIXELS
+							+ RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid)
+							/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS); /* Adjust to atlas UV coords */
 
 						template->opaqueVertices = realloc(template->opaqueVertices,
 								(template->count[0] + 8) * sizeof(float));
@@ -215,9 +216,9 @@ void parseBlockmeshes(void) {
 						break;
 					case 't':
 						loadVertexData(vertexdata, vectordata + 1);
-						vertexdata[7] = (vertexdata[7] * RSM_TEXTURE_SIZE_PIXELS
-							+ RSM_TEXTURE_SIZE_PIXELS * texid)
-							/ (ntextures * RSM_TEXTURE_SIZE_PIXELS);
+						vertexdata[7] = (vertexdata[7] * RSM_BLOCK_TEXTURE_SIZE_PIXELS
+							+ RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid)
+							/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS);
 
 						template->transVertices = realloc(template->transVertices,
 								(template->count[1] + 8) * sizeof(float));
@@ -266,8 +267,7 @@ void parseBlockmeshes(void) {
 	/* Generate and bind atlas to OpenGL renderer */
 	glGenTextures(1, &textureAtlas);
 	glBindTexture(GL_TEXTURE_2D, textureAtlas);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RSM_TEXTURE_SIZE_PIXELS, texAtlasSize	/(4 * RSM_TEXTURE_SIZE_PIXELS), 0,
-			GL_RGBA, GL_UNSIGNED_BYTE, texAtlasData);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RSM_BLOCK_TEXTURE_SIZE_PIXELS, texAtlasSize	/ (4 * RSM_BLOCK_TEXTURE_SIZE_PIXELS), 0, GL_RGBA, GL_UNSIGNED_BYTE, texAtlasData);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -293,12 +293,12 @@ void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant) {
 	/* If it exists, parse the bounding box for this block and load it to
 	 * boundingboxes */
 
-	char boundingboxpath[RSM_MAX_MESHDATA_NAME_LENGTH];
+	char boundingboxpath[RSM_MAX_PATH_NAME_LENGTH];
 
 	if (sizeof(textureBasePath) + sizeof(textureBlockPath) + strlen(boxname) +
-			sizeof(boundingboxFormatExtension) > RSM_MAX_MESHDATA_NAME_LENGTH) {
+			sizeof(boundingboxFormatExtension) > RSM_MAX_PATH_NAME_LENGTH) {
 		fprintf(stderr, "Bounding box format name too long at %s exceeding %u (with extensions), aborting.\n",
-				boxname, RSM_MAX_MESHDATA_NAME_LENGTH);
+				boxname, RSM_MAX_PATH_NAME_LENGTH);
 		exit(RSM_EXIT_EXCBUF);
 	}
 

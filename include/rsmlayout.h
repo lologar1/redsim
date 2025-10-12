@@ -25,6 +25,9 @@ extern float RSM_FLY_SPEED_CAP;
 
 extern float RSM_MOUSE_SENSITIVITY;
 
+#define RSM_HOTBAR_SLOTS 10
+extern unsigned int hotbarIndex;
+
 extern float RSM_FPS;
 #define FPS_CAP true
 extern float RSM_FOV;
@@ -35,10 +38,12 @@ extern float RENDER_DISTANCE_NEAR;
 #define PLAYER_BOUNDINGBOX_DIMENSIONS ((vec3) {0.6f, 1.8f, 0.6f})
 #define BLOCK_BOUNDINGBOX_SAFE_DISTANCE 1e-4f
 
-#define RSM_TEXTURE_SIZE_PIXELS 32
+#define RSM_BLOCK_TEXTURE_SIZE_PIXELS 32
+#define RSM_GUI_TEXTURE_SIZE_PIXELS 64
+
 #define RSM_MAX_BLOCKMESH_VERTICES 10000
 #define RSM_MAX_BLOCKMESH_INDICES 30000
-#define RSM_MAX_MESHDATA_NAME_LENGTH 512
+#define RSM_MAX_PATH_NAME_LENGTH 512
 #define RSM_MAX_SHADER_INFOLOG_LENGTH 512
 
 #define RSM_BIT_COLLISION (1UL << 0) /* Collidable */
@@ -47,6 +52,7 @@ extern char textureBasePath[10];
 extern char textureBlockPath[8];
 extern char textureGuiPath[5];
 extern char textureBlockmapPath[13];
+extern char textureGuimapPath[11];
 extern char meshFormatExtension[6];
 extern char textureFormatExtension[5];
 extern char boundingboxFormatExtension[13];

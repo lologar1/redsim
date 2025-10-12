@@ -18,7 +18,9 @@ void client_init(void) {
 	/* Generate template blockmeshes from disk and parse bounding boxes */
 	chunkmap = usf_newhm();
 	meshmap = usf_newhm();
-	parseBlockmeshes();
+	parseBlockdata();
+	initGUI();
+	parseGUIdata();
 
 	/* TODO: Retrieve data from disk
 	 * And remesh all chunks */
@@ -114,6 +116,10 @@ void client_init(void) {
 }
 
 /* RENDERER COMMUNICATION */
+void client_getGUI(GLuint *gui, unsigned int *ngui) {
+	*gui = guiVAO;
+	*ngui = nGUIIndices;
+}
 
 /* Chunk stuff */
 void client_getChunks(GLuint ***chunks, int *nchunks) {
@@ -126,6 +132,9 @@ void client_getChunks(GLuint ***chunks, int *nchunks) {
 void client_frameEvent(GLFWwindow *window) {
 	/* Called each frame */
 	(void) window;
+
+	/* Draw GUI TODO: not necessary every frame? */
+	renderGUI();
 
 	/* Meshlist maintenance */
 	static unsigned int lastRenderDistance = 0;

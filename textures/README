@@ -5,7 +5,7 @@ The handle is used to retrieve the corresponding texture files only. This is to 
 
 Inside blocks/ lives two or three files per texture, named [handle].png, [handle].mesh and [handle].boundingbox.
 
-The first may be any size .png file containing the image data for the texture.
+The first is a RSM_BLOCK_TEXTURE_SIZE_PIXELS squared sized .png file containing the image data for the texture.
 
 The second is actually a text file containing the mesh data and how it associates with the texture data
 in the following format:
@@ -30,4 +30,6 @@ The third is optional and only required of blocks which have collision with the 
 	As always, they extend in the plus directions (West, Up, North).
 
 GUI texture mapping documentation
-(TODO)
+Each line in guimap.txt maps to a unique GUI element. No variants are possible ; one element per line.
+
+Inside gui/ lives one .png file (sized RSM_GUI_TEXTURE_SIZE_PIXELS) representing the element texture.

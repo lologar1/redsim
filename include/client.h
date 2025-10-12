@@ -10,13 +10,16 @@
 #include "renderutils.h"
 #include "redsim.h"
 #include "userio.h"
+#include "gui.h"
 
-extern float (**boundingboxes)[6];
+extern GLuint guiVAO;
+extern unsigned int nGUIIndices;
 
 /* Client procedures */
 void client_init(void);
 
 /* Renderer communication */
+void client_getGUI(GLuint *gui, unsigned int *ngui);
 void client_getChunks(GLuint ***chunks, int *nchunks);
 
 void client_frameEvent(GLFWwindow *window);

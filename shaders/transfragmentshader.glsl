@@ -10,6 +10,6 @@ uniform sampler2D atlas;
 void main() {
 	vec4 texColor = texture(atlas, texPos);
 
-	outAcc = vec4(texColor.rgb * texColor.a, texColor.a); /* Very basic */
+	outAcc = vec4(texColor.rgb * texColor.a, texColor.a);
 	outReveal = texColor.a;
 }
