@@ -130,6 +130,7 @@ void client_getChunks(GLuint ***chunks, int *nchunks) {
 }
 
 /* View stuff */
+extern unsigned int a;
 void client_frameEvent(GLFWwindow *window) {
 	/* Called each frame */
 	(void) window;

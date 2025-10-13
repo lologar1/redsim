@@ -143,21 +143,21 @@ void renderCrosshair(float **vertices, unsigned int *sizev, unsigned int **indic
 
 	meshAppend(vertices, sizev, indices, sizei, v, i, sizeof(v), sizeof(i));
 }
+unsigned int a;
 void renderHotbar(float **vertices, unsigned int *sizev, unsigned int **indices, unsigned int *sizei) {
 	/* Draw hotbar */
+#define HOTBAR_BASE (WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2))
 	size_t svertices = (2 * RSM_HOTBAR_SLOTS + 2) * 5;
 	float v[svertices + (4 * 5)]; /* Space for all vertices plus slot selection */
 
 	for (int i = 0; i < RSM_HOTBAR_SLOTS + 1; i++) {
 		int offset = i * 10;
-		v[offset + 0] = WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2)
-			+ RSM_GUI_TEXTURE_SIZE_PIXELS * i;
+		v[offset + 0] = HOTBAR_BASE + RSM_GUI_TEXTURE_SIZE_PIXELS * i;
 		v[offset + 1] = 0.0f;
 		v[offset + 2] = pHotbar;
 		v[offset + 3] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 4] = atlasAdjust(0.0f, pHotbar);
 
-		v[offset + 5] = WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2)
-			+ RSM_GUI_TEXTURE_SIZE_PIXELS * i;
+		v[offset + 5] = HOTBAR_BASE + RSM_GUI_TEXTURE_SIZE_PIXELS * i;
 		v[offset + 6] = RSM_GUI_TEXTURE_SIZE_PIXELS;
 		v[offset + 7] = pHotbar;
 		v[offset + 8] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 9] = atlasAdjust(1.0f, pHotbar);
@@ -165,10 +165,10 @@ void renderHotbar(float **vertices, unsigned int *sizev, unsigned int **indices,
 
 	/* Slot selection */
 	float selection[] = {
-		WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2) + RSM_GUI_TEXTURE_SIZE_PIXELS * hotbarIndex, 0.0f, pSlotSelection, 0.0f, atlasAdjust(0.0f, pSlotSelection),
-		WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2) + RSM_GUI_TEXTURE_SIZE_PIXELS * hotbarIndex, RSM_GUI_TEXTURE_SIZE_PIXELS, pSlotSelection, 0.0f, atlasAdjust(1.0f, pSlotSelection),
-		WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2) + RSM_GUI_TEXTURE_SIZE_PIXELS * (hotbarIndex + 1), 0.0f, pSlotSelection, 1.0f, atlasAdjust(0.0f, pSlotSelection),
-		WINDOW_WIDTH/2 - RSM_GUI_TEXTURE_SIZE_PIXELS * ((float) RSM_HOTBAR_SLOTS/2) + RSM_GUI_TEXTURE_SIZE_PIXELS * (hotbarIndex + 1), RSM_GUI_TEXTURE_SIZE_PIXELS, pSlotSelection, 1.0f, atlasAdjust(1.0f, pSlotSelection),
+		HOTBAR_BASE + RSM_GUI_TEXTURE_SIZE_PIXELS * hotbarIndex, 0.0f, pSlotSelection, 0.0f, atlasAdjust(0.0f, pSlotSelection),
+		HOTBAR_BASE + RSM_GUI_TEXTURE_SIZE_PIXELS * hotbarIndex, RSM_GUI_TEXTURE_SIZE_PIXELS, pSlotSelection, 0.0f, atlasAdjust(1.0f, pSlotSelection),
+		HOTBAR_BASE + RSM_GUI_TEXTURE_SIZE_PIXELS * (hotbarIndex + 1), 0.0f, pSlotSelection, 1.0f, atlasAdjust(0.0f, pSlotSelection),
+		HOTBAR_BASE + RSM_GUI_TEXTURE_SIZE_PIXELS * (hotbarIndex + 1), RSM_GUI_TEXTURE_SIZE_PIXELS, pSlotSelection, 1.0f, atlasAdjust(1.0f, pSlotSelection),
 	};
 	memcpy(v + svertices, selection, sizeof(selection));
 
@@ -183,5 +183,5 @@ void renderHotbar(float **vertices, unsigned int *sizev, unsigned int **indices,
 	i[sindices + 0] = RSM_HOTBAR_SLOTS * 2 + 2 + 0; i[sindices + 1] = RSM_HOTBAR_SLOTS * 2 + 2 + 1; i[sindices + 2] = RSM_HOTBAR_SLOTS * 2 + 2 + 2;
 	i[sindices + 3] = RSM_HOTBAR_SLOTS * 2 + 2 + 1; i[sindices + 4] = RSM_HOTBAR_SLOTS * 2 + 2 + 2; i[sindices + 5] = RSM_HOTBAR_SLOTS * 2 + 2 + 3;
 
-	meshAppend(vertices, sizev, indices, sizei, v, i, sizeof(v) + sizeof(selection), sizeof(i) + 6 * sizeof(float));
+	meshAppend(vertices, sizev, indices, sizei, v, i, sizeof(v), sizeof(i));
 }
