@@ -15,7 +15,7 @@ float compositionQuad[] = {
 
 unsigned int screenWidth = WINDOW_WIDTH, screenHeight = WINDOW_HEIGHT;
 
-int render(GLFWwindow* window) {
+void render(GLFWwindow* window) {
 	/* Setup renderer within window window and start rendering loop */
 
 	/* Set callback functions */
@@ -191,7 +191,7 @@ int render(GLFWwindow* window) {
 
 		if ((glError = glGetError())) {
 			fprintf(stderr, "OpenGL Error %d\n", glError);
-			return 1;
+			exit(RSM_EXIT_GLERROR);
 		}
 
 		/* Framerate cap */
@@ -215,7 +215,7 @@ int render(GLFWwindow* window) {
 		 * our camera, effectively tilting the world to simulate having
 		 * moved around. */
 		glm_vec3_add(cameraPos, relativeViewTarget, viewTarget);
-		glm_lookat(cameraPos, viewTarget, (vec3) {0.0f, 1.0f, 0.0f}, view);
+		glm_lookat(cameraPos, viewTarget, UPVECTOR, view);
 
 		/* Perspective projection matrix */
 		glm_perspective(glm_rad(RSM_FOV), (float) WINDOW_WIDTH / (float) WINDOW_HEIGHT,
@@ -284,7 +284,6 @@ int render(GLFWwindow* window) {
 
 	/* Window has been closed */
 	glfwTerminate();
-	return 0;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {

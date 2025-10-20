@@ -34,13 +34,13 @@ void rsm_move(vec3 position) {
 
 	glm_vec3_copy(speed, momentum);
 	glm_vec3_scale(momentum, deltaTime, momentum);
-	glm_vec3_rotate(momentum, -glm_rad(yaw), upvector);
+	glm_vec3_rotate(momentum, -glm_rad(yaw), UPVECTOR);
 
 	/* Collision handling */
 	Chunkdata *chunkdata;
 	Blockdata *blockdata;
 	float boundingbox[6];
-	vec3 blockposition, offset, newPosition, playerCornerNew, playerCornerOld;
+	vec3 blockposition, offset, newPosition, playerCornerNew, playerCornerOld, boxcenter;
 	mat4 rotation;
 
 	/* Future position of the player */
@@ -59,9 +59,7 @@ void rsm_move(vec3 position) {
 			for (offset[2] = PLAYER_BOUNDINGBOX_DIMENSIONS[2]; offset[2] > -1.0f; offset[2]--) {
 				/* Blockposition now contains the absolute world position of the block in question.
 				 * To retrieve it, first get the chunk (and check if it exists) then the offset inside that */
-				blockposition[0] = playerCornerNew[0] + offset[0];
-				blockposition[1] = playerCornerNew[1] + offset[1];
-				blockposition[2] = playerCornerNew[2] + offset[2];
+				glm_vec3_add(playerCornerNew, offset, blockposition);
 
 				chunkdata = (Chunkdata *) usf_inthmget(chunkmap, TOCHUNKINDEX(
 							chunkOffsetConvertFloat(blockposition[0]),
@@ -79,14 +77,25 @@ void rsm_move(vec3 position) {
 
 				/* Get bounding box data and check it against player bounding box */
 				memcpy(boundingbox, boundingboxes[blockdata->id][blockdata->variant], sizeof(float [6]));
-				boundingbox[0] += floor(blockposition[0]);
-				boundingbox[1] += floor(blockposition[1]);
-				boundingbox[2] += floor(blockposition[2]);
+				glm_vec3_floor(blockposition, blockposition);
+				glm_vec3_add(boundingbox, blockposition, boundingbox);
+
+				/* To prevent phasing through a float imprecision-induced offset boundingbox poking in an
+				 * adjacent block, downsize it by an adjusted offset first */
+				glm_vec3_adds(boundingbox, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox);
+				glm_vec3_subs(boundingbox+3, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox+3);
 
 				if (blockdata->rotation != NONE) {
-					/* Bounding boxes may be asymmetric */
-					rotationMatrix(rotation, blockdata->rotation);
+					/* Find diametrically opposite corner */
+					glm_vec3_add(boundingbox, boundingbox+3, boundingbox+3);
+
+					glm_vec3_adds(boundingbox, 0.5f, boxcenter);
+					rotationMatrix(rotation, blockdata->rotation, boxcenter);
 					glm_mat4_mulv3(rotation, boundingbox, 1.0f, boundingbox);
+					glm_mat4_mulv3(rotation, boundingbox+3, 1.0f, boundingbox+3);
+
+					/* Find new dimensions */
+					glm_vec3_sub(boundingbox+3, boundingbox, boundingbox+3);
 				}
 
 				if (AABBIntersect(boundingbox, boundingbox+3, playerCornerNew,
@@ -114,9 +123,9 @@ void rsm_move(vec3 position) {
 						PLAYER_BOUNDINGBOX_DIMENSIONS[miss]) - BLOCK_BOUNDINGBOX_SAFE_DISTANCE;
 
 				/* Match speed to orientation, kill component and replace it */
-				glm_vec3_rotate(speed, -glm_rad(yaw), upvector);
+				glm_vec3_rotate(speed, -glm_rad(yaw), UPVECTOR);
 				speed[miss] = 0.0f; /* Kill speed for that component */
-				glm_vec3_rotate(speed, glm_rad(yaw), upvector);
+				glm_vec3_rotate(speed, glm_rad(yaw), UPVECTOR);
 			}
 		}
 	}
@@ -127,6 +136,16 @@ void rsm_move(vec3 position) {
 int AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2) {
 	/* Returns either the axis which a bounding box doesn't intersect another (prio xyz)
 	 * Or -1 if all axes intersect */
+
+	/* First normalize dimensions and corner */
+	if (dim1[0] < 0.0f) { dim1[0] = fabsf(dim1[0]); corner1[0] -= dim1[0]; }
+	if (dim1[1] < 0.0f) { dim1[1] = fabsf(dim1[1]); corner1[1] -= dim1[1]; }
+	if (dim1[2] < 0.0f) { dim1[2] = fabsf(dim1[2]); corner1[2] -= dim1[2]; }
+
+	if (dim2[0] < 0.0f) { dim2[0] = fabsf(dim2[0]); corner1[0] -= dim2[0]; }
+	if (dim2[1] < 0.0f) { dim2[1] = fabsf(dim2[1]); corner1[1] -= dim2[1]; }
+	if (dim2[2] < 0.0f) { dim2[2] = fabsf(dim2[2]); corner1[2] -= dim2[2]; }
+
 	if (corner1[0] + dim1[0] < corner2[0] || corner1[0] > corner2[0] + dim2[0]) return 0;
 	if (corner1[1] + dim1[1] < corner2[1] || corner1[1] > corner2[1] + dim2[1]) return 1;
 	if (corner1[2] + dim1[2] < corner2[2] || corner1[2] > corner2[2] + dim2[2]) return 2;

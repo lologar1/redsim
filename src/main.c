@@ -21,7 +21,7 @@ int main() {
 	if (window == NULL) {
 		fprintf(stderr, "Fatal error creating GLFW window, exiting.\n");
 		glfwTerminate();
-		return -1;
+		exit(RSM_EXIT_INITFAIL);
 	}
 
 	glfwMakeContextCurrent(window);
@@ -31,15 +31,14 @@ int main() {
 	if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
 		fprintf(stderr, "Fatal error initializing GLAD, exiting.\n");
 		glfwTerminate();
-		return -1;
+		exit(RSM_EXIT_INITFAIL);
 	}
 
 	/* Start rendering and gameloop */
-	fprintf(stderr, "Starting RedsimV0.1\n");
+	fprintf(stderr, "Starting %s\n", WINDOW_NAME);
 	client_init();
-	int returnCode = render(window);
+	render(window);
 
-	fprintf(stderr, "Process ended with code %d\n", returnCode);
-
-	return returnCode;
+	printf("Process exited normally.\n");
+	exit(RSM_EXIT_NORMAL);
 }

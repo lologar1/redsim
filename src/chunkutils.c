@@ -253,7 +253,7 @@ void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, R
 	vec3 posAdjust = {(float) x, (float) y, (float) z};
 
 	translocationMatrix(adjust, posAdjust, rotation);
-	rotationMatrix(rotAdjust, rotation); /* Needed for normal adjustment */
+	rotationMatrix(rotAdjust, rotation, MESHCENTER); /* Needed for normal adjustment */
 
 	float *vertexPos;
 
@@ -276,32 +276,32 @@ void translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation
 	/* Makes an appropriate translocation (translation + rotation) matrix given
 	 * a translation vector (position) and a rotation */
 	mat4 rotAdjust;
-	rotationMatrix(rotAdjust, rotation);
+	rotationMatrix(rotAdjust, rotation, MESHCENTER);
 
 	glm_mat4_identity(translocation);
 	glm_translate(translocation, translation);
 	glm_mat4_mul(translocation, rotAdjust, translocation);
 }
 
-void rotationMatrix(mat4 rotAdjust, Rotation rotation) {
+void rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter) {
 	/* Makes an appropriate rotation matrix for a given rotation */
 	glm_mat4_identity(rotAdjust);
 
 	switch (rotation) {
 		case EAST:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), upvector);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), UPVECTOR);
 			break;
 		case SOUTH:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(180), upvector);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(180), UPVECTOR);
 			break;
 		case WEST:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), upvector);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), UPVECTOR);
 			break;
 		case UP:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), rightvector);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), RIGHTVECTOR);
 			break;
 		case DOWN:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), rightvector);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), RIGHTVECTOR);
 			break;
 		case NONE:
 		case NORTH:

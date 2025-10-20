@@ -14,6 +14,6 @@
 #include <math.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); /* Function to remap viewport whenever window   is resized */
-int render(GLFWwindow* window); /* Render scene with calls to the client */
+void render(GLFWwindow* window); /* Render scene with calls to the client */
 
 #endif

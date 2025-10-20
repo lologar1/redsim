@@ -16,9 +16,14 @@ void client_init(void) {
 	fprintf(stderr, "Initializing client...\n");
 
 	/* Generate template blockmeshes from disk and parse bounding boxes */
+	/* Generate world and mesh lookup tables */
 	chunkmap = usf_newhm();
 	meshmap = usf_newhm();
+
+	/* Get block, mesh and bounding box data from disk */
 	parseBlockdata();
+
+	/* Allocate buffers for GUI and load its assets from disk */
 	initGUI();
 	parseGUIdata();
 
@@ -75,22 +80,22 @@ void client_init(void) {
 		.id = 1,
 		.variant = 1,
 		.rotation = DOWN,
-		.metadata = 0
+		.metadata = 1
 	};
 
 	Chunkdata *c0 = calloc(1, sizeof(Chunkdata));
 	Chunkdata *c1 = calloc(1, sizeof(Chunkdata));
 	Chunkdata *c2 = calloc(1, sizeof(Chunkdata));
 
-	(*c0)[0][0][0] = t0;
+	//(*c0)[0][0][0] = t0;
 	(*c0)[5][5][5] = b0;
-	(*c0)[1][0][0] = t6;
-	(*c0)[1][1][1] = b0;
+	//(*c0)[1][0][0] = t6;
+	//(*c0)[1][1][1] = b0;
 	(*c0)[CHUNKSIZE-1][CHUNKSIZE-1][CHUNKSIZE-1] = t0;
 
 	(*c1)[0][0][0] = b0;
-	(*c1)[CHUNKSIZE-1][CHUNKSIZE-1][CHUNKSIZE-1] = t0;
-	(*c1)[CHUNKSIZE-1][CHUNKSIZE-2][CHUNKSIZE-1] = b0;
+	//(*c1)[CHUNKSIZE-1][CHUNKSIZE-1][CHUNKSIZE-1] = t0;
+	//(*c1)[CHUNKSIZE-1][CHUNKSIZE-2][CHUNKSIZE-1] = b0;
 
 	(*c2)[0][0][0] = t0;
 	(*c2)[0][0][2] = t1;
@@ -112,7 +117,7 @@ void client_init(void) {
 
 	/* END TESTBED */
 
-	generateMeshlist();
+	generateMeshlist(); /* Subsequently called only on render distance change */
 	renderGUI(); /* Subsequently called only on GUI modification (from user input) */
 }
 

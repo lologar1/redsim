@@ -9,7 +9,7 @@ LIB_OBJ_DIR := $(LIB_DIR)/obj
 
 CC := gcc
 CFLAGS := -Wall -Wextra -Werror -O2 -g
-LINKS := -lGL -lX11 -lpthread -lXrandr -lglfw -lm
+LINKS := -lGL -lX11 -lpthread -lXrandr -ldl -lglfw -lm
 INCLUDES := -I$(INC_DIR) -I$(LIB_INC_DIR)
 
 SRCS := $(wildcard $(SRC_DIR)/*.c)
