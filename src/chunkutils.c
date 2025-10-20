@@ -1,5 +1,7 @@
 #include "chunkutils.h"
 
+extern Blockmesh ***blockmeshes;
+
 void checkAndAddBlockmeshDataFloat(unsigned int basecount, unsigned int increment, unsigned int *buffersize,
 		float **buffer, float *data, float **basebuffer);
 void checkAndAddBlockmeshDataInteger(unsigned int basecount, unsigned int increment, unsigned int *buffersize,

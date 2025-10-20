@@ -39,19 +39,6 @@ int render(GLFWwindow* window) {
 	GLuint compositionShader = createShaderProgram(compositionVertexShader, compositionFragmentShader);
 	GLuint guiShader = createShaderProgram(guiVertexShader, guiFragmentShader);
 
-	/* Each chunk holds separate opaque/transparent meshes
-	 * chunks is a list of VAOs queried each frame from the game.
-	 * Whenever a chunk changes, the CPU regenerates the mesh and chunks is
-	 * automatically updated.
-	 * The last two unsigned ints hold the number of elements for their
-	 * respective chunks. */
-	GLuint **chunks;
-	int nchunks;
-
-	/* For the GUI, only one VAO is required along with the number of elements to draw */
-	GLuint gui;
-	unsigned int ngui;
-
 	/* To render composition quad at the end of rendering */
 	GLuint compositionVAO, compositionVBO;
 	glGenVertexArrays(1, &compositionVAO);
@@ -183,6 +170,9 @@ int render(GLFWwindow* window) {
 	/* Multiply reveal buffer by new source to get opacity factor */
 	glBlendFuncSeparatei(2, GL_ZERO, GL_ONE_MINUS_SRC_COLOR, GL_ZERO, GL_ZERO);
 
+	/* For GUI (writes to its default color buffer of 0) do ordered transparency */
+	glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
 	glBlendEquation(GL_FUNC_ADD);
 
 	/* Rendering variables */
@@ -219,8 +209,6 @@ int render(GLFWwindow* window) {
 		client_frameEvent(window);
 		client_getOrientationVector(relativeViewTarget);
 		client_getPosition(cameraPos);
-		client_getChunks(&chunks, &nchunks);
-		client_getGUI(&gui, &ngui);
 
 		/* Create view translation matrix from cameraPos to origin:
 		 * This matrix transforms world coordinates to be in front of
@@ -247,9 +235,9 @@ int render(GLFWwindow* window) {
 		glUseProgram(opaqueShader);
 		glUniformMatrix4fv(glGetUniformLocation(opaqueShader, "viewMatrix"), 1, GL_FALSE, (float *) view);
 		glUniformMatrix4fv(glGetUniformLocation(opaqueShader, "projectionMatrix"), 1, GL_FALSE, (float *) perspective);
-		for (i = 0; i < nchunks; i++) {
-			glBindVertexArray(chunks[i][0]);
-			glDrawElements(GL_TRIANGLES, chunks[i][2], GL_UNSIGNED_INT, 0);
+		for (i = 0; i < nmesh; i++) {
+			glBindVertexArray(meshes[i][0]);
+			glDrawElements(GL_TRIANGLES, meshes[i][2], GL_UNSIGNED_INT, 0);
 		}
 
 		/* Transparent rendering */
@@ -260,22 +248,24 @@ int render(GLFWwindow* window) {
 		glUseProgram(transShader);
 		glUniformMatrix4fv(glGetUniformLocation(transShader, "viewMatrix"), 1, GL_FALSE, (float *) view);
 		glUniformMatrix4fv(glGetUniformLocation(transShader, "projectionMatrix"), 1, GL_FALSE, (float *) perspective);
-		for (i = 0; i < nchunks; i++) {
-			glBindVertexArray(chunks[i][1]);
-			glDrawElements(GL_TRIANGLES, chunks[i][3], GL_UNSIGNED_INT, 0);
+		for (i = 0; i < nmesh; i++) {
+			glBindVertexArray(meshes[i][1]);
+			glDrawElements(GL_TRIANGLES, meshes[i][3], GL_UNSIGNED_INT, 0);
 		}
 
 		/* GUI rendering */
 		glDisable(GL_CULL_FACE);
 		glBindFramebuffer(GL_FRAMEBUFFER, GUIFBO);
-		glEnable(GL_DEPTH_TEST);
-		glDepthMask(GL_TRUE); /* Only keep foremost GUI elements */
+		glDisable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDisable(GL_BLEND);
+		glEnable(GL_BLEND);
 		glUseProgram(guiShader);
-		glBindVertexArray(gui);
-		glDrawElements(GL_TRIANGLES, ngui, GL_UNSIGNED_INT, 0);
+
+		for (i = MAX_GUI_PRIORITY - 1; i >= 0; i--) {
+			glBindVertexArray(guiVAO[i]);
+			glDrawElements(GL_TRIANGLES, nGUIIndices[i], GL_UNSIGNED_INT, 0);
+		}
 
 		/* Composition */
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

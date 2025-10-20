@@ -5,6 +5,7 @@
 float (**boundingboxes)[6];
 GLuint textureAtlas;
 Blockmesh ***blockmeshes;
+uint64_t **spriteids; /* Note that getting a sprite from an item which doesn't have one will yield the first. */
 
 /* Shader stuff */
 
@@ -124,10 +125,11 @@ void parseBlockdata(void) {
 	/* Alloc ID indirection layer (equivalent to number of defined meshes (lines) in blockmap */
 	blockmeshes = malloc(nblocks * sizeof(Blockmesh **));
 	boundingboxes = malloc(nblocks * sizeof(float (*)[6]));
+	spriteids = malloc(nblocks * sizeof(uint64_t *));
 
 	/* Iterate through ids and variants and create appropriate blockmesh templates */
 	uint64_t id, nvariants, nvariant;
-	uint64_t texid, ntextures;
+	uint64_t texid, ntextures, spriteid;
 	Blockmesh *template;
 	char **variants, *variant;
 
@@ -144,12 +146,13 @@ void parseBlockdata(void) {
 	GLsizei texAtlasSize = 0; /* Buffer size in bytes */
 
 	/* Now load mesh data */
-	for (texid = id = 0; id < nblocks; id++) {
+	for (spriteid = texid = id = 0; id < nblocks; id++) {
 		/* Read specifications from file */
 		blockmap[id][strlen(blockmap[id]) - 1] = '\0'; /* Remove trailing \n */
 		variants = usf_scsplit(blockmap[id], ' ', &nvariants);
 
 		blockmeshes[id] = malloc(nvariants * sizeof(Blockmesh *));
+		spriteids[id] = calloc(nvariants, sizeof(uint64_t));
 
 		/* calloc to avoid having uninitialized data in no-collision blocks */
 		boundingboxes[id] = calloc(1, nvariants * sizeof(float [6]));
@@ -157,6 +160,11 @@ void parseBlockdata(void) {
 		for (nvariant = 0; nvariant < nvariants; nvariant++, texid++) {
 			/* If it exists, parse this block's bounding box to boundingboxes */
 			variant = variants[nvariant];
+
+			if (variant[0] == '*') {
+				spriteids[id][nvariant] = spriteid++; /* To get sprite from specific identifier (id+variant) */
+				variant++;
+			}
 
 			parseBoundingBox(variant, id, nvariant);
 			blockmeshes[id][nvariant] = template = calloc(1, sizeof(Blockmesh));

@@ -6,21 +6,19 @@
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
 #include "rsmlayout.h"
-#include "chunkutils.h"
-#include "renderutils.h"
 #include "redsim.h"
 #include "userio.h"
+#include "renderutils.h"
 #include "gui.h"
 
-extern GLuint guiVAO;
-extern unsigned int nGUIIndices;
-
 /* Client procedures */
-void client_init(void);
+extern float pitch, yaw;
+extern vec3 orientation, position;
+extern usf_hashmap *chunkmap, *meshmap;
+extern GLuint **meshes;
+extern int nmesh;
 
-/* Renderer communication */
-void client_getGUI(GLuint *gui, unsigned int *ngui);
-void client_getChunks(GLuint ***chunks, int *nchunks);
+void client_init(void);
 
 void client_frameEvent(GLFWwindow *window);
 void client_getOrientationVector(vec3 ori);

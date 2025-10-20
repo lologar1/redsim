@@ -116,21 +116,7 @@ void client_init(void) {
 	renderGUI(); /* Subsequently called only on GUI modification (from user input) */
 }
 
-/* RENDERER COMMUNICATION */
-void client_getGUI(GLuint *gui, unsigned int *ngui) {
-	*gui = guiVAO;
-	*ngui = nGUIIndices;
-}
-
-/* Chunk stuff */
-void client_getChunks(GLuint ***chunks, int *nchunks) {
-	/* Sets appropriate chunk mesh pointers for renderer */
-	*nchunks = nmesh;
-	*chunks = meshes;
-}
-
 /* View stuff */
-extern unsigned int a;
 void client_frameEvent(GLFWwindow *window) {
 	/* Called each frame */
 	(void) window;

@@ -1,3 +1,4 @@
+itemicons0
 slot_selection
 slot
 crosshair

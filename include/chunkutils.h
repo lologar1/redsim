@@ -4,8 +4,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
-#include "rsmlayout.h"
 #include "usfhashmap.h"
+#include "rsmlayout.h"
+#include "client.h"
 
 #define upvector ((vec3) {0.0f, 1.0f, 0.0f})
 #define rightvector ((vec3) {1.0f, 0.0f, 0.0f})
@@ -13,13 +14,6 @@
 
 #define CHUNKCOORDMASK (0x1FFFFF)
 #define TOCHUNKINDEX(x, y, z) ((uint64_t) ((x) & CHUNKCOORDMASK) << 42 | (uint64_t) ((y) & CHUNKCOORDMASK) << 21 | (uint64_t) ((z) & CHUNKCOORDMASK))
-
-extern vec3 position;
-
-extern usf_hashmap *chunkmap;
-extern usf_hashmap *meshmap;
-extern GLuint **meshes;
-extern int nmesh;
 
 typedef enum {
     NONE,
@@ -39,8 +33,6 @@ typedef struct {
 	unsigned int *transIndices;
 	unsigned int count[4]; /* Never change */
 } Blockmesh;
-
-extern Blockmesh ***blockmeshes;
 
 typedef struct {
     unsigned int id : 13;       /* Block type e.g. WIRE */

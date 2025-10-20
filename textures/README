@@ -2,6 +2,7 @@
 Each line in blockmap.txt maps a unique block ID (starting from 0) to its block handle.
 Variants live on the same line and are separated by a single space character, without a terminating space.
 The handle is used to retrieve the corresponding texture files only. This is to make textures more human-readable and explicit instead of relying on knowing block IDs for each texture.
+If an identifier starts with * (star), then a corresponding item sprite is assigned to it. The sprites must be packed in their own GUI texture bundles from right to left, up to down, according to the order in blockmap.
 
 Inside blocks/ lives two or three files per texture, named [handle].png, [handle].mesh and [handle].boundingbox.
 
@@ -31,5 +32,4 @@ The third is optional and only required of blocks which have collision with the 
 
 GUI texture mapping documentation
 Each line in guimap.txt maps to a unique GUI element. No variants are possible ; one element per line.
-
 Inside gui/ lives one .png file (sized RSM_GUI_TEXTURE_SIZE_PIXELS) representing the element texture.

@@ -1,0 +1,24 @@
+Blocks are either support or component. Support blocks may be placed anywhere while components may only be
+placed on top of support blocks.
+
+Support blocks may be either solid (conductor) or transparent (insulator).
+Non-insulators hold a "power status" which is equal to the highest signal strength (ss) feeding into it.
+
+There are a few primitive components:
+	Wire
+		Can be placed only on top of blocks but may "climb" 1-high steps between blocks.
+	Diode
+		Actually a support block, but doesn't transmit current from under to over itself.
+	Constant source
+		Actually a support block, but has a constant power status
+	Inverter
+		Can be placed either on top or on the sides of support blocks.
+		If the block is not an insulator, the state of the inverter is the inverse of its power status.
+	Buffer
+		Delays an input by 2^n ticks where n is its manually-set delay state (max 16 ticks), 1t throughput
+	Analog transistor
+		Outputs its principal input ss - max of its side input ss, clamped at 0
+	Digital transistor
+		Outputs its principal input if its side input ss is equal or lower than it
+	Amplifying diode
+		Outputs max ss if its input is at least 1

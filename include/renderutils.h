@@ -6,6 +6,10 @@
 #include "usfstring.h"
 #include "usfio.h"
 
+extern float (**boundingboxes)[6];
+extern GLuint textureAtlas;
+extern uint64_t **spriteids;
+
 typedef float Vertex[8];
 
 GLuint createShader(GLenum shaderType, char *shaderSource);
