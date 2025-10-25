@@ -256,7 +256,7 @@ void render(GLFWwindow* window) {
 		/* GUI rendering */
 		glDisable(GL_CULL_FACE);
 		glBindFramebuffer(GL_FRAMEBUFFER, GUIFBO);
-		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_DEPTH_TEST); /* Already ordered for transparency */
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_BLEND);
@@ -264,7 +264,8 @@ void render(GLFWwindow* window) {
 
 		for (i = MAX_GUI_PRIORITY - 1; i >= 0; i--) {
 			glBindVertexArray(guiVAO[i]);
-			glDrawElements(GL_TRIANGLES, nGUIIndices[i], GL_UNSIGNED_INT, 0);
+			if (nGUIIndices[i])
+				glDrawElements(GL_TRIANGLES, nGUIIndices[i], GL_UNSIGNED_INT, 0);
 		}
 
 		/* Composition */
@@ -278,8 +279,8 @@ void render(GLFWwindow* window) {
 		glBindVertexArray(compositionVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6); /* Draw final quad */
 
-		glfwSwapBuffers(window); /* Render what's been drawn */
 	    glfwPollEvents(); /* Update state and call appropriate callback functions for user input */
+		glfwSwapBuffers(window); /* Render what's been drawn */
 	}
 
 	/* Window has been closed */

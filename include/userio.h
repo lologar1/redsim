@@ -1,17 +1,9 @@
 #ifndef USERIO_H
 #define USERIO_H
 
+#include "redsim.h"
 #include "gui.h"
 #include "rsmlayout.h"
-
-typedef enum {
-	NORMAL, /* Normal gamestate (mouse captured) */
-	MENU, /* Escape menu (mouse free) */
-	INVENTORY, /* Inventory menu (mouse free) */
-	COMMAND /* Text prompt (mouse free) */
-} Gamestate;
-
-extern Gamestate gamestate;
 
 extern int RSM_FORWARD;
 extern int RSM_BACKWARD;

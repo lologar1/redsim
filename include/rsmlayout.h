@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <stdint.h>
 
+/* When rendering, pixel offsets (for the GUI for example) are all relative to these width and height values */
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
 #define WINDOW_NAME "Redsim V0.1"
@@ -44,8 +45,13 @@ extern float RSM_MOUSE_SENSITIVITY;
 #define RSM_HOTBAR_SLOTS 10
 #define RSM_HOTBAR_COUNT 2
 
-extern float RSM_FPS;
+#define RSM_INVENTORY_SLOTS_HORIZONTAL 12
+#define RSM_INVENTORY_SLOTS_VERTICAL 4
+#define RSM_INVENTORY_ICONS 4
+
+#define RSM_FPS 240.0f
 #define FPS_CAP true
+#define VSYNC false
 
 extern float RSM_FOV;
 extern unsigned int RENDER_DISTANCE;
@@ -60,9 +66,16 @@ extern float RENDER_DISTANCE_NEAR;
 #define RSM_BLOCK_TEXTURE_SIZE_PIXELS 32
 #define RSM_GUI_TEXTURE_SIZE_PIXELS 64
 #define RSM_SPRITE_TEXTURE_SIZE_PIXELS 16
-/* Offset should be calculated as if rendering without scaling, as it will adjust automatically */
-#define RSM_SPRITE_OFFSET_PIXELS 10
+#define RSM_ICON_TEXTURE_SIZE_PIXELS 16
+
 #define RSM_GUI_SCALING_FACTOR 1.0f
+#define RSM_HOTBAR_SLOT_SIZE_PIXELS 64
+#define RSM_INVENTORY_SLOT_SIZE_PIXELS 48
+#define RSM_INVENTORY_ICON_SIZE_PIXELS (3 * RSM_INVENTORY_SLOT_SIZE_PIXELS)
+/* Offset should be calculated from hotbar slot size as if rendering without scaling, as it will adjust automatically */
+#define RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS 10
+#define RSM_INVENTORY_SLOT_SPRITE_OFFSET_PIXELS 10
+#define RSM_INVENTORY_ICON_SPRITE_OFFSET_PIXELS 10
 
 #define RSM_MAX_BLOCKMESH_VERTICES 10000
 #define RSM_MAX_BLOCKMESH_INDICES 30000

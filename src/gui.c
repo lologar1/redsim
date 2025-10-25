@@ -5,7 +5,9 @@ GLuint guiAtlas;
 GLuint guiVBO[MAX_GUI_PRIORITY], guiEBO[MAX_GUI_PRIORITY], guiVAO[MAX_GUI_PRIORITY];
 unsigned int nGUIIndices[MAX_GUI_PRIORITY];
 
-unsigned int hotbarIndex;
+unsigned int hotbarIndex; /* Current slot */
+unsigned int inventoryIndex; /* Current submenu */
+
 uint64_t hotbar[RSM_HOTBAR_SLOTS][2] = {{1, 3}, {1, 6}, {1, 7}}; /* Hotbar status id:variant */
 
 extern uint64_t **spriteids;
@@ -28,6 +30,8 @@ void initGUI(void) {
 	}
 
 	glBindVertexArray(0);
+
+	initInventory(); /* Create base inventory mesh once */
 }
 
 void parseGUIdata(void) {
@@ -115,6 +119,9 @@ void renderGUI(void) {
 	renderCrosshair();
 	renderHotbar();
 
+	if (gamestate == INVENTORY) renderInventory();
+	else nGUIIndices[pInventorySlot] = 0;
+
 	meshAppend(pItemIcons0, spritevbuf, sizesv, spriteibuf, sizesi);
 
 	free(spritevbuf);
@@ -177,21 +184,21 @@ void renderCrosshair(void) {
 
 void renderHotbar(void) {
 	/* Draw hotbar */
-#define SLOT_SIZE (RSM_GUI_TEXTURE_SIZE_PIXELS * RSM_GUI_SCALING_FACTOR)
-#define HOTBAR_BASE (WINDOW_WIDTH/2 - SLOT_SIZE * ((float) RSM_HOTBAR_SLOTS/2))
+#define HSLOT_SIZE (RSM_HOTBAR_SLOT_SIZE_PIXELS * RSM_GUI_SCALING_FACTOR)
+#define HOTBAR_BASE (WINDOW_WIDTH/2 - HSLOT_SIZE * ((float) RSM_HOTBAR_SLOTS/2))
 	float v[(2 * RSM_HOTBAR_SLOTS + 2) * 5]; /* Space for all vertices plus slot selection */
 
 	for (int i = 0; i < RSM_HOTBAR_SLOTS + 1; i++) {
 		int offset = i * 10;
-		v[offset + 0] = HOTBAR_BASE + SLOT_SIZE * i;
+		v[offset + 0] = HOTBAR_BASE + HSLOT_SIZE * i;
 		v[offset + 1] = 0.0f;
-		v[offset + 2] = pHotbar;
-		v[offset + 3] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 4] = atlasAdjust(0.0f, pHotbar);
+		v[offset + 2] = pHotbarSlot;
+		v[offset + 3] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 4] = atlasAdjust(0.0f, pHotbarSlot);
 
-		v[offset + 5] = HOTBAR_BASE + SLOT_SIZE * i;
-		v[offset + 6] = SLOT_SIZE;
-		v[offset + 7] = pHotbar;
-		v[offset + 8] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 9] = atlasAdjust(1.0f, pHotbar);
+		v[offset + 5] = HOTBAR_BASE + HSLOT_SIZE * i;
+		v[offset + 6] = HSLOT_SIZE;
+		v[offset + 7] = pHotbarSlot;
+		v[offset + 8] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 9] = atlasAdjust(1.0f, pHotbarSlot);
 	}
 
 	unsigned int i[6 * RSM_HOTBAR_SLOTS];
@@ -200,23 +207,100 @@ void renderHotbar(void) {
 		i[offset + 0] = 0 + j; i[offset + 1] = 1 + j; i[offset + 2] = 2 + j;
 	}
 
-	meshAppend(pHotbar, v, sizeof(v)/sizeof(float), i, sizeof(i)/sizeof(unsigned int));
+	meshAppend(pHotbarSlot, v, sizeof(v)/sizeof(float), i, sizeof(i)/sizeof(unsigned int));
 
 	/* Slot selection */
 	float selection[] = {
-		HOTBAR_BASE + SLOT_SIZE * hotbarIndex, 0.0f, pSlotSelection, 0.0f, atlasAdjust(0.0f, pSlotSelection),
-		HOTBAR_BASE + SLOT_SIZE * hotbarIndex, SLOT_SIZE, pSlotSelection, 0.0f, atlasAdjust(1.0f, pSlotSelection),
-		HOTBAR_BASE + SLOT_SIZE * (hotbarIndex + 1), SLOT_SIZE, pSlotSelection, 1.0f, atlasAdjust(1.0f, pSlotSelection),
-		HOTBAR_BASE + SLOT_SIZE * (hotbarIndex + 1), 0.0f, pSlotSelection, 1.0f, atlasAdjust(0.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * hotbarIndex, 0.0f, pSlotSelection, 0.0f, atlasAdjust(0.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * hotbarIndex, HSLOT_SIZE, pSlotSelection, 0.0f, atlasAdjust(1.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * (hotbarIndex + 1), HSLOT_SIZE, pSlotSelection, 1.0f, atlasAdjust(1.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * (hotbarIndex + 1), 0.0f, pSlotSelection, 1.0f, atlasAdjust(0.0f, pSlotSelection),
 	};
 
 	meshAppend(pSlotSelection, selection, sizeof(selection)/sizeof(float), QUADI, QUADISIZE);
 
 	for (int j = 0; j < RSM_HOTBAR_SLOTS; j++) {
 		renderItemSprite(hotbar[j][0], hotbar[j][1],
-				HOTBAR_BASE + SLOT_SIZE * j + (RSM_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR),
-				RSM_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR,
-				SLOT_SIZE - 2 * (RSM_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR),
-				SLOT_SIZE - 2 * (RSM_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR));
+				HOTBAR_BASE + HSLOT_SIZE * j + (RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR),
+				RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR,
+				HSLOT_SIZE - 2 * (RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR),
+				HSLOT_SIZE - 2 * (RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR));
 	}
+}
+
+void renderInventory(void) {
+	/* Display the created base inventory mesh, and populate it with the sprites corresponding to the
+	 * currently chosen submenu (icon). Also highlight which submenu is chosen. */
+#define NINV_INDICES (RSM_INVENTORY_SLOTS_HORIZONTAL * RSM_INVENTORY_SLOTS_VERTICAL*6 + RSM_INVENTORY_ICONS*6)
+	/* Enable inventory display as renderer skips meshes with 0 indices (set by else in renderGUI) */
+	nGUIIndices[pInventorySlot] = NINV_INDICES;
+}
+
+void initInventory(void) {
+	/* Initialize inventory mesh, which is made up of RSM_INVENTORY_SLOTS_HORIZONTAL by
+	 * RSM_INVENTORY_SLOTS_VERTICAL slots, centered on the screen, with clickable icons
+	 * on top which act as subfolders on top (starting at the leftmost horizontal slot) */
+#define ISLOT_SIZE (RSM_INVENTORY_SLOT_SIZE_PIXELS * RSM_GUI_SCALING_FACTOR)
+#define INV_BASE_X (WINDOW_WIDTH/2 - ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_HORIZONTAL/2))
+#define INV_BASE_Y (WINDOW_HEIGHT/2 - ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
+#define INV_ICONS_Y (WINDOW_HEIGHT/2 + ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
+
+#define NINV_VERTICES ((RSM_INVENTORY_SLOTS_HORIZONTAL + 1) * 2 * RSM_INVENTORY_SLOTS_VERTICAL * 5 + RSM_INVENTORY_ICONS * 4 * 5)
+	float v[NINV_VERTICES];
+	unsigned int i[NINV_INDICES]; /* Defined earlier for use in renderInventory */
+
+	unsigned int j, k, ioffset, voffset;
+
+	/* Generate inv background once */
+	ioffset = voffset = 0;
+
+	/* Slots */
+	for (j = 0; j < RSM_INVENTORY_SLOTS_VERTICAL; j++) {
+		for (k = 0; k < RSM_INVENTORY_SLOTS_HORIZONTAL * 2; k++, ioffset += 3) {
+			/* Quite serpentine formula to get the right indices */
+			i[ioffset + 0] = 0 + k + j * RSM_INVENTORY_SLOTS_HORIZONTAL * 2 + 2 * j;
+			i[ioffset + 1] = 1 + k + j * RSM_INVENTORY_SLOTS_HORIZONTAL * 2 + 2 * j;
+			i[ioffset + 2] = 2 + k + j * RSM_INVENTORY_SLOTS_HORIZONTAL * 2 + 2 * j;
+		}
+	}
+
+	for (j = 0; j < RSM_INVENTORY_SLOTS_VERTICAL; j++) {
+		for (k = 0; k < RSM_INVENTORY_SLOTS_HORIZONTAL + 1; k++, voffset += 10) {
+			v[voffset + 0] = INV_BASE_X + ISLOT_SIZE * k;
+			v[voffset + 1] = INV_BASE_Y + ISLOT_SIZE * j;
+			v[voffset + 2] = pInventorySlot;
+			v[voffset + 3] = k % 2 == 0 ? 0.0f : 1.0f; v[voffset + 4] = atlasAdjust(0.0f, pInventorySlot);
+
+			v[voffset + 5] = INV_BASE_X + ISLOT_SIZE * k;
+			v[voffset + 6] = INV_BASE_Y + ISLOT_SIZE * (j + 1);
+			v[voffset + 7] = pInventorySlot;
+			v[voffset + 8] = k % 2 == 0 ? 0.0f : 1.0f; v[voffset + 9] = atlasAdjust(1.0f, pInventorySlot);
+		}
+	}
+
+	/* Icons */
+#define ICON_SIZE (RSM_INVENTORY_ICON_SIZE_PIXELS * RSM_GUI_SCALING_FACTOR)
+	for (j = 0; j < RSM_INVENTORY_ICONS; j++, ioffset += 6) {
+#define NINV_SLOT_INDICES ((RSM_INVENTORY_SLOTS_HORIZONTAL * 2 + 2) * RSM_INVENTORY_SLOTS_VERTICAL)
+		i[ioffset + 0] = 0 + j * 4 + NINV_SLOT_INDICES;
+		i[ioffset + 1] = 1 + j * 4 + NINV_SLOT_INDICES;
+		i[ioffset + 2] = 2 + j * 4 + NINV_SLOT_INDICES;
+
+		i[ioffset + 3] = 1 + j * 4 + NINV_SLOT_INDICES;
+		i[ioffset + 4] = 2 + j * 4 + NINV_SLOT_INDICES;
+		i[ioffset + 5] = 3 + j * 4 + NINV_SLOT_INDICES;
+	}
+
+	for (j = 0; j < RSM_INVENTORY_ICONS; j++, voffset += 20) {
+		v[voffset + 0] = INV_BASE_X + ICON_SIZE * j; v[voffset + 1] = INV_ICONS_Y;
+		v[voffset + 2] = pInventorySlot; v[voffset + 3] = 0.0f; v[voffset + 4] = atlasAdjust(0.0f, pSolidIcon + j);
+		v[voffset + 5] = INV_BASE_X + ICON_SIZE * j; v[voffset + 6] = INV_ICONS_Y + ICON_SIZE;
+		v[voffset + 7] = pInventorySlot; v[voffset + 8] = 0.0f; v[voffset + 9] = atlasAdjust(1.0f, pSolidIcon + j);
+		v[voffset + 10] = INV_BASE_X + ICON_SIZE * (j + 1); v[voffset + 11] = INV_ICONS_Y;
+		v[voffset + 12] = pInventorySlot; v[voffset + 13] = 1.0f; v[voffset + 14] = atlasAdjust(0.0f, pSolidIcon + j);
+		v[voffset + 15] = INV_BASE_X + ICON_SIZE * (j + 1); v[voffset + 16] = INV_ICONS_Y + ICON_SIZE;
+		v[voffset + 17] = pInventorySlot; v[voffset + 18] = 1.0f; v[voffset + 19] = atlasAdjust(1.0f, pSolidIcon + j);
+	}
+
+	meshAppend(pInventorySlot, v, sizeof(v)/sizeof(float), i, sizeof(i)/sizeof(unsigned int));
 }

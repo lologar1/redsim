@@ -25,7 +25,12 @@ int main() {
 	}
 
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(0); /* Disable VSync to avoid stuttering, FPS cap is set elsewhere */
+
+#if VSYNC == true
+	glfwSwapInterval(1);
+#else
+	glfwSwapInterval(0);
+#endif
 
 	/* Initialize GLAD */
 	if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {

@@ -1,4 +1,9 @@
 itemicons0
+inventory_slot
+solid_icon
+trans_icon
+component_icon
+misc_icon
 slot_selection
-slot
+hotbar_slot
 crosshair
