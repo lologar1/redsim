@@ -21,11 +21,12 @@ void client_init(void) {
 	meshmap = usf_newhm();
 
 	/* Get block, mesh and bounding box data from disk */
+	namemap = usf_newhm(); /* Init namemap before populating it */
 	parseBlockdata();
 
 	/* Allocate buffers for GUI and load its assets from disk */
-	initGUI();
 	parseGUIdata();
+	initGUI();
 
 	/* TODO: Retrieve data from disk
 	 * And remesh all chunks */

@@ -5,10 +5,12 @@ GLuint guiAtlas;
 GLuint guiVBO[MAX_GUI_PRIORITY], guiEBO[MAX_GUI_PRIORITY], guiVAO[MAX_GUI_PRIORITY];
 unsigned int nGUIIndices[MAX_GUI_PRIORITY];
 
+usf_hashmap *namemap; /* Name -> (id:variant) in the form of a uint64_t partitioned in 2 32-bit numbers */
+
 unsigned int hotbarIndex; /* Current slot */
 unsigned int inventoryIndex; /* Current submenu */
 
-uint64_t hotbar[RSM_HOTBAR_SLOTS][2] = {{1, 3}, {1, 6}, {1, 7}}; /* Hotbar status id:variant */
+uint64_t hotbar[RSM_HOTBAR_SLOTS][2]; /* Hotbar status id:variant */
 
 extern uint64_t **spriteids;
 
@@ -34,6 +36,7 @@ void initGUI(void) {
 	initInventory(); /* Create base inventory mesh once */
 }
 
+char *iconlayouts[RSM_INVENTORY_ICONS]; /* For use by inventory init ; free'd then */
 void parseGUIdata(void) {
 	/* Create GUI texture atlas and parse GUI elements from disk */
 	char guiPath[sizeof(textureBasePath) + sizeof(textureGuiPath)];
@@ -65,12 +68,26 @@ void parseGUIdata(void) {
 					element, RSM_MAX_PATH_NAME_LENGTH);
 			exit(RSM_EXIT_EXCBUF);
 		}
-
-		strcpy(guitexturepath, guiPath);
-		strcat(guitexturepath, element);
+		strcpy(guitexturepath, guiPath); strcat(guitexturepath, element);
 		strcat(guitexturepath, textureFormatExtension);
 
 		atlasAppend(guitexturepath, RSM_GUI_TEXTURE_SIZE_PIXELS, &guiAtlasData, &guiAtlasSize);
+
+		/* Check for icons */
+		if (!(nelement >= PICON && nelement < PICON + RSM_INVENTORY_ICONS)) continue;
+		/* Reuse same buffer for this name. A bit unpretty, but what do you want */
+		if (sizeof(guiPath) + strlen(element) + sizeof(layoutFormatExtension) > RSM_MAX_PATH_NAME_LENGTH) {
+			fprintf(stderr, "GUI texture name too long at %s exceeding %u (with extensions), aborting.\n",
+					element, RSM_MAX_PATH_NAME_LENGTH);
+			exit(RSM_EXIT_EXCBUF);
+		}
+		strcpy(guitexturepath, guiPath); strcat(guitexturepath, element);
+		strcat(guitexturepath, layoutFormatExtension);
+
+		if ((iconlayouts[nelement - PICON] = usf_ftos(guitexturepath, "r", NULL)) == NULL) {
+			fprintf(stderr, "Cannot find inventory submenu layout at %s, aborting.\n", guitexturepath);
+			exit(RSM_EXIT_NOLAYOUT);
+		}
 	}
 
 	free(elements);
@@ -118,9 +135,7 @@ void renderGUI(void) {
 
 	renderCrosshair();
 	renderHotbar();
-
-	if (gamestate == INVENTORY) renderInventory();
-	else nGUIIndices[pInventorySlot] = 0;
+	renderInventory(); /* Will handle itself */
 
 	meshAppend(pItemIcons0, spritevbuf, sizesv, spriteibuf, sizesi);
 
@@ -171,12 +186,11 @@ void renderItemSprite(uint64_t id, uint64_t variant, float x, float y, float w, 
 
 void renderCrosshair(void) {
 	/* Draw crosshair */
-#define CROSSHAIR_SIZE (32.0f * RSM_GUI_SCALING_FACTOR)
 	float v[] = {
-		WINDOW_WIDTH/2 - CROSSHAIR_SIZE, WINDOW_HEIGHT/2 - CROSSHAIR_SIZE, pCrosshair, 0.0f, atlasAdjust(0.0f, pCrosshair),
-		WINDOW_WIDTH/2 - CROSSHAIR_SIZE, WINDOW_HEIGHT/2 + CROSSHAIR_SIZE, pCrosshair, 0.0f, atlasAdjust(1.0f, pCrosshair),
-		WINDOW_WIDTH/2 + CROSSHAIR_SIZE, WINDOW_HEIGHT/2 + CROSSHAIR_SIZE, pCrosshair, 1.0f, atlasAdjust(1.0f, pCrosshair),
-		WINDOW_WIDTH/2 + CROSSHAIR_SIZE, WINDOW_HEIGHT/2 - CROSSHAIR_SIZE, pCrosshair, 1.0f, atlasAdjust(0.0f, pCrosshair),
+		WINDOW_WIDTH/2 - RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 - RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 0.0f, atlasAdjust(0.0f, pCrosshair),
+		WINDOW_WIDTH/2 - RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 + RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 0.0f, atlasAdjust(1.0f, pCrosshair),
+		WINDOW_WIDTH/2 + RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 + RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 1.0f, atlasAdjust(1.0f, pCrosshair),
+		WINDOW_WIDTH/2 + RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 - RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 1.0f, atlasAdjust(0.0f, pCrosshair),
 	};
 
 	meshAppend(pCrosshair, v, sizeof(v)/sizeof(float), QUADI, QUADISIZE);
@@ -184,7 +198,7 @@ void renderCrosshair(void) {
 
 void renderHotbar(void) {
 	/* Draw hotbar */
-#define HSLOT_SIZE (RSM_HOTBAR_SLOT_SIZE_PIXELS * RSM_GUI_SCALING_FACTOR)
+#define HSLOT_SIZE (RSM_HOTBAR_SLOT_SIZE_PIXELS)
 #define HOTBAR_BASE (WINDOW_WIDTH/2 - HSLOT_SIZE * ((float) RSM_HOTBAR_SLOTS/2))
 	float v[(2 * RSM_HOTBAR_SLOTS + 2) * 5]; /* Space for all vertices plus slot selection */
 
@@ -221,26 +235,35 @@ void renderHotbar(void) {
 
 	for (int j = 0; j < RSM_HOTBAR_SLOTS; j++) {
 		renderItemSprite(hotbar[j][0], hotbar[j][1],
-				HOTBAR_BASE + HSLOT_SIZE * j + (RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR),
-				RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR,
-				HSLOT_SIZE - 2 * (RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR),
-				HSLOT_SIZE - 2 * (RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS * RSM_GUI_SCALING_FACTOR));
+				HOTBAR_BASE + HSLOT_SIZE * j + RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS,
+				RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS,
+				HSLOT_SIZE - 2 * RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS,
+				HSLOT_SIZE - 2 * RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS);
 	}
 }
 
+unsigned int submenuSpriteIndices[RSM_INVENTORY_ICONS];
 void renderInventory(void) {
 	/* Display the created base inventory mesh, and populate it with the sprites corresponding to the
 	 * currently chosen submenu (icon). Also highlight which submenu is chosen. */
 #define NINV_INDICES (RSM_INVENTORY_SLOTS_HORIZONTAL * RSM_INVENTORY_SLOTS_VERTICAL*6 + RSM_INVENTORY_ICONS*6)
-	/* Enable inventory display as renderer skips meshes with 0 indices (set by else in renderGUI) */
+
+	if (gamestate != INVENTORY) {
+		/* Disable all inventory GUI rendering as renderer skips meshes with 0 indices */
+		nGUIIndices[pInventorySlot] = 0;
+		memset(nGUIIndices + PICON, 0, sizeof(unsigned int) * RSM_INVENTORY_ICONS);
+		return;
+	}
+
 	nGUIIndices[pInventorySlot] = NINV_INDICES;
+	nGUIIndices[PICON + inventoryIndex] = submenuSpriteIndices[inventoryIndex];
 }
 
 void initInventory(void) {
 	/* Initialize inventory mesh, which is made up of RSM_INVENTORY_SLOTS_HORIZONTAL by
 	 * RSM_INVENTORY_SLOTS_VERTICAL slots, centered on the screen, with clickable icons
 	 * on top which act as subfolders on top (starting at the leftmost horizontal slot) */
-#define ISLOT_SIZE (RSM_INVENTORY_SLOT_SIZE_PIXELS * RSM_GUI_SCALING_FACTOR)
+#define ISLOT_SIZE (RSM_INVENTORY_SLOT_SIZE_PIXELS)
 #define INV_BASE_X (WINDOW_WIDTH/2 - ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_HORIZONTAL/2))
 #define INV_BASE_Y (WINDOW_HEIGHT/2 - ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
 #define INV_ICONS_Y (WINDOW_HEIGHT/2 + ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
@@ -279,7 +302,7 @@ void initInventory(void) {
 	}
 
 	/* Icons */
-#define ICON_SIZE (RSM_INVENTORY_ICON_SIZE_PIXELS * RSM_GUI_SCALING_FACTOR)
+#define ICON_SIZE (RSM_INVENTORY_ICON_SIZE_PIXELS)
 	for (j = 0; j < RSM_INVENTORY_ICONS; j++, ioffset += 6) {
 #define NINV_SLOT_INDICES ((RSM_INVENTORY_SLOTS_HORIZONTAL * 2 + 2) * RSM_INVENTORY_SLOTS_VERTICAL)
 		i[ioffset + 0] = 0 + j * 4 + NINV_SLOT_INDICES;
@@ -293,14 +316,54 @@ void initInventory(void) {
 
 	for (j = 0; j < RSM_INVENTORY_ICONS; j++, voffset += 20) {
 		v[voffset + 0] = INV_BASE_X + ICON_SIZE * j; v[voffset + 1] = INV_ICONS_Y;
-		v[voffset + 2] = pInventorySlot; v[voffset + 3] = 0.0f; v[voffset + 4] = atlasAdjust(0.0f, pSolidIcon + j);
+		v[voffset + 2] = pInventorySlot; v[voffset + 3] = 0.0f; v[voffset + 4] = atlasAdjust(0.0f, PICON + j);
 		v[voffset + 5] = INV_BASE_X + ICON_SIZE * j; v[voffset + 6] = INV_ICONS_Y + ICON_SIZE;
-		v[voffset + 7] = pInventorySlot; v[voffset + 8] = 0.0f; v[voffset + 9] = atlasAdjust(1.0f, pSolidIcon + j);
+		v[voffset + 7] = pInventorySlot; v[voffset + 8] = 0.0f; v[voffset + 9] = atlasAdjust(1.0f, PICON + j);
 		v[voffset + 10] = INV_BASE_X + ICON_SIZE * (j + 1); v[voffset + 11] = INV_ICONS_Y;
-		v[voffset + 12] = pInventorySlot; v[voffset + 13] = 1.0f; v[voffset + 14] = atlasAdjust(0.0f, pSolidIcon + j);
+		v[voffset + 12] = pInventorySlot; v[voffset + 13] = 1.0f; v[voffset + 14] = atlasAdjust(0.0f, PICON + j);
 		v[voffset + 15] = INV_BASE_X + ICON_SIZE * (j + 1); v[voffset + 16] = INV_ICONS_Y + ICON_SIZE;
-		v[voffset + 17] = pInventorySlot; v[voffset + 18] = 1.0f; v[voffset + 19] = atlasAdjust(1.0f, pSolidIcon + j);
+		v[voffset + 17] = pInventorySlot; v[voffset + 18] = 1.0f; v[voffset + 19] = atlasAdjust(1.0f, PICON + j);
 	}
 
 	meshAppend(pInventorySlot, v, sizeof(v)/sizeof(float), i, sizeof(i)/sizeof(unsigned int));
+
+	/* Sprites for each submenu */
+	char **iconlayout;
+	uint64_t nsprites, itemuid, itemid, itemvariant;
+	unsigned int xslotoffset, yslotoffset;
+	for (j = 0; j < RSM_INVENTORY_ICONS; j++) {
+		/* Populate icon sprites for this submenu and set it in the gui layer corresponding to its icon.
+		 * This way, the base inventory (slots and icons) are in the pInventorySlot layer while the
+		 * icon sprits live in the icon layers, saving them from being re-drawn each GUI render.
+		 * We can also use the renderSprite function for this since initInventory is called before
+		 * everything, and this renderSprite can be repurposed and assumed to be 0 here */
+		iconlayout = usf_scsplit(iconlayouts[j], '\n', &nsprites);
+		nsprites--; /* Account for terminating \n */
+
+		for (k = 0; k < nsprites; k++) {
+			itemuid = usf_strhmget(namemap, iconlayout[k]).u;
+			itemid = itemuid >> 32; itemvariant = itemuid & 0xFFFFFFFF;
+
+			xslotoffset = (k % RSM_INVENTORY_SLOTS_HORIZONTAL) * ISLOT_SIZE;
+			yslotoffset = (k / RSM_INVENTORY_SLOTS_HORIZONTAL) * ISLOT_SIZE;
+			renderItemSprite(itemid, itemvariant,
+					INV_BASE_X + xslotoffset + RSM_INVENTORY_SLOT_SPRITE_OFFSET_PIXELS,
+					INV_ICONS_Y - ISLOT_SIZE - yslotoffset + RSM_INVENTORY_SLOT_SPRITE_OFFSET_PIXELS,
+					ISLOT_SIZE - RSM_INVENTORY_SLOT_SPRITE_OFFSET_PIXELS * 2,
+					ISLOT_SIZE - RSM_INVENTORY_SLOT_SPRITE_OFFSET_PIXELS * 2);
+		}
+
+		submenuSpriteIndices[j] = sizesi;
+		meshAppend(PICON + j, spritevbuf, sizesv, spriteibuf, sizesi);
+
+		/* Reset sprite buffers */
+		sizesv = sizesi = 0;
+		free(spritevbuf);
+		free(spriteibuf);
+		spritevbuf = NULL;
+		spriteibuf = NULL;
+
+		free(iconlayout);
+		free(iconlayouts[j]);
+	}
 }

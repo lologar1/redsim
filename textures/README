@@ -33,3 +33,4 @@ The third is optional and only required of blocks which have collision with the 
 GUI texture mapping documentation
 Each line in guimap.txt maps to a unique GUI element. No variants are possible ; one element per line.
 Inside gui/ lives one .png file (sized RSM_GUI_TEXTURE_SIZE_PIXELS) representing the element texture.
+For icons, a .layout file also exists specifying an item name (same name as in blockmap) per line, in order, which will be displayed in that inventory submenu

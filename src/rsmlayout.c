@@ -14,11 +14,6 @@ float RSM_MOUSE_SENSITIVITY = 0.1f;
 float RSM_FOV = 120.0f;
 unsigned int RENDER_DISTANCE = 8;
 float RENDER_DISTANCE_NEAR = 0.1f;
-//define CHUNKSIZE
-//define PLAYER_BOUNDINGBOX_RELATIVE_CORNER
-//define PLAYER_BOUNDINGBOX_DIMENSIONS
-
-//Bitmasks for block metadata defined in the header file
 
 /* Attention! Make sure to set constant sizes in rsmlayout.h otherwise compiler will complain */
 char textureBasePath[] = "textures/";
@@ -29,3 +24,4 @@ char textureGuimapPath[] = "guimap.txt";
 char meshFormatExtension[] = ".mesh";
 char textureFormatExtension[] = ".png";
 char boundingboxFormatExtension[] = ".boundingbox";
+char layoutFormatExtension[] = ".layout";

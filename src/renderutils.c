@@ -158,7 +158,6 @@ void parseBlockdata(void) {
 		boundingboxes[id] = calloc(1, nvariants * sizeof(float [6]));
 
 		for (nvariant = 0; nvariant < nvariants; nvariant++, texid++) {
-			/* If it exists, parse this block's bounding box to boundingboxes */
 			variant = variants[nvariant];
 
 			if (variant[0] == '*') {
@@ -166,7 +165,12 @@ void parseBlockdata(void) {
 				variant++;
 			}
 
+			/* Log it into namemap for future reference */
+			usf_strhmput(namemap, variant, USFDATAU(id << 32 | nvariant));
+
+			/* If it exists, parse this block's bounding box to boundingboxes */
 			parseBoundingBox(variant, id, nvariant);
+
 			blockmeshes[id][nvariant] = template = calloc(1, sizeof(Blockmesh));
 
 			/* TODO: permit multiple textures per variant with some form like $[num]variantname and

@@ -12,18 +12,20 @@
  * TOP = shown with most priority (smallest Z) */
 typedef enum {
 	pItemIcons0, /* This prio is used for all icons ; the others are simply for texture loading (contiguous) */
-	pInventorySlot,
 	pSolidIcon,
 	pTransIcon,
 	pComponentIcon,
 	pMiscIcon,
+	pInventorySlot,
 	pSlotSelection,
 	pHotbarSlot,
 	pCrosshair,
 	MAX_GUI_PRIORITY
 } GUIPriority;
+#define PICON (pSolidIcon) /* First icon offset */
 
 extern GLuint guiAtlas, guiVAO[MAX_GUI_PRIORITY];
+extern usf_hashmap *namemap;
 extern unsigned int hotbarIndex, nGUIIndices[MAX_GUI_PRIORITY];
 extern uint64_t hotbar[RSM_HOTBAR_SLOTS][2];
 
