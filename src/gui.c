@@ -11,6 +11,7 @@ unsigned int hotbarIndex; /* Current slot */
 unsigned int inventoryIndex; /* Current submenu */
 
 uint64_t hotbar[RSM_HOTBAR_SLOTS][2]; /* Hotbar status id:variant */
+uint64_t submenus[RSM_INVENTORY_ICONS][RSM_INVENTORY_SLOTS_HORIZONTAL][RSM_INVENTORY_SLOTS_VERTICAL];
 
 extern uint64_t **spriteids;
 
@@ -244,30 +245,35 @@ void renderHotbar(void) {
 
 unsigned int submenuSpriteIndices[RSM_INVENTORY_ICONS];
 void renderInventory(void) {
+#define ISLOT_SIZE (RSM_INVENTORY_SLOT_SIZE_PIXELS)
+#define INV_BASE_X (WINDOW_WIDTH/2 - ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_HORIZONTAL/2))
+#define INV_BASE_Y (WINDOW_HEIGHT/2 - ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
+#define INV_ICONS_Y (WINDOW_HEIGHT/2 + ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
 	/* Display the created base inventory mesh, and populate it with the sprites corresponding to the
 	 * currently chosen submenu (icon). Also highlight which submenu is chosen. */
 #define NINV_INDICES (RSM_INVENTORY_SLOTS_HORIZONTAL * RSM_INVENTORY_SLOTS_VERTICAL*6 + RSM_INVENTORY_ICONS*6)
 
+	/* Do not display all submenus at the same time (and none when not in inventory) */
+	memset(nGUIIndices + PICON, 0, sizeof(unsigned int) * RSM_INVENTORY_ICONS);
+
 	if (gamestate != INVENTORY) {
 		/* Disable all inventory GUI rendering as renderer skips meshes with 0 indices */
 		nGUIIndices[pInventorySlot] = 0;
-		memset(nGUIIndices + PICON, 0, sizeof(unsigned int) * RSM_INVENTORY_ICONS);
 		return;
 	}
 
 	nGUIIndices[pInventorySlot] = NINV_INDICES;
 	nGUIIndices[PICON + inventoryIndex] = submenuSpriteIndices[inventoryIndex];
+
+	/* ID 0 1 is one of the sprite placeholders ; refer to blockmap */
+	renderItemSprite(0, 1, INV_BASE_X + RSM_INVENTORY_ICON_SIZE_PIXELS * inventoryIndex, INV_ICONS_Y,
+			RSM_INVENTORY_ICON_SIZE_PIXELS, RSM_INVENTORY_ICON_SIZE_PIXELS);
 }
 
 void initInventory(void) {
 	/* Initialize inventory mesh, which is made up of RSM_INVENTORY_SLOTS_HORIZONTAL by
 	 * RSM_INVENTORY_SLOTS_VERTICAL slots, centered on the screen, with clickable icons
 	 * on top which act as subfolders on top (starting at the leftmost horizontal slot) */
-#define ISLOT_SIZE (RSM_INVENTORY_SLOT_SIZE_PIXELS)
-#define INV_BASE_X (WINDOW_WIDTH/2 - ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_HORIZONTAL/2))
-#define INV_BASE_Y (WINDOW_HEIGHT/2 - ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
-#define INV_ICONS_Y (WINDOW_HEIGHT/2 + ISLOT_SIZE * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
-
 #define NINV_VERTICES ((RSM_INVENTORY_SLOTS_HORIZONTAL + 1) * 2 * RSM_INVENTORY_SLOTS_VERTICAL * 5 + RSM_INVENTORY_ICONS * 4 * 5)
 	float v[NINV_VERTICES];
 	unsigned int i[NINV_INDICES]; /* Defined earlier for use in renderInventory */
@@ -344,8 +350,16 @@ void initInventory(void) {
 			itemuid = usf_strhmget(namemap, iconlayout[k]).u;
 			itemid = itemuid >> 32; itemvariant = itemuid & 0xFFFFFFFF;
 
-			xslotoffset = (k % RSM_INVENTORY_SLOTS_HORIZONTAL) * ISLOT_SIZE;
-			yslotoffset = (k / RSM_INVENTORY_SLOTS_HORIZONTAL) * ISLOT_SIZE;
+			xslotoffset = k % RSM_INVENTORY_SLOTS_HORIZONTAL;
+			yslotoffset = k / RSM_INVENTORY_SLOTS_HORIZONTAL;
+
+			/* Set in submenus for access by user input (quick copy to hotbar) */
+			submenus[j][xslotoffset][RSM_INVENTORY_SLOTS_VERTICAL - yslotoffset - 1] = itemuid;
+
+			/* Adjust to pixel size for sprite offsets */
+			xslotoffset *= ISLOT_SIZE;
+			yslotoffset *= ISLOT_SIZE;
+
 			renderItemSprite(itemid, itemvariant,
 					INV_BASE_X + xslotoffset + RSM_INVENTORY_SLOT_SPRITE_OFFSET_PIXELS,
 					INV_ICONS_Y - ISLOT_SIZE - yslotoffset + RSM_INVENTORY_SLOT_SPRITE_OFFSET_PIXELS,

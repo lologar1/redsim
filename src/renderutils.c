@@ -139,7 +139,7 @@ void parseBlockdata(void) {
 	Vertex vertexdata; /* Scratchpad for loading raw vertex data from file */
 
 	/* Precompute number of textures to get right UV coordinate mappings */
-	for (ntextures = id = 0; id < nblocks; id++)
+	for (ntextures = id = 1; id < nblocks; id++) /* Skip id 0 (only one texture ; rest are sprite placeholders */
 		ntextures += usf_scount(blockmap[id], ' ') + 1;
 
 	unsigned char *texAtlasData = NULL; /* Temporary buffer */
@@ -167,6 +167,12 @@ void parseBlockdata(void) {
 
 			/* Log it into namemap for future reference */
 			usf_strhmput(namemap, variant, USFDATAU(id << 32 | nvariant));
+
+			/* Allow for SPRITE_PLACEHOLDERs in blockmap not taking space in the atlas */
+			if (id == 0 && nvariant) {
+				texid--; /* OK since not air ; nvariant isn't 0 so texid is at least 1 */
+				continue;
+			}
 
 			/* If it exists, parse this block's bounding box to boundingboxes */
 			parseBoundingBox(variant, id, nvariant);

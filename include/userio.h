@@ -4,6 +4,7 @@
 #include "redsim.h"
 #include "gui.h"
 #include "rsmlayout.h"
+#include "renderer.h"
 
 extern int RSM_FORWARD;
 extern int RSM_BACKWARD;

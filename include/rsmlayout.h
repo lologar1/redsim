@@ -51,7 +51,7 @@ extern float RSM_MOUSE_SENSITIVITY;
 
 #define RSM_FPS 240.0f
 #define FPS_CAP true
-#define VSYNC false
+#define VSYNC true
 
 extern float RSM_FOV;
 extern unsigned int RENDER_DISTANCE;

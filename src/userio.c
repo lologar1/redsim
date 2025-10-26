@@ -9,6 +9,7 @@ int RSM_UP;
 int RSM_LEFTCLICK;
 int RSM_RIGHTCLICK;
 int RSM_MIDDLECLICK;
+
 float mouseX, mouseY;
 
 void processKey(GLFWwindow *window, int key, int scancode, int action, int mods) {
@@ -92,11 +93,51 @@ void processMouseInput(GLFWwindow *window, int button, int action, int mods) {
 	(void) window;
 	(void) mods;
 
-	switch (button) {
-		case RSM_BUTTON_LEFTCLICK: RSM_LEFTCLICK = action == GLFW_PRESS ? 1 : 0; break;
-		case RSM_BUTTON_RIGHTCLICK: RSM_RIGHTCLICK = action == GLFW_PRESS ? 1 : 0; break;
-		case RSM_BUTTON_MIDDLECLICK: RSM_MIDDLECLICK = action == GLFW_PRESS ? 1 : 0; break;
+	/* Convert from real screen xy (and inverted y) to WINDOW_WIDTH by WINDOW_HEIGHT (and right y) positions */
+	float x, y;
+	x = mouseX * ((float) WINDOW_WIDTH/screenWidth);
+	y = (screenHeight - mouseY) * ((float) WINDOW_HEIGHT/screenHeight);
+
+	uint64_t uid;
+	switch (gamestate) {
+		case NORMAL:
+			switch (button) {
+				case RSM_BUTTON_LEFTCLICK: RSM_LEFTCLICK = action == GLFW_PRESS ? 1 : 0; break;
+				case RSM_BUTTON_RIGHTCLICK: RSM_RIGHTCLICK = action == GLFW_PRESS ? 1 : 0; break;
+				case RSM_BUTTON_MIDDLECLICK: RSM_MIDDLECLICK = action == GLFW_PRESS ? 1 : 0; break;
+			}
+			break;
+
+		case INVENTORY:
+#define INV_BASE_X (WINDOW_WIDTH/2-RSM_INVENTORY_SLOT_SIZE_PIXELS * ((float) RSM_INVENTORY_SLOTS_HORIZONTAL/2))
+#define INV_ICONS_Y (WINDOW_HEIGHT/2+RSM_INVENTORY_SLOT_SIZE_PIXELS * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
+#define INV_SLOTS_Y (WINDOW_HEIGHT/2-RSM_INVENTORY_SLOT_SIZE_PIXELS * ((float) RSM_INVENTORY_SLOTS_VERTICAL/2))
+#define INV_SLOTS_WIDTH (RSM_INVENTORY_SLOT_SIZE_PIXELS * RSM_INVENTORY_SLOTS_HORIZONTAL)
+#define INV_SLOTS_HEIGHT (RSM_INVENTORY_SLOT_SIZE_PIXELS * RSM_INVENTORY_SLOTS_VERTICAL)
+
+			/* Assuming icons do not protrude from inventory slot bounds */
+			if (x < INV_BASE_X || x > INV_BASE_X + INV_SLOTS_WIDTH) return;
+			if (y < INV_SLOTS_Y || y > INV_ICONS_Y + RSM_INVENTORY_ICON_SIZE_PIXELS) return;
+
+			if (y >= INV_ICONS_Y) { /* Change submenu */
+				inventoryIndex = (unsigned int) (x - INV_BASE_X) / RSM_INVENTORY_ICON_SIZE_PIXELS;
+			} else { /* Change hotbar configuration */
+				uid = submenus[inventoryIndex]
+					[(unsigned int) ((x - INV_BASE_X) / RSM_INVENTORY_SLOT_SIZE_PIXELS)]
+					[(unsigned int) ((y - INV_SLOTS_Y) / RSM_INVENTORY_SLOT_SIZE_PIXELS)];
+				hotbar[hotbarIndex][0] = uid >> 32;
+				hotbar[hotbarIndex][1] = uid & 0xFFFFFFFF;
+			}
+			break;
+
+		case MENU: /*TODO*/
+			break;
+
+		case COMMAND:
+			return;
 	}
+
+	renderGUI();
 }
 
 void processMouseScroll(GLFWwindow *window, double xoffset, double yoffset) {

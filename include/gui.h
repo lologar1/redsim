@@ -12,6 +12,7 @@
  * TOP = shown with most priority (smallest Z) */
 typedef enum {
 	pItemIcons0, /* This prio is used for all icons ; the others are simply for texture loading (contiguous) */
+	pItemIcons1,
 	pSolidIcon,
 	pTransIcon,
 	pComponentIcon,
@@ -26,8 +27,9 @@ typedef enum {
 
 extern GLuint guiAtlas, guiVAO[MAX_GUI_PRIORITY];
 extern usf_hashmap *namemap;
-extern unsigned int hotbarIndex, nGUIIndices[MAX_GUI_PRIORITY];
+extern unsigned int hotbarIndex, inventoryIndex, nGUIIndices[MAX_GUI_PRIORITY];
 extern uint64_t hotbar[RSM_HOTBAR_SLOTS][2];
+extern uint64_t submenus[RSM_INVENTORY_ICONS][RSM_INVENTORY_SLOTS_HORIZONTAL][RSM_INVENTORY_SLOTS_VERTICAL];
 
 void initGUI(void); /* OpenGL stuff for GUI */
 void parseGUIdata(void); /* Create texture atlas and gui elements */
