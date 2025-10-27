@@ -64,26 +64,14 @@ void parseGUIdata(void) {
 		element = elements[nelement];
 
 		/* Append texture for this element to the atlas */
-		if (sizeof(guiPath) + strlen(element) + sizeof(textureFormatExtension) > RSM_MAX_PATH_NAME_LENGTH) {
-			fprintf(stderr, "GUI texture name too long at %s exceeding %u (with extensions), aborting.\n",
-					element, RSM_MAX_PATH_NAME_LENGTH);
-			exit(RSM_EXIT_EXCBUF);
-		}
-		strcpy(guitexturepath, guiPath); strcat(guitexturepath, element);
-		strcat(guitexturepath, textureFormatExtension);
+		pathcat(guitexturepath, 3, guiPath, element, textureFormatExtension);
 
 		atlasAppend(guitexturepath, RSM_GUI_TEXTURE_SIZE_PIXELS, &guiAtlasData, &guiAtlasSize);
 
 		/* Check for icons */
 		if (!(nelement >= PICON && nelement < PICON + RSM_INVENTORY_ICONS)) continue;
 		/* Reuse same buffer for this name. A bit unpretty, but what do you want */
-		if (sizeof(guiPath) + strlen(element) + sizeof(layoutFormatExtension) > RSM_MAX_PATH_NAME_LENGTH) {
-			fprintf(stderr, "GUI texture name too long at %s exceeding %u (with extensions), aborting.\n",
-					element, RSM_MAX_PATH_NAME_LENGTH);
-			exit(RSM_EXIT_EXCBUF);
-		}
-		strcpy(guitexturepath, guiPath); strcat(guitexturepath, element);
-		strcat(guitexturepath, layoutFormatExtension);
+		pathcat(guitexturepath, 3, guiPath, element, layoutFormatExtension);
 
 		if ((iconlayouts[nelement - PICON] = usf_ftos(guitexturepath, "r", NULL)) == NULL) {
 			fprintf(stderr, "Cannot find inventory submenu layout at %s, aborting.\n", guitexturepath);

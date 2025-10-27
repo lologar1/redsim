@@ -7,6 +7,9 @@ void checkAndAddBlockmeshDataFloat(unsigned int basecount, unsigned int incremen
 void checkAndAddBlockmeshDataInteger(unsigned int basecount, unsigned int increment, unsigned int *buffersize,
 		unsigned int **buffer, unsigned int *data, unsigned int **basebuffer);
 
+/* Temporary buffers for vertices/indices scratchpad */
+float *opaqueVertexBuffer, *transVertexBuffer;
+unsigned int *opaqueIndexBuffer, *transIndexBuffer;
 void remeshChunk(int64_t x, int64_t y, int64_t z) {
 	/* Generate appropriate mesh array (VAO) for a given chunk and set it in meshmap */
 	uint64_t chunkindex;
@@ -18,10 +21,10 @@ void remeshChunk(int64_t x, int64_t y, int64_t z) {
 	chunkindex = TOCHUNKINDEX(x, y, z);
 
 	chunk = (Chunkdata *) usf_inthmget(chunkmap, chunkindex).p;
+
 	if (chunk == NULL) {
-		/* Newly created chunk, empty. */
-		chunk = (Chunkdata *) calloc(1, sizeof(Chunkdata));
-		usf_inthmput(chunkmap, chunkindex, USFDATAP(chunk));
+		fprintf(stderr, "Chunk at %lu %lu %lu does not exist ; aborting.\n", x, y, z);
+		exit(RSM_EXIT_NOCHUNK);
 	}
 
 	mesh = (GLuint *) usf_inthmget(meshmap, chunkindex).p;
@@ -65,32 +68,20 @@ void remeshChunk(int64_t x, int64_t y, int64_t z) {
 		usf_inthmput(meshmap, chunkindex, USFDATAP(mesh)); /* Set mesh */
 	}
 
-	/* Temporary buffers for vertex data */
-	float *opaqueVertices, *transVertices, *oVert, *tVert;
-	unsigned int *opaqueIndices, *transIndices, *oInd, *tInd;
-
-	/* Member count for vertex data */
-	unsigned int opaqueVertexCount = 0, transVertexCount = 0, opaqueIndexCount = 0, transIndexCount = 0;
-	unsigned int nMeshOpaqueVertex, nMeshTransVertex, nMeshOpaqueIndex, nMeshTransIndex;
-
 	/* Scratchpad for getting correctly-translated blockmeshes */
-	Blockmesh *blockmesh;
-	blockmesh = (Blockmesh *) malloc(sizeof(Blockmesh));
-	blockmesh->opaqueVertices = (float *) malloc(sizeof(float) * RSM_MAX_BLOCKMESH_VERTICES);
-	blockmesh->transVertices = (float *) malloc(sizeof(float) * RSM_MAX_BLOCKMESH_VERTICES);
-	blockmesh->opaqueIndices = (unsigned int *) malloc(sizeof(unsigned int) * RSM_MAX_BLOCKMESH_INDICES);
-	blockmesh->transIndices = (unsigned int *) malloc(sizeof(unsigned int) * RSM_MAX_BLOCKMESH_INDICES);
+	static float ov_buf[RSM_MAX_BLOCKMESH_VERTICES], tv_buf[RSM_MAX_BLOCKMESH_VERTICES];
+	static unsigned int oi_buf[RSM_MAX_BLOCKMESH_INDICES], ti_buf[RSM_MAX_BLOCKMESH_INDICES];
+	static Blockmesh blockmesh = {
+		.opaqueVertices = ov_buf, .transVertices = tv_buf,
+		.opaqueIndices = oi_buf, .transIndices = ti_buf
+	};
 
-	/* Dynamically-resizing buffer */
-	unsigned int opaqueVertBufferSize = BUFSIZ, transVertBufferSize = BUFSIZ,
-				 opaqueIndBufferSize = BUFSIZ, transIndBufferSize = BUFSIZ;
-	oVert = opaqueVertices = malloc(BUFSIZ * sizeof(float));
-	tVert = transVertices = malloc(BUFSIZ * sizeof(float));
-	oInd = opaqueIndices = malloc(BUFSIZ * sizeof(unsigned int));
-	tInd = transIndices = malloc(BUFSIZ * sizeof(unsigned int));
-
+	/* Adjust indices for each blockmesh added */
 	unsigned int runningOpaqueIndexOffset, runningTransIndexOffset, i;
 	runningOpaqueIndexOffset = runningTransIndexOffset = 0;
+
+	float *ov_bufptr = opaqueVertexBuffer, *tv_bufptr = transVertexBuffer;
+	unsigned int *oi_bufptr = opaqueIndexBuffer, *ti_bufptr = transIndexBuffer;
 
 	for (a = 0; a < CHUNKSIZE; a++) {
 		for (b = 0; b < CHUNKSIZE; b++) {
@@ -102,72 +93,49 @@ void remeshChunk(int64_t x, int64_t y, int64_t z) {
 
 				if (block.id == 0) continue; /* Air */
 
-				getBlockmesh(blockmesh, block.id, block.variant, block.rotation,
+				getBlockmesh(&blockmesh, block.id, block.variant, block.rotation,
 						x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
 
-				/* Query mesh member counts */
-				nMeshOpaqueVertex = blockmesh->count[0];
-				nMeshTransVertex = blockmesh->count[1];
-				nMeshOpaqueIndex = blockmesh->count[2];
-				nMeshTransIndex = blockmesh->count[3];
+				/* Adjust indices with running total. All vertices assumed to be used at least once */
+				for (i = 0; i < blockmesh.count[2]; i++) blockmesh.opaqueIndices[i] += runningOpaqueIndexOffset;
+				for (i = 0; i < blockmesh.count[3]; i++) blockmesh.transIndices[i] += runningTransIndexOffset;
+				runningOpaqueIndexOffset += blockmesh.count[0] / (sizeof(Vertex) / sizeof(float));
+				runningTransIndexOffset += blockmesh.count[1] / (sizeof(Vertex) / sizeof(float));
 
-				/* Adjust indices with running total */
-				for (i = 0; i < nMeshOpaqueIndex; i++)
-					blockmesh->opaqueIndices[i] += runningOpaqueIndexOffset;
-				for (i = 0; i < nMeshTransIndex; i++)
-					blockmesh->transIndices[i] += runningTransIndexOffset;
-				runningOpaqueIndexOffset += nMeshOpaqueVertex / 8; /* Get number of vertices and offset */
-				runningTransIndexOffset += nMeshTransVertex / 8; /* All vertices must be used at least once */
+				/* Copy to scratchpad while updating pointers */
+				/* TODO: cull if block is present on one side */
+				memcpy(ov_bufptr, blockmesh.opaqueVertices, blockmesh.count[0] * sizeof(float));
+				memcpy(tv_bufptr, blockmesh.transVertices, blockmesh.count[1] * sizeof(float));
+				memcpy(oi_bufptr, blockmesh.opaqueIndices, blockmesh.count[2] * sizeof(unsigned int));
+				memcpy(ti_bufptr, blockmesh.transIndices, blockmesh.count[3] * sizeof(unsigned int));
 
-				/* Add mesh data to dynamic buffers */
-				checkAndAddBlockmeshDataFloat(opaqueVertexCount, nMeshOpaqueVertex, &opaqueVertBufferSize,
-						&oVert, blockmesh->opaqueVertices, &opaqueVertices);
-				checkAndAddBlockmeshDataFloat(transVertexCount, nMeshTransVertex, &transVertBufferSize, &tVert,
-						blockmesh->transVertices, &transVertices);
-				/* Indices */
-				checkAndAddBlockmeshDataInteger(opaqueIndexCount, nMeshOpaqueIndex, &opaqueIndBufferSize, &oInd,
-						blockmesh->opaqueIndices, &opaqueIndices);
-				checkAndAddBlockmeshDataInteger(transIndexCount, nMeshTransIndex, &transIndBufferSize, &tInd,
-						blockmesh->transIndices, &transIndices);
-
-				/* Add counts */
-				opaqueVertexCount += nMeshOpaqueVertex;
-				transVertexCount += nMeshTransVertex;
-				opaqueIndexCount += nMeshOpaqueIndex;
-				transIndexCount += nMeshTransIndex;
+				/* Offset pointers */
+				ov_bufptr += blockmesh.count[0]; tv_bufptr += blockmesh.count[1];
+				oi_bufptr += blockmesh.count[2]; ti_bufptr += blockmesh.count[3];
 			}
 		}
 	}
+
+	unsigned int nOV = ov_bufptr - opaqueVertexBuffer, nTV = tv_bufptr - transVertexBuffer,
+				 nOI = oi_bufptr - opaqueIndexBuffer, nTI = ti_bufptr - transIndexBuffer;
 
 	GLint buffer; /* VAOs don't store VBO bindings, but only attributes. This is why we have to query it manually */
 	glBindVertexArray(mesh[0]); /* Opaque VAO */
 	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buffer); /* Query buffer for this VAO */
 	glBindBuffer(GL_ARRAY_BUFFER, buffer); /* We need the VBO to be able to copy vertex data */
-	glBufferData(GL_ARRAY_BUFFER, opaqueVertexCount * sizeof(float), opaqueVertices, GL_DYNAMIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, opaqueIndexCount * sizeof(unsigned int), opaqueIndices, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, nOV * sizeof(float), opaqueVertexBuffer, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, nOI * sizeof(unsigned int), opaqueIndexBuffer, GL_DYNAMIC_DRAW);
 
 	glBindVertexArray(mesh[1]); /* Trans VAO */
 	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, transVertexCount * sizeof(float), transVertices, GL_DYNAMIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, transIndexCount * sizeof(unsigned int), transIndices, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, nTV * sizeof(float), transVertexBuffer, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, nTI * sizeof(unsigned int), transIndexBuffer, GL_DYNAMIC_DRAW);
 
 	glBindVertexArray(0); /* Unbind when done */
 
 	/* Set number of elements to draw for this chunk */
-	mesh[2] = opaqueIndexCount;
-	mesh[3] = transIndexCount;
-
-	/* Free CPU-side buffers */
-	free(blockmesh->opaqueVertices);
-	free(blockmesh->transVertices);
-	free(blockmesh->opaqueIndices);
-	free(blockmesh->transIndices);
-	free(blockmesh);
-	free(opaqueVertices);
-	free(opaqueIndices);
-	free(transVertices);
-	free(transIndices);
+	mesh[2] = nOI; mesh[3] = nTI;
 }
 
 void updateMeshlist(void) {
@@ -228,23 +196,11 @@ void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, R
 	Blockmesh *template;
 	template = blockmeshes[id][variant];
 
-	/* Copy state to scratchpad */
-	if (template->count[0] > RSM_MAX_BLOCKMESH_VERTICES || template->count[1] > RSM_MAX_BLOCKMESH_VERTICES) {
-		fprintf(stderr, "Error: Blockmesh for ID %u variant %u exceeds maximum blockmesh vertex count (%u or %u > %u), aborting.\n", id, variant, template->count[0], template->count[1], RSM_MAX_BLOCKMESH_VERTICES);
-		exit(RSM_EXIT_EXCBUF);
-	} else {
-		/* Copy to scratchpad data to be adjusted */
-		memcpy(blockmesh->opaqueVertices, template->opaqueVertices, sizeof(float) * template->count[0]);
-		memcpy(blockmesh->transVertices, template->transVertices, sizeof(float) * template->count[1]);
-	}
-
-	if (template->count[2] > RSM_MAX_BLOCKMESH_INDICES || template->count[3] > RSM_MAX_BLOCKMESH_INDICES) {
-		fprintf(stderr, "Error: Blockmesh for ID %u variant %u exceeds maximum blockmesh index count (%u or %u > %u), aborting.\n", id, variant, template->count[2], template->count[3], RSM_MAX_BLOCKMESH_INDICES);
-		exit(RSM_EXIT_EXCBUF);
-	} else {
-		memcpy(blockmesh->opaqueIndices, template->opaqueIndices, sizeof(unsigned int) * template->count[2]);
-		memcpy(blockmesh->transIndices, template->transIndices, sizeof(unsigned int) * template->count[3]);
-	}
+	/* Copy state to scratchpad ; safe as buffer sizes are checked in parsing (renderutils) */
+	memcpy(blockmesh->opaqueVertices, template->opaqueVertices, sizeof(float) * template->count[0]);
+	memcpy(blockmesh->transVertices, template->transVertices, sizeof(float) * template->count[1]);
+	memcpy(blockmesh->opaqueIndices, template->opaqueIndices, sizeof(unsigned int) * template->count[2]);
+	memcpy(blockmesh->transIndices, template->transIndices, sizeof(unsigned int) * template->count[3]);
 
 	memcpy(blockmesh->count, template->count, sizeof(unsigned int) * 4); /* Get counts (never changes) */
 
@@ -311,28 +267,26 @@ void rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter) {
 	}
 }
 
-void checkAndAddBlockmeshDataFloat(unsigned int basecount, unsigned int increment, unsigned int *buffersize,
-	float **buffer, float *data, float **basebuffer) {
-	/* Automatically expand buffer size if needed and copy blockmesh data data into
-	 * buffer buffer, incrementing it automatically */
-	if (basecount + increment >= *buffersize) {
-		/* Resize buffer */
-		*basebuffer = realloc(*basebuffer, *buffersize * 2 * sizeof(float));
-		*buffersize *= 2;
+void pathcat(char *destination, int n, ...) {
+	size_t size = 0;
+
+	va_list sizes, args;
+	va_start(args, n);
+	va_copy(sizes, args);
+
+	for (int i = 0; i < n; i++)
+		size += strlen(va_arg(sizes, char *));
+	va_end(sizes);
+
+	if (size + 1 > RSM_MAX_PATH_NAME_LENGTH) {
+		fprintf(stderr, "Concatenation of %d paths exceeds max buffer length %u, aborting.\n",
+				n, RSM_MAX_PATH_NAME_LENGTH);
+		exit(RSM_EXIT_EXCBUF);
 	}
 
-	memcpy(*buffer, data, increment * sizeof(float));
-	*buffer += increment;
-}
+	strcpy(destination, va_arg(args, char *));
+	for (int i = 1; i < n; i++)
+		strcat(destination, va_arg(args, char *));
 
-void checkAndAddBlockmeshDataInteger(unsigned int basecount, unsigned int increment, unsigned int *buffersize,
-	unsigned int **buffer, unsigned int *data, unsigned int **basebuffer) {
-	/* Same thing as checkAndAddBlockmeshDataFloat, but for unsigned integers (indices) */
-	if (basecount + increment >= *buffersize) {
-		*basebuffer = realloc(*basebuffer, *buffersize * 2 * sizeof(unsigned int));
-		*buffersize *= 2;
-	}
-
-	memcpy(*buffer, data, increment * sizeof(unsigned int));
-	*buffer += increment;
+	va_end(args);
 }

@@ -4,6 +4,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
+#include <stdarg.h>
 #include "usfhashmap.h"
 #include "rsmlayout.h"
 #include "client.h"
@@ -31,6 +32,7 @@ typedef struct {
 	float *transVertices;
 	unsigned int *opaqueIndices; /* Never change */
 	unsigned int *transIndices;
+	/* For count : nmembers is as follows : opaque vertices, trans vertices, opaque indices, trans indices */
 	unsigned int count[4]; /* Never change */
 } Blockmesh;
 
@@ -43,6 +45,10 @@ typedef struct {
 
 typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];
 
+/* Buffers serving as remeshing scratchpad ; alloc'd once in parseBlockmeshes */
+extern float *opaqueVertexBuffer, *transVertexBuffer;
+extern unsigned int *opaqueIndexBuffer, *transIndexBuffer;
+
 void remeshChunk(int64_t x, int64_t y, int64_t z);
 void updateMeshlist(void);
 void generateMeshlist(void);
@@ -50,7 +56,6 @@ void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, R
 void translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation);
 void rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter);
 
-void checkAndAddBlockmeshDataFloat(unsigned int basecount, unsigned int increment, unsigned int *buffersize, float **buffer, float *data, float **basebuffer);
-void checkAndAddBlockmeshDataInteger(unsigned int basecount, unsigned int increment, unsigned int *buffersize, unsigned int **buffer, unsigned int *data, unsigned int **basebuffer);
+void pathcat(char *destination, int n, ...);
 
 #endif

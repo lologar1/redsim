@@ -6,6 +6,10 @@
 #include "usfstring.h"
 #include "usfio.h"
 
+#define CHUNKVOLUME (CHUNKSIZE * CHUNKSIZE * CHUNKSIZE)
+
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 extern float (**boundingboxes)[6];
 extern GLuint textureAtlas;
 extern uint64_t **spriteids;

@@ -92,6 +92,7 @@ void atlasAppend(char *meshname, int texSize, unsigned char **atlasptr, GLsizei 
 	stbi_image_free(imagedata);
 }
 
+size_t max_ov_size, max_tv_size, max_oi_size, max_ti_size;
 void parseBlockdata(void) {
 	/* Create a texture atlas (and set it to textureAtlas, which is used by the renderer) which
 	 * corresponds neatly with adjusted coordinates of meshes, which should then be set as templates
@@ -103,11 +104,8 @@ void parseBlockdata(void) {
 	char texMeshPath[sizeof(textureBasePath) + sizeof(textureBlockPath)];
 	char blockmapPath[sizeof(textureBasePath) + sizeof(textureBlockmapPath)];
 
-	strcpy(texMeshPath, textureBasePath);
-	strcat(texMeshPath, textureBlockPath);
-
-	strcpy(blockmapPath, textureBasePath);
-	strcat(blockmapPath, textureBlockmapPath);
+	strcpy(texMeshPath, textureBasePath); strcat(texMeshPath, textureBlockPath);
+	strcpy(blockmapPath, textureBasePath); strcat(blockmapPath, textureBlockmapPath);
 
 	fprintf(stderr, "Loading blockmeshes from directory %s\n", texMeshPath);
 	fprintf(stderr, "Loading blockmap from file %s\n", blockmapPath);
@@ -118,7 +116,7 @@ void parseBlockdata(void) {
 	blockmap = usf_ftot(blockmapPath, "r", &nblocks);
 
 	if (blockmap == NULL) {
-		fprintf(stderr, "Error reading blockmap %s (Does it exist?), aborting.\n", blockmapPath);
+		fprintf(stderr, "Error reading blockmap at %s (Does it exist?), aborting.\n", blockmapPath);
 		exit(RSM_EXIT_NOBLOCKMAP);
 	}
 
@@ -155,7 +153,7 @@ void parseBlockdata(void) {
 		spriteids[id] = calloc(nvariants, sizeof(uint64_t));
 
 		/* calloc to avoid having uninitialized data in no-collision blocks */
-		boundingboxes[id] = calloc(1, nvariants * sizeof(float [6]));
+		boundingboxes[id] = calloc(nvariants, sizeof(float [6]));
 
 		for (nvariant = 0; nvariant < nvariants; nvariant++, texid++) {
 			variant = variants[nvariant];
@@ -174,7 +172,7 @@ void parseBlockdata(void) {
 				continue;
 			}
 
-			/* If it exists, parse this block's bounding box to boundingboxes */
+			/* If it exists, will parse this block's bounding box to boundingboxes */
 			parseBoundingBox(variant, id, nvariant);
 
 			blockmeshes[id][nvariant] = template = calloc(1, sizeof(Blockmesh));
@@ -183,30 +181,11 @@ void parseBlockdata(void) {
 			 * out-of-bounds UV values */
 
 			/* Append texture for this mesh to the atlas */
-			if (sizeof(texMeshPath) + strlen(variant) +
-					sizeof(textureFormatExtension) > RSM_MAX_PATH_NAME_LENGTH) {
-				fprintf(stderr, "Mesh texture name too long at %s exceeding %u (with extensions), abourting.\n",
-						variant, RSM_MAX_PATH_NAME_LENGTH);
-				exit(RSM_EXIT_EXCBUF);
-			}
-
-			strcpy(meshtexturepath, texMeshPath);
-			strcat(meshtexturepath, variant);
-			strcat(meshtexturepath, textureFormatExtension);
-
+			pathcat(meshtexturepath, 3, texMeshPath, variant, textureFormatExtension);
 			atlasAppend(meshtexturepath, RSM_BLOCK_TEXTURE_SIZE_PIXELS, &texAtlasData, &texAtlasSize);
 
 			/* Now build the template using raw mesh data from the text file */
-			if (sizeof(texMeshPath) + strlen(variant) + sizeof(meshFormatExtension) > RSM_MAX_PATH_NAME_LENGTH) {
-				fprintf(stderr, "Mesh format name too long at %s exceeding %u (with extensions), aborting.\n",
-						variant, RSM_MAX_PATH_NAME_LENGTH);
-				exit(RSM_EXIT_EXCBUF);
-			}
-
-			strcpy(meshdatapath, texMeshPath);
-			strcat(meshdatapath, variant);
-			strcat(meshdatapath, meshFormatExtension);
-
+			pathcat(meshdatapath, 3, texMeshPath, variant, meshFormatExtension);
 			meshdata = usf_ftot(meshdatapath, "r", &meshdatalen);
 			if (meshdata == NULL) {
 				fprintf(stderr, "Error reading raw mesh data at %s (Does it exist?), aborting.\n", meshdatapath);
@@ -220,51 +199,49 @@ void parseBlockdata(void) {
 				vectordata = meshdata[d];
 
 				switch (vectordata[0]) {
+#define VERTEXADJUST loadVertexData(vertexdata, vectordata + 1); \
+				vertexdata[7] = (vertexdata[7] * RSM_BLOCK_TEXTURE_SIZE_PIXELS \
+						+ RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid) \
+						/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS); \
+				template->VERTEXSECTION = realloc(template->VERTEXSECTION, \
+						(template->count[COUNTSECTION] + (sizeof(Vertex)/sizeof(float))) * sizeof(float)); \
+				memcpy(template->VERTEXSECTION + template->count[COUNTSECTION], \
+						vertexdata, sizeof(Vertex)); \
+				template->count[COUNTSECTION] += sizeof(Vertex)/sizeof(float);
 					case 'o':
-						loadVertexData(vertexdata, vectordata + 1);
-						vertexdata[7] = (vertexdata[7] * RSM_BLOCK_TEXTURE_SIZE_PIXELS
-							+ RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid)
-							/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS); /* Adjust to atlas UV coords */
-
-						template->opaqueVertices = realloc(template->opaqueVertices,
-								(template->count[0] + 8) * sizeof(float));
-						memcpy(template->opaqueVertices + template->count[0],
-								vertexdata, sizeof(Vertex));
-						template->count[0] += 8;
+#define VERTEXSECTION opaqueVertices
+#define COUNTSECTION 0
+						VERTEXADJUST
+#undef VERTEXSECTION
+#undef COUNTSECTION
 						break;
 					case 't':
-						loadVertexData(vertexdata, vectordata + 1);
-						vertexdata[7] = (vertexdata[7] * RSM_BLOCK_TEXTURE_SIZE_PIXELS
-							+ RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid)
-							/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS);
-
-						template->transVertices = realloc(template->transVertices,
-								(template->count[1] + 8) * sizeof(float));
-						memcpy(template->transVertices + template->count[1],
-								vertexdata, sizeof(Vertex));
-						template->count[1] += 8;
+#define VERTEXSECTION transVertices
+#define COUNTSECTION 1
+						VERTEXADJUST
+#undef VERTEXSECTION
+#undef COUNTSECTION
 						break;
+#define INDEXADJUST indices = usf_scsplit(vectordata + 1, ' ', &nindices); \
+				template->INDEXSECTION = realloc(template->INDEXSECTION, \
+						(template->count[COUNTSECTION] + nindices) * sizeof(unsigned int)); \
+				for (n = 0; n < nindices; n++) \
+					template->INDEXSECTION[template->count[COUNTSECTION] + n] = atof(indices[n]); \
+				template->count[COUNTSECTION] += nindices; \
+				free(indices);
 					case 'i':
-						indices = usf_scsplit(vectordata + 1, ' ', &nindices);
-						template->opaqueIndices = realloc(template->opaqueIndices,
-								(template->count[2] + nindices) * sizeof(unsigned int));
-
-						for (n = 0; n < nindices; n++)
-							template->opaqueIndices[template->count[2] + n] = atof(indices[n]);
-
-						template->count[2] += nindices;
-						free(indices);
+#define INDEXSECTION opaqueIndices
+#define COUNTSECTION 2
+						INDEXADJUST
+#undef INDEXSECTION
+#undef COUNTSECTION
 						break;
 					case 'e':
-						indices = usf_scsplit(vectordata + 1, ' ', &nindices);
-						template->transIndices = realloc(template->transIndices,
-								(template->count[3] + nindices) * sizeof(unsigned int));
-
-						for (n = 0; n < nindices; n++)
-							template->transIndices[template->count[3] + n] = atof(indices[n]);
-
-						template->count[3] += nindices;
-						free(indices);
+#define INDEXSECTION transIndices
+#define COUNTSECTION 3
+						INDEXADJUST
+#undef INDEXSECTION
+#undef COUNTSECTION
 						break;
 					case '#': /* To allow for comments. Other chars would work but would trigger error message */
 					case '\n':
@@ -276,11 +253,38 @@ void parseBlockdata(void) {
 
 			}
 
+			/* Guard against buffer overflow when copying to scratchpad on chunk remeshing */
+			if (template->count[0] > RSM_MAX_BLOCKMESH_VERTICES
+					|| template->count[1] > RSM_MAX_BLOCKMESH_VERTICES) {
+				fprintf(stderr, "Blockmesh for ID %lu variant %lu exceeds maximum blockmesh vertex count (%u or %u) > %u, aborting.\n", id, nvariant, template->count[0], template->count[1], RSM_MAX_BLOCKMESH_VERTICES);
+				exit(RSM_EXIT_EXCBUF);
+			}
+
+			if (template->count[2] > RSM_MAX_BLOCKMESH_INDICES
+					|| template->count[3] > RSM_MAX_BLOCKMESH_INDICES) {
+				fprintf(stderr, "Blockmesh for ID %lu variant %lu exceeds maximum blockmesh index count (%u or %u) > %u, aborting.\n", id, nvariant, template->count[2], template->count[3], RSM_MAX_BLOCKMESH_INDICES);
+				exit(RSM_EXIT_EXCBUF);
+			}
+
+			/* Adjust maximum sizes for buffer allocation */
+			max_ov_size = MAX(max_ov_size, template->count[0]); max_tv_size = MAX(max_tv_size, template->count[1]);
+			max_oi_size = MAX(max_oi_size, template->count[2]); max_ti_size = MAX(max_ti_size, template->count[3]);
+
 			usf_freetxt(meshdata, meshdatalen);
 		}
 
 		free(variants); /* Alloc'd by usf_scsplit so no new allocations for substrings */
 	}
+
+	/* Allocate vertex/index buffers for chunk remeshing, done once */
+	max_ov_size *= sizeof(float) * CHUNKVOLUME; max_tv_size *= sizeof(float) * CHUNKVOLUME;
+	max_oi_size *= sizeof(unsigned int) * CHUNKVOLUME; max_ti_size *= sizeof(unsigned int) * CHUNKVOLUME;
+
+	opaqueVertexBuffer = malloc(max_ov_size); transVertexBuffer = malloc(max_tv_size);
+	opaqueIndexBuffer = malloc(max_oi_size); transIndexBuffer = malloc(max_ti_size);
+
+	fprintf(stderr, "Scratchpad buffer sizes for remeshing (vertex opaque/trans, index opaque/trans): "
+			"%luB, %luB, %luB, %luB\n", max_ov_size, max_tv_size, max_oi_size, max_ti_size);
 
 	/* Generate and bind atlas to OpenGL renderer */
 	glGenTextures(1, &textureAtlas);
@@ -313,17 +317,7 @@ void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant) {
 
 	char boundingboxpath[RSM_MAX_PATH_NAME_LENGTH];
 
-	if (sizeof(textureBasePath) + sizeof(textureBlockPath) + strlen(boxname) +
-			sizeof(boundingboxFormatExtension) > RSM_MAX_PATH_NAME_LENGTH) {
-		fprintf(stderr, "Bounding box format name too long at %s exceeding %u (with extensions), aborting.\n",
-				boxname, RSM_MAX_PATH_NAME_LENGTH);
-		exit(RSM_EXIT_EXCBUF);
-	}
-
-	strcpy(boundingboxpath, textureBasePath);
-	strcat(boundingboxpath, textureBlockPath);
-	strcat(boundingboxpath, boxname);
-	strcat(boundingboxpath, boundingboxFormatExtension);
+	pathcat(boundingboxpath, 4, textureBasePath, textureBlockPath, boxname, boundingboxFormatExtension);
 
 	char *boundingbox;
 	boundingbox = usf_ftos(boundingboxpath, "r", NULL);
