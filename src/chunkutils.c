@@ -214,18 +214,15 @@ void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, R
 	float *vertexPos;
 
 	/* Rotate, translate and adjust vertex coords (and normals for rotation) for opaque vertices */
-	for (i = 0; i < template->count[0] / 8; i++) {
-		vertexPos = blockmesh->opaqueVertices + i * 8;
-		glm_mat4_mulv3(adjust, vertexPos, 1.0f, vertexPos);
-		glm_mat4_mulv3(rotAdjust, vertexPos + 3, 1.0f, vertexPos + 3); /* Rotate normals */
+#define TRANSLOCATEVERTICES(COUNTSECTION, VERTEXSECTION) \
+	for (i = 0; i < template->count[COUNTSECTION] / (sizeof(Vertex)/sizeof(float)); i++) { \
+		vertexPos = blockmesh->VERTEXSECTION + i * (sizeof(Vertex)/sizeof(float)); \
+		glm_mat4_mulv3(adjust, vertexPos, 1.0f, vertexPos); \
+		glm_mat4_mulv3(rotAdjust, vertexPos + 3, 1.0f, vertexPos + 3); /* Rotate normals */ \
 	}
 
-	/* Now trans */
-	for (i = 0; i < template->count[1] / 8; i++) {
-		vertexPos = blockmesh->transVertices + i * 8;
-		glm_mat4_mulv3(adjust, vertexPos, 1.0f, vertexPos);
-		glm_mat4_mulv3(rotAdjust, vertexPos + 3, 1.0f, vertexPos + 3); /* Rotate normals */
-	}
+	TRANSLOCATEVERTICES(0, opaqueVertices);
+	TRANSLOCATEVERTICES(1, transVertices);
 }
 
 void translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation) {

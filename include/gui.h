@@ -34,7 +34,7 @@ extern uint64_t submenus[RSM_INVENTORY_ICONS][RSM_INVENTORY_SLOTS_HORIZONTAL][RS
 void initGUI(void); /* OpenGL stuff for GUI */
 void parseGUIdata(void); /* Create texture atlas and gui elements */
 
-float atlasAdjust(float y, GUIPriority priority);
+float guiAtlasAdjust(float y, GUIPriority priority);
 void meshAppend(unsigned int priority, float *v, unsigned int sizev, unsigned int *i, unsigned int sizei);
 
 void renderGUI(void); /* Render the GUI */

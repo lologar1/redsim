@@ -94,7 +94,7 @@ void parseGUIdata(void) {
 	free(guiAtlasData);
 }
 
-float atlasAdjust(float y, GUIPriority priority) {
+float guiAtlasAdjust(float y, GUIPriority priority) {
 	return (y * RSM_GUI_TEXTURE_SIZE_PIXELS + RSM_GUI_TEXTURE_SIZE_PIXELS * priority)
 		/ (MAX_GUI_PRIORITY * RSM_GUI_TEXTURE_SIZE_PIXELS);
 }
@@ -152,10 +152,10 @@ void renderItemSprite(uint64_t id, uint64_t variant, float x, float y, float w, 
 	soy = 1.0f - (spriteoffset / SPRITES_PER_LINE) * SPRITE_STRIDE - SPRITE_STRIDE;
 
 	float v[] = {
-		x, y, pItemIcons0, sox, atlasAdjust(soy, pItemIcons0 + spritetex),
-		x, y+h, pItemIcons0, sox, atlasAdjust(soy + SPRITE_STRIDE, pItemIcons0 + spritetex),
-		x+w, y, pItemIcons0, sox + SPRITE_STRIDE, atlasAdjust(soy, pItemIcons0 + spritetex),
-		x+w, y+h, pItemIcons0, sox + SPRITE_STRIDE, atlasAdjust(soy + SPRITE_STRIDE, pItemIcons0 + spritetex),
+		x, y, pItemIcons0, sox, guiAtlasAdjust(soy, pItemIcons0 + spritetex),
+		x, y+h, pItemIcons0, sox, guiAtlasAdjust(soy + SPRITE_STRIDE, pItemIcons0 + spritetex),
+		x+w, y, pItemIcons0, sox + SPRITE_STRIDE, guiAtlasAdjust(soy, pItemIcons0 + spritetex),
+		x+w, y+h, pItemIcons0, sox + SPRITE_STRIDE, guiAtlasAdjust(soy + SPRITE_STRIDE, pItemIcons0 + spritetex),
 	};
 
 	spritevbuf = realloc(spritevbuf, (sizesv + 4*5) * sizeof(float));
@@ -176,10 +176,10 @@ void renderItemSprite(uint64_t id, uint64_t variant, float x, float y, float w, 
 void renderCrosshair(void) {
 	/* Draw crosshair */
 	float v[] = {
-		WINDOW_WIDTH/2 - RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 - RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 0.0f, atlasAdjust(0.0f, pCrosshair),
-		WINDOW_WIDTH/2 - RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 + RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 0.0f, atlasAdjust(1.0f, pCrosshair),
-		WINDOW_WIDTH/2 + RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 + RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 1.0f, atlasAdjust(1.0f, pCrosshair),
-		WINDOW_WIDTH/2 + RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 - RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 1.0f, atlasAdjust(0.0f, pCrosshair),
+		WINDOW_WIDTH/2 - RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 - RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 0.0f, guiAtlasAdjust(0.0f, pCrosshair),
+		WINDOW_WIDTH/2 - RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 + RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 0.0f, guiAtlasAdjust(1.0f, pCrosshair),
+		WINDOW_WIDTH/2 + RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 + RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 1.0f, guiAtlasAdjust(1.0f, pCrosshair),
+		WINDOW_WIDTH/2 + RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 - RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 1.0f, guiAtlasAdjust(0.0f, pCrosshair),
 	};
 
 	meshAppend(pCrosshair, v, sizeof(v)/sizeof(float), QUADI, QUADISIZE);
@@ -196,12 +196,12 @@ void renderHotbar(void) {
 		v[offset + 0] = HOTBAR_BASE + HSLOT_SIZE * i;
 		v[offset + 1] = 0.0f;
 		v[offset + 2] = pHotbarSlot;
-		v[offset + 3] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 4] = atlasAdjust(0.0f, pHotbarSlot);
+		v[offset + 3] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 4] = guiAtlasAdjust(0.0f, pHotbarSlot);
 
 		v[offset + 5] = HOTBAR_BASE + HSLOT_SIZE * i;
 		v[offset + 6] = HSLOT_SIZE;
 		v[offset + 7] = pHotbarSlot;
-		v[offset + 8] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 9] = atlasAdjust(1.0f, pHotbarSlot);
+		v[offset + 8] = i % 2 == 0 ? 0.0f : 1.0f; v[offset + 9] = guiAtlasAdjust(1.0f, pHotbarSlot);
 	}
 
 	unsigned int i[6 * RSM_HOTBAR_SLOTS];
@@ -214,10 +214,10 @@ void renderHotbar(void) {
 
 	/* Slot selection */
 	float selection[] = {
-		HOTBAR_BASE + HSLOT_SIZE * hotbarIndex, 0.0f, pSlotSelection, 0.0f, atlasAdjust(0.0f, pSlotSelection),
-		HOTBAR_BASE + HSLOT_SIZE * hotbarIndex, HSLOT_SIZE, pSlotSelection, 0.0f, atlasAdjust(1.0f, pSlotSelection),
-		HOTBAR_BASE + HSLOT_SIZE * (hotbarIndex + 1), HSLOT_SIZE, pSlotSelection, 1.0f, atlasAdjust(1.0f, pSlotSelection),
-		HOTBAR_BASE + HSLOT_SIZE * (hotbarIndex + 1), 0.0f, pSlotSelection, 1.0f, atlasAdjust(0.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * hotbarIndex, 0.0f, pSlotSelection, 0.0f, guiAtlasAdjust(0.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * hotbarIndex, HSLOT_SIZE, pSlotSelection, 0.0f, guiAtlasAdjust(1.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * (hotbarIndex + 1), HSLOT_SIZE, pSlotSelection, 1.0f, guiAtlasAdjust(1.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * (hotbarIndex + 1), 0.0f, pSlotSelection, 1.0f, guiAtlasAdjust(0.0f, pSlotSelection),
 	};
 
 	meshAppend(pSlotSelection, selection, sizeof(selection)/sizeof(float), QUADI, QUADISIZE);
@@ -286,12 +286,12 @@ void initInventory(void) {
 			v[voffset + 0] = INV_BASE_X + ISLOT_SIZE * k;
 			v[voffset + 1] = INV_BASE_Y + ISLOT_SIZE * j;
 			v[voffset + 2] = pInventorySlot;
-			v[voffset + 3] = k % 2 == 0 ? 0.0f : 1.0f; v[voffset + 4] = atlasAdjust(0.0f, pInventorySlot);
+			v[voffset + 3] = k % 2 == 0 ? 0.0f : 1.0f; v[voffset + 4] = guiAtlasAdjust(0.0f, pInventorySlot);
 
 			v[voffset + 5] = INV_BASE_X + ISLOT_SIZE * k;
 			v[voffset + 6] = INV_BASE_Y + ISLOT_SIZE * (j + 1);
 			v[voffset + 7] = pInventorySlot;
-			v[voffset + 8] = k % 2 == 0 ? 0.0f : 1.0f; v[voffset + 9] = atlasAdjust(1.0f, pInventorySlot);
+			v[voffset + 8] = k % 2 == 0 ? 0.0f : 1.0f; v[voffset + 9] = guiAtlasAdjust(1.0f, pInventorySlot);
 		}
 	}
 
@@ -309,14 +309,14 @@ void initInventory(void) {
 	}
 
 	for (j = 0; j < RSM_INVENTORY_ICONS; j++, voffset += 20) {
-		v[voffset + 0] = INV_BASE_X + ICON_SIZE * j; v[voffset + 1] = INV_ICONS_Y;
-		v[voffset + 2] = pInventorySlot; v[voffset + 3] = 0.0f; v[voffset + 4] = atlasAdjust(0.0f, PICON + j);
-		v[voffset + 5] = INV_BASE_X + ICON_SIZE * j; v[voffset + 6] = INV_ICONS_Y + ICON_SIZE;
-		v[voffset + 7] = pInventorySlot; v[voffset + 8] = 0.0f; v[voffset + 9] = atlasAdjust(1.0f, PICON + j);
-		v[voffset + 10] = INV_BASE_X + ICON_SIZE * (j + 1); v[voffset + 11] = INV_ICONS_Y;
-		v[voffset + 12] = pInventorySlot; v[voffset + 13] = 1.0f; v[voffset + 14] = atlasAdjust(0.0f, PICON + j);
-		v[voffset + 15] = INV_BASE_X + ICON_SIZE * (j + 1); v[voffset + 16] = INV_ICONS_Y + ICON_SIZE;
-		v[voffset + 17] = pInventorySlot; v[voffset + 18] = 1.0f; v[voffset + 19] = atlasAdjust(1.0f, PICON + j);
+		v[voffset+0] = INV_BASE_X + ICON_SIZE * j; v[voffset+1] = INV_ICONS_Y;
+		v[voffset+2] = pInventorySlot; v[voffset+3] = 0.0f; v[voffset+4] = guiAtlasAdjust(0.0f, PICON + j);
+		v[voffset+5] = INV_BASE_X + ICON_SIZE * j; v[voffset+6] = INV_ICONS_Y + ICON_SIZE;
+		v[voffset+7] = pInventorySlot; v[voffset+8] = 0.0f; v[voffset+9] = guiAtlasAdjust(1.0f, PICON + j);
+		v[voffset+10] = INV_BASE_X + ICON_SIZE * (j + 1); v[voffset+11] = INV_ICONS_Y;
+		v[voffset+12] = pInventorySlot; v[voffset+13] = 1.0f; v[voffset+14] = guiAtlasAdjust(0.0f, PICON + j);
+		v[voffset+15] = INV_BASE_X + ICON_SIZE * (j + 1); v[voffset+16] = INV_ICONS_Y + ICON_SIZE;
+		v[voffset+17] = pInventorySlot; v[voffset+18] = 1.0f; v[voffset+19] = guiAtlasAdjust(1.0f, PICON + j);
 	}
 
 	meshAppend(pInventorySlot, v, sizeof(v)/sizeof(float), i, sizeof(i)/sizeof(unsigned int));

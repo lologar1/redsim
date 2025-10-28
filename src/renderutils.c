@@ -192,37 +192,30 @@ void parseBlockdata(void) {
 				exit(RSM_EXIT_NOMESHDATA);
 			}
 
-			/* Loop through all mesh data and set appropriate fields */
+			/* Loop through mesh data specification lines and adjust tex coords before appending to template */
 			uint64_t nindices, n;
 			char **indices;
 			for (d = 0; d < meshdatalen; d++) {
 				vectordata = meshdata[d];
 
 				switch (vectordata[0]) {
-#define VERTEXADJUST loadVertexData(vertexdata, vectordata + 1); \
-				vertexdata[7] = (vertexdata[7] * RSM_BLOCK_TEXTURE_SIZE_PIXELS \
-						+ RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid) \
-						/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS); \
+#define ATLASADJUST(y) ((y * RSM_BLOCK_TEXTURE_SIZE_PIXELS + RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid) \
+					/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS))
+#define VERTEXADJUST(COUNTSECTION, VERTEXSECTION) \
+				loadVertexData(vertexdata, vectordata + 1); \
+				vertexdata[7] = ATLASADJUST(vertexdata[7]); \
 				template->VERTEXSECTION = realloc(template->VERTEXSECTION, \
 						(template->count[COUNTSECTION] + (sizeof(Vertex)/sizeof(float))) * sizeof(float)); \
-				memcpy(template->VERTEXSECTION + template->count[COUNTSECTION], \
-						vertexdata, sizeof(Vertex)); \
+				memcpy(template->VERTEXSECTION + template->count[COUNTSECTION], vertexdata, sizeof(Vertex)); \
 				template->count[COUNTSECTION] += sizeof(Vertex)/sizeof(float);
 					case 'o':
-#define VERTEXSECTION opaqueVertices
-#define COUNTSECTION 0
-						VERTEXADJUST
-#undef VERTEXSECTION
-#undef COUNTSECTION
+						VERTEXADJUST(0, opaqueVertices);
 						break;
 					case 't':
-#define VERTEXSECTION transVertices
-#define COUNTSECTION 1
-						VERTEXADJUST
-#undef VERTEXSECTION
-#undef COUNTSECTION
+						VERTEXADJUST(1, transVertices);
 						break;
-#define INDEXADJUST indices = usf_scsplit(vectordata + 1, ' ', &nindices); \
+#define INDEXADJUST(COUNTSECTION, INDEXSECTION) \
+				indices = usf_scsplit(vectordata + 1, ' ', &nindices); \
 				template->INDEXSECTION = realloc(template->INDEXSECTION, \
 						(template->count[COUNTSECTION] + nindices) * sizeof(unsigned int)); \
 				for (n = 0; n < nindices; n++) \
@@ -230,18 +223,10 @@ void parseBlockdata(void) {
 				template->count[COUNTSECTION] += nindices; \
 				free(indices);
 					case 'i':
-#define INDEXSECTION opaqueIndices
-#define COUNTSECTION 2
-						INDEXADJUST
-#undef INDEXSECTION
-#undef COUNTSECTION
+						INDEXADJUST(2, opaqueIndices);
 						break;
 					case 'e':
-#define INDEXSECTION transIndices
-#define COUNTSECTION 3
-						INDEXADJUST
-#undef INDEXSECTION
-#undef COUNTSECTION
+						INDEXADJUST(3, transIndices);
 						break;
 					case '#': /* To allow for comments. Other chars would work but would trigger error message */
 					case '\n':
