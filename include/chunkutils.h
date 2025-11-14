@@ -45,9 +45,10 @@ typedef struct {
 
 typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];
 
-/* Buffers serving as remeshing scratchpad ; alloc'd once in parseBlockmeshes */
+/* Buffers serving as remeshing scratchpad ; alloc'd once in parseBlockdata */
 extern float *opaqueVertexBuffer, *transVertexBuffer;
 extern unsigned int *opaqueIndexBuffer, *transIndexBuffer;
+extern Blockmesh ***blockmeshes;
 
 void remeshChunk(int64_t x, int64_t y, int64_t z);
 void updateMeshlist(void);

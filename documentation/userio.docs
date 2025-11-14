@@ -1,0 +1,32 @@
+int RSM_FORWARD, RSM_BACKWARD, RSM_LEFT, RSM_DOWN, RSM_UP, RSM_LEFTCLICK, RSM_RIGHTCLICK, RSM_MIDDLECLICK
+float mouseX, mouseY
+	Variables which reflect the current user input status, either by its movement keys or its mouse position.
+
+void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
+	Callback for keypresses.
+
+	Movement keys update the earlier mentionned variables.
+	Hotslot keys change the hotbar index.
+	The menu key opens the menu or brings the state back to normal.
+	The inventory and command key open their respective widgets from normal mode.
+
+	The GUI is refreshed at the end as it may have changed.
+
+void processMouseMovement(GLFWwindow *window, double xpos, double ypos)
+	Callback for mouse movement.
+
+	Update the earlier mentionned mouse position variables.
+	Update the pitch and yaw variables (see client) from mouse offset since last position.
+
+void processMouseInput(GLFWwindow *window, int button, int action, int mods)
+	Callback for mouse button input.
+
+	Button presses update the earlier mentionned mouse button press variables.
+
+	If the inventory is open, clicking on an submenu will "open" it (see gui) and clicking on an item sprite
+	will change the hotbar at current index to contain it.
+
+void processMouseScroll(GLFWwindow *window, double xoffset, double yoffset)
+	Callback for mouse scroll wheel events.
+
+	Updates the hotbar index (with wrap-around) to increment or decrement for each scroll wheel tick.

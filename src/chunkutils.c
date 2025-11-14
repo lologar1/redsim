@@ -1,11 +1,6 @@
 #include "chunkutils.h"
 
-extern Blockmesh ***blockmeshes;
-
-void checkAndAddBlockmeshDataFloat(unsigned int basecount, unsigned int increment, unsigned int *buffersize,
-		float **buffer, float *data, float **basebuffer);
-void checkAndAddBlockmeshDataInteger(unsigned int basecount, unsigned int increment, unsigned int *buffersize,
-		unsigned int **buffer, unsigned int *data, unsigned int **basebuffer);
+Blockmesh ***blockmeshes; /* Populated by parseBlockdata */
 
 /* Temporary buffers for vertices/indices scratchpad */
 float *opaqueVertexBuffer, *transVertexBuffer;
@@ -265,25 +260,17 @@ void rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter) {
 }
 
 void pathcat(char *destination, int n, ...) {
-	size_t size = 0;
-
-	va_list sizes, args;
+	/* Concatenates a path into destination */
+	va_list args;
 	va_start(args, n);
-	va_copy(sizes, args);
 
-	for (int i = 0; i < n; i++)
-		size += strlen(va_arg(sizes, char *));
-	va_end(sizes);
+	int success;
+	success = usf_vstrcat(destination, RSM_MAX_PATH_NAME_LENGTH, n, args);
+	va_end(args);
 
-	if (size + 1 > RSM_MAX_PATH_NAME_LENGTH) {
+	if (!success) {
 		fprintf(stderr, "Concatenation of %d paths exceeds max buffer length %u, aborting.\n",
 				n, RSM_MAX_PATH_NAME_LENGTH);
 		exit(RSM_EXIT_EXCBUF);
 	}
-
-	strcpy(destination, va_arg(args, char *));
-	for (int i = 1; i < n; i++)
-		strcat(destination, va_arg(args, char *));
-
-	va_end(args);
 }

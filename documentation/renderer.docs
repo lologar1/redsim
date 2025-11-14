@@ -1,0 +1,47 @@
+unsigned int screenWidth, screenHeight
+	The actual window dimensions. This is also the size of the composition framebuffer since it is the one
+	rendering to screen. The rest of rendering is done to a WINDOW_WIDTH by WINDOW_HEIGHT framebuffer which is
+	then scaled to fit.
+
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
+	GLFW callback to resize screenWidth and screenHeight on viewport change
+
+void render(GLFWwindow *window)
+	Function called after all setup is finished by main. Contains the main renderloop.
+
+	First, setup shaders, shader programs, the composition quad, the opaque and transparent framebuffers
+	along with their textures and blending to the proper settings for OIT, and bind texture atlases.
+
+	Then, enter the renderloop, which each frame:
+		Checks for a GL error.
+
+		Waits until a GLFW event or FPS threshold is reached (this limits FPS to RSM_FPS when no inputs are
+		given)
+
+		Build lookat and perspective matricies from client variables.
+
+		Opaque rendering
+			Using rendering FBO
+			Cull faces
+			Depth test
+			No blending
+
+		Trans rendering
+			Using rendering FBO
+			Depth test but no depth mask
+			Blending
+
+		GUI rendering
+			Using GUI FBO
+			No depth test, no culling
+			Blending
+			Render all layers (refer to gui) one after another if indices > 0
+
+		Composition
+			Using composition (default) framebuffer
+			No depth test
+			No blending
+
+		Note that the rendering FBO has multiple color attachments, as opaque rendering writes to one and
+		trans rendering actually writes reveal and accumulation values, which then all get synthesised to
+		a final result in composition (with the GUI overlayed on top)

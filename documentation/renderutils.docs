@@ -1,0 +1,59 @@
+float (**boundingboxes)[6]
+	Associates id:variant to a bounding box specification (3 floats for the corner, 3 floats for dimensions).
+	Blocks which do not have collision default to all zeroes, so an illegal bounding box is a single point at
+	the origin of the block.
+
+	Note that the origin of the block must be the smallest XYZ triplet while dimensions extend into +X, +Y and +Z
+
+GLuint textureAtlas
+	The block texture atlas (GL buffer)
+
+uint64_t **spriteids
+	Retrieve the "sprite id" of an id:variant pair. Sprite id starts at 0 and increments for each *-prefixed
+	block name as specified in blockmap.
+
+	Used to correlate id:variant to the right sprite when drawing the GUI (see gui).
+
+GLuint createShader(GLenum shaderType, char *shaderSource)
+GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader)
+	Creates a GL shader and compiles it into a GL shader program while handling errors etc.
+	Mainly OpenGL utility functions.
+
+void atlasAppend(char *meshname, int texSize, unsigned char **atlasptr, GLsizei *atlassize)
+	Appends a texture (images must have 4 color channels; RGBA) to the specified texture atlas
+	(CPU-side buffer, not GL object) which is dynamically resized.
+
+void parseBlockdata(void)
+	Called once on program initialization, this function populates all structures that have to do with
+	block data as specified on disk, as well as its texture data.
+
+	First, find all the paths required (blockmap, base texture path, etc.)
+
+	Then, allocate blockmeshes, boundingboxes and spriteids. These will be populated during the iteration of
+	blockmap, which serves as a kind of guide to find other resources.
+
+	For each line in blockmap, a new ID is defined. For each space-separated entry in that line, a new variant
+	is defined. Thus each entry in blockmap has its own id:variant pair (henceforth referred to as a UID —
+	unique ID)
+
+	If the entry has a prefix *, its UID is logged into spriteids.
+	The string name of the entry (without a * if it has one) is logged into namemap.
+	The bounding box of the entry is parsed by parseBoundingbox (and thus logged into boundingboxes)
+	The mesh data is read and written to a template for UV adjustment and index offsetting. The template is
+	automatically resized for each line of vertices or indices (see textures/README for more details)
+
+	Scratchpad buffers used by remeshing (see chunkutils) are allocated and the texture atlas is transferred
+	to its GL buffer.
+
+void loadVertexData(Vertex vertex, char *vector)
+	Parse textual data (char *vector) into a Vertex (float [8])
+
+void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant)
+	If it exists, parse the bounding box of this UID and update boundingboxes accordingly.
+
+	First retrieve the bounding box path. If it is null, return (it does not exist and the entry in boundingboxes
+	is left at 0 (since it was alloc'd using calloc). This is why accessing an illegal bounding box generates
+	collision only at block origin).
+
+	Then, simply parse the first line of the .boundingbox file (see textures/README for more information) and
+	dump data into boundingboxes.

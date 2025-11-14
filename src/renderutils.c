@@ -4,7 +4,6 @@
 
 float (**boundingboxes)[6];
 GLuint textureAtlas;
-Blockmesh ***blockmeshes;
 uint64_t **spriteids; /* Note that getting a sprite from an item which doesn't have one will yield the first. */
 
 /* Shader stuff */
@@ -19,7 +18,7 @@ GLuint createShader(GLenum shaderType, char *shaderSource) {
 	GLuint shaderID;
 
 	shaderID = glCreateShader(shaderType); /* Create gl shader of proper type */
-	src = usf_ftos(shaderSource, "r", NULL); /* Read shader source file as a single string */
+	src = usf_ftos(shaderSource, NULL); /* Read shader source file as a single string */
 	glShaderSource(shaderID, 1, (const char **) &src, NULL); /* Set source to file */
 	glCompileShader(shaderID); /* Compile */
 	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success); /* Check compilation status */
@@ -113,7 +112,7 @@ void parseBlockdata(void) {
 	char **blockmap;
 	uint64_t nblocks;
 
-	blockmap = usf_ftot(blockmapPath, "r", &nblocks);
+	blockmap = usf_ftot(blockmapPath, &nblocks);
 
 	if (blockmap == NULL) {
 		fprintf(stderr, "Error reading blockmap at %s (Does it exist?), aborting.\n", blockmapPath);
@@ -186,7 +185,7 @@ void parseBlockdata(void) {
 
 			/* Now build the template using raw mesh data from the text file */
 			pathcat(meshdatapath, 3, texMeshPath, variant, meshFormatExtension);
-			meshdata = usf_ftot(meshdatapath, "r", &meshdatalen);
+			meshdata = usf_ftot(meshdatapath, &meshdatalen);
 			if (meshdata == NULL) {
 				fprintf(stderr, "Error reading raw mesh data at %s (Does it exist?), aborting.\n", meshdatapath);
 				exit(RSM_EXIT_NOMESHDATA);
@@ -265,6 +264,7 @@ void parseBlockdata(void) {
 	max_ov_size *= sizeof(float) * CHUNKVOLUME; max_tv_size *= sizeof(float) * CHUNKVOLUME;
 	max_oi_size *= sizeof(unsigned int) * CHUNKVOLUME; max_ti_size *= sizeof(unsigned int) * CHUNKVOLUME;
 
+	/* Scratchpad buffers used by remeshing */
 	opaqueVertexBuffer = malloc(max_ov_size); transVertexBuffer = malloc(max_tv_size);
 	opaqueIndexBuffer = malloc(max_oi_size); transIndexBuffer = malloc(max_ti_size);
 
@@ -305,7 +305,7 @@ void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant) {
 	pathcat(boundingboxpath, 4, textureBasePath, textureBlockPath, boxname, boundingboxFormatExtension);
 
 	char *boundingbox;
-	boundingbox = usf_ftos(boundingboxpath, "r", NULL);
+	boundingbox = usf_ftos(boundingboxpath, NULL);
 
 	if (boundingbox == NULL) return; /* Block must be passthrough, no bounding box */
 

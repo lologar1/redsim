@@ -13,8 +13,6 @@ unsigned int inventoryIndex; /* Current submenu */
 uint64_t hotbar[RSM_HOTBAR_SLOTS][2]; /* Hotbar status id:variant */
 uint64_t submenus[RSM_INVENTORY_ICONS][RSM_INVENTORY_SLOTS_HORIZONTAL][RSM_INVENTORY_SLOTS_VERTICAL];
 
-extern uint64_t **spriteids;
-
 void initGUI(void) {
 	/* Create the appropriate OpenGL structures for the GUI */
 	glGenVertexArrays(MAX_GUI_PRIORITY, guiVAO);
@@ -43,16 +41,13 @@ void parseGUIdata(void) {
 	char guiPath[sizeof(textureBasePath) + sizeof(textureGuiPath)];
 	char guimapPath[sizeof(textureBasePath) + sizeof(textureGuimapPath)];
 
-	strcpy(guiPath, textureBasePath);
-	strcat(guiPath, textureGuiPath);
-
-	strcpy(guimapPath, textureBasePath);
-	strcat(guimapPath, textureGuimapPath);
+	pathcat(guiPath, 2, textureBasePath, textureGuiPath);
+	pathcat(guimapPath, 2, textureBasePath, textureGuimapPath);
 
 	char *guimap, **elements, *element;
 	uint64_t nelement, nelements;
 
-	guimap = usf_ftos(guimapPath, "r", NULL);
+	guimap = usf_ftos(guimapPath, NULL);
 	elements = usf_scsplit(guimap, '\n', &nelements);
 	nelements--; /* One more because terminating \n is included as separator */
 
@@ -73,7 +68,7 @@ void parseGUIdata(void) {
 		/* Reuse same buffer for this name. A bit unpretty, but what do you want */
 		pathcat(guitexturepath, 3, guiPath, element, layoutFormatExtension);
 
-		if ((iconlayouts[nelement - PICON] = usf_ftos(guitexturepath, "r", NULL)) == NULL) {
+		if ((iconlayouts[nelement - PICON] = usf_ftos(guitexturepath, NULL)) == NULL) {
 			fprintf(stderr, "Cannot find inventory submenu layout at %s, aborting.\n", guitexturepath);
 			exit(RSM_EXIT_NOLAYOUT);
 		}
@@ -253,7 +248,7 @@ void renderInventory(void) {
 	nGUIIndices[pInventorySlot] = NINV_INDICES;
 	nGUIIndices[PICON + inventoryIndex] = submenuSpriteIndices[inventoryIndex];
 
-	/* ID 0 1 is one of the sprite placeholders ; refer to blockmap */
+	/* ID 0 1 is one of the sprite placeholders. In this case submenu selection; refer to blockmap */
 	renderItemSprite(0, 1, INV_BASE_X + RSM_INVENTORY_ICON_SIZE_PIXELS * inventoryIndex, INV_ICONS_Y,
 			RSM_INVENTORY_ICON_SIZE_PIXELS, RSM_INVENTORY_ICON_SIZE_PIXELS);
 }

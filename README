@@ -1,175 +1,34 @@
-Welcome to the official Redsim (RSM) documentation!
-Words in <carets> are usually program variables or important functions.
+#>>> Welcome to Redsim ! <<<
 
-Chunkutils
-	A very important utility file that hosts all chunk-related functionalities, such as chunk loading
-	meshing, GPU memory handling (mesh culling) and maintenance of the <chunkmap> and <meshmap>.
+Redsim (RSM) is a 3D circuit simulator written in C and OpenGL.
 
-	<chunkmap>
-		A usf_hashmap which links a "chunk index" to a <Chunkdata *>. Chunk indexes are 64-bit
-		unsigned integers representing a 3D position, where the first bit is irrelevant and
-		subsequent lenghts of 21 bits represent the x, y and z position respectively.
+DOCUMENTATION
+	Documentation for most of RSM can be found in the documentation/ folder (.docs text files).
 
-		Modified by:
-			<client_init()>
-				Initialized on program startup.
-			<remeshChunk()>
-				Remeshing a non-existing chunk initializes it to air.
+	Most of the documentation is qualitative (no in-depth input-output specifications for functions...) as
+	functionality can be derived by looking at the source code in conjunction with the documentation.
 
-	<meshmap>
-		A usf_hashmap which links a "chunk index" (see above) to a "mesh".
-		A mesh is a pointer to four <GLuint>, the two first being the opaque and transparent VAOs for a
-		given chunk. The two last are the number of indices in each VAO to be rendered.
+	Keep in mind this documentation mostly refers to RSM's implementation and not its usage. For help, see
+	below or refer to the in-game help command for more details.
 
-		Modified by:
-			<client_init()>
-				Initialized on program startup.
-			<remeshChunk()>
-				Remeshing a chunk without a mesh initializes it before setting its data.
+BUILDING RSM
+	Currently, RSM uses the following libraries, some of which must be installed your system:
+		GLFW (dependency)
+		GLAD (included)
+		stb_image (included)
+		cglm (dependency)
+		usflib2 (dependency; can be found in my github)
+	usflib2 must be compiled then symlinked in the redsim/ directory (same level as the Makefile).
 
-	<blockmeshes>
-		A pointer to <Blockmesh>. Holds an appropriate <Blockmesh> template for each block ID.
-		(Initialized by renderutils)
+	Then, simply run `make` to produce the executable.
 
-	<Blockmesh>
-		Stores all the information for opaque and transparent vertices and indices for a given block ID.
+INFORMATION
+	For more details, refer to the in-game help command.
 
-	<Blockdata>
-		Stores all the information for a block existing in the world ; i.e. it is instantiated.
+	RSM allows you to build complex circuits in 3D space, which can then be simulated on-the-fly (interactive
+	mode) or compiled and optimized for fast evaluation (compiled mode).
 
-	<Chunkdata>
-		Holds all <Blockdata> for a given chunk.
+	Every RSM configuration option, such as movement keys, hotbar and slot counts, etc. can be modified in
+	the src/rsmlayout.c (these options are subject to change at runtime) or src/rsmlayout.h.
 
-	<remeshChunk()>
-		Takes a "chunk index" (see above) and updates the <chunkmap> and <meshmap> accordingly with the
-		re-meshed chunk. Also updates <meshes> and <nmesh> indirectly because the pointers are the same.
-
-	<generateMeshlist()>
-		Clears and recalculates <meshes> and <nmesh> with all chunks that should be rendered around the player.
-
-	<updateMeshlist()>
-		Updates <meshes> and <nmesh> with the new player position.
-								
-		Attention: currently updateMeshlist() does not (but maybe in the future) cull any meshes which go
-		unused. If GPU memory is a problem, this may need to be implemented.
-								
-		CPU-side chunks are always conserved, as they are needed to run simulations even outside the player's
-		view.
-
-Client
-	Handles user input and bridges between the renderer (always locally ran) and the meshes that it should
-	display.
-
-	<meshes> and <nmesh>
-		Variables passed to the renderer which contain all meshes to be rendered.
-
-		<meshes> is a pointer to a pointer of four elements, which are the same as in meshmap but
-		adjusted for the chunks to display at this time.
-
-		<nmesh> is simply the number of meshes to display.
-
-Renderutils
-	Handles shader utilities for the renderer as well as mesh loading and texture atlas creation.
-		<createShaderProgram()> and <createShader()>
-			Helper functions for the renderer to load GLSL shaders from disk and compile, link and create
-			their OpenGL objects.
-
-		<atlassz>
-			Size of the texture atlas in bytes.
-
-		<atlasdata> and <currentimage>
-			Pointer to the whole atlas, or an offset which is the current latest image.
-			Used only in atlas creation by <atlasAppend>.
-
-		<atlasAppend()>
-			Dynamically loads images of size RSM_TEXTURE_SIZE_PIXELS squared. Automatically
-			resize the texture atlas and append images. Helper function for <parseBlockmeshes()>
-
-		<parseBlockmeshes()>
-			Creates all template blockmeshes from their specification on disk.
-			For documentation on that, see textures/README.
-			Templates are stored in <blockmeshes> (indirection is id -> variant -> blockmesh pointer).
-			The texture atlas OpenGL handle is stored in <textureAtlas>.
-
-Chunkutils
-	Defines most structs for chunk and mesh handling and rendering.
-	Utility for remeshing chunks and maintaining the meshlist (<meshes> and <nmesh>)
-
-	<remeshChunk()>
-		Loads a given <Chunkdata> from memory and updates its mesh in <meshmap> for all corresponding blocks.
-		More precisely, it queries a <Blockmesh> for every block which isn't air, updates its vertices for
-		translation and rotation, and offsets its indices accordingly, and finally dumps the data in the
-		appropriate OpenGL buffer gotten from <meshmap>.
-
-		This function will create OpenGL buffers if a chunk doesn't have one, as well as a <Chunkdata>. These
-		buffers never get deleted as <Chunkdata> represents the static state of the chunk and the mesh may get
-		queried again by the renderer.
-
-	<updateMeshlist() and generateMeshlist()>
-		Triggered on crossing a chunk border (or change in render distance for <generateMeshlist()>)
-		and updates which meshes should be passed to the GPU for rendering. For <generateMeshlist()>,
-		<meshes> is also reallocated to the new render distance-driven size.
-
-	<getBlockmesh()>
-		Takes in a scratchpad <Blockmesh> and copies template data to its fields. Automatically adjusts
-		vertices for translocation ; index offsetting is done by the caller.
-
-Renderer
-	Holds the logic for the OpenGL renderer setup.
-
-	<render()>
-		Main function. First initializes OpenGL components like shader programs, framebuffer allocations,
-		composition quad definition, blending function settings, callbacks (for screen resizing), etc.
-
-		The renderloop runs once ever 1/FPS seconds, or whenever there is a glfwEvent (mouse movement, etc.)
-		It first renders all opaque objects then transparent objects with order-independent transparency (OIT).
-		This is because to be honest I find it sooo ugly to have the CPU sort transparent meshes and then issue
-		a single draw call PER transparent object to be rendered ?!? It's inane.
-
-	<framebuffer_size_callback()>
-		Resizes variables for the composition framebuffer dimensions. A scene is first rendered to an in-between
-		framebuffer, then rendered (squashed, if proportions do not fit) to the composition framebuffer.
-
-RSMLAYOUT
-	Holds most configuration variables for RSM. Exceptions are ones which shouldn't be modified for normal
-	program execution, like CHUNKCOORDMASK which is used to transform x, y, z coords to a chunk index.
-
-	RSM_KEY_*
-		Input keys. RSM_KEY_FORWARD for example will move you forward in the world. This is for easy key config.
-
-	RSM_FLY_(X/Y/Z)_(ACCELERATION/DECELERATION)
-		Acceleration (or natural air-braking deceleration) in units per second squared of the player
-		while flying.
-
-	RSM_FLY_(X/Y/Z)_CAP
-		Maximum speed in units per second of the player while flying.
-
-	RSM_MOUSE_SENSITIVITY
-		Scaling factor for delta mouse pixel movement before adding it to the camera yaw or pitch.
-
-	RSM_FPS
-		Resting frames per second (when no events bypass the wait).
-
-	RSM_FOV
-		Field of view (in degrees) for the projection matrix.
-
-	RENDER_DISTANCE
-		Frustum far plane distance in chunks.
-
-	RENDER_DISTANCE_NEAR
-		Frustum near plane distance in units.
-
-	RSM_TEXTURE_SIZE_PIXELS
-		Texture size in pixels squared.
-
-	RSM_MAX_BLOCKMESH_VERTICES and RSM_MAX_BLOCKMESH_INDICES
-		Maximum vertices/indices for a single mesh.
-		Buffer sizes, will exit program if they are exceeded.
-
-	RSM_MAX_MESHDATA_NAME_LENGTH
-		Maximum name length for the path of a mesh format specification.
-		Buffer size, will exit program if exceeded.
-
-	chars*
-		Constant strings for many RSM subdirectories. Their size (including \0) need to be reflected in
-		rsmlayout.h so the compiler knows their size.
+	(TODO)

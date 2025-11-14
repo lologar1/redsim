@@ -1,0 +1,127 @@
+enum GUIPriority
+	Encodes priority (z-values) for different GUI layers. Priority 0 is the highest, as it is closest to the
+	camera on GUI rendering.
+
+	Note that some components, such as ItemIcons or Icons (tab icons) have multiple entries. This is because
+	multiple textures are used (one per tab icon, and one per 16 item icons) while the components themselves
+	ought to be in the same layer. parseGUIdata uses GUIPriority to correlate files on disk with their
+	GUI components through guimap.
+
+GLuint guiAtlas
+	The GUI texture atlas (OpenGL buffer)
+
+GLuint guiVAO[MAX_GUI_PRIORITY]
+	An array of VAOs for each GUI layer. They are rendered from farthest to closest so occlusion and transparency
+	work as intended.
+
+	Note that while the z-values correlate to GUIPriority, sometimes components are not placed in their
+	"corresponding" VAO. For example, for quick submenu switching, item icons for each inventory icon are
+	stored inside the corresponding tab icon VAO instead of the pItemIcons0 layer (this is fine, since
+	all tab icons have higher priority than pInventorySlot)
+
+usf_hashmap *namemap
+	Converts block name to its id and variant (each treated as a 32 bit value packed into a uint64_t).
+	Since ids and variants are < 32 bits there is no possibility of collision. A "block name" is the handle by
+	which it is referred in blockmap (also called its variant name)
+
+	namemap is populated by parseBlockdata (see renderutils) and used to retrieve the id:variant pair from the
+	.layout files specifying submenu contents (for convenience to humans, we use the "names" as specified in
+	blockmap instead of listing id:variant directly)
+
+unsigned int hotbarIndex
+	Current slot accessed in the hotbar.
+
+unsigned int inventoryIndex
+	Current submenu accessed in the inventory.
+
+unsigned int nGUIIndices[MAX_GUI_PRIORITY]
+	Array of the same size of guiVAO which holds the number of indices to draw for each layer.
+
+uint64_t hotbar[RSM_HOTBAR_SLOTS][2]
+	Array holding an id:variant pair for each hotbar slot.
+
+uint64_t submenus[RSM_INVENTORY_ICONS][RSM_INVENTORY_SLOTS_HORIZONTAL][RSM_INVENTORY_SLOTS_VERTICAL]
+	Array holding an id:variant pair for each slot of each submenu
+
+void initGUI(void)
+	Called once from client_init, creates all VAOs in guiVAO and calls initInventory
+
+void parseGUIdata(void)
+	Called once from client_init, reads files from disk and populates GUI structures
+
+	First retrieve the paths of guimap and iterate over all declared textures (they MUST each correspond to a
+	layer specified in GUIPriority).
+
+	For each layer, retrieve its texture path and append it to the GUI texture atlas. If it is a submenu icon,
+	find its associated .layout file and copy data to the temporary iconlayouts buffer (will be processed by
+	initInventory, called later)
+
+	Finally, dump the raw atlas data into a GL buffer (guiAtlas) and free other temporary buffers. By the end of
+	parseGUIdata, the atlas should contain textures in the order that they appear as described by GUIPriority,
+	and iconlayouts contains the unparsed layout data.
+
+float guiAtlasAdjust(float y, GUIPriority priority)
+	Same as the ATLASADJUST macro (see renderutils) for adjust UVs on templates, but instead return UVs for
+	a given GUIPriority. This is because most GUI components are regenerated on-the-fly whhen renderGUI is
+	called instead of reading from templates (an exception to this is the way layouts are shown)
+
+void meshAppend(unsigned int priority, float *v, unsigned int sizev, unsigned int *i, unsigned int sizei)
+	Takes in a mesh (GUI components to render) and transfers it into the appropriate guiVAO GL buffer.
+	Also sets nGUIIndices for that priority to reflect the number of indices.
+
+	Note that, as with templates' count field (see chunkutils), sizev and sizei must be expressed in number of
+	members (floats or unsigned ints) and not size in bytes.
+
+void renderGUI(void)
+	Calls the appropriate subfunctions to render the GUI (essentially "remeshes" it)
+
+	Note that sprites (rendered through renderItemSprite; see below) have their own dynamic buffers as the number
+	of sprites to render in one round is not known in advance. These buffers (spriteibuf, sizesv, sizesi) are
+	reallocated each time renderGUI is called.
+
+void renderItemSprite(uint64_t id, uint64_t variant, float x, float y, float w, float h)
+	Finds the appropriate UV for the sprite (which lives inside a texture in guiAtlas) and appends it to the
+	dynamic item sprites buffers (see above).
+
+	Sprites are ordered according to their declaration order in blockmap. If a block has a star before its name,
+	it then also has a sprite equivalent. To display non-block sprites, variants of id 0 (air) are used (a whole
+	texture is reserved for sprite placeholders currently)
+
+void renderCrosshair(void)
+	Draws the crosshair and meshAppends it.
+
+void renderHotbar(void)
+	Draws the hotbar slots and the selection cursor and meshAppend them.
+	Renders sprites inside the hotbar slots.
+
+void renderInventory(void)
+	Because of the special way in which submenu layouts are pre-generated and then chosen, a special array
+	(submenuSpriteIndices) contains the number of indices for each submenu layout (generated by initInventory).
+	The job of renderInventory is to "enable" the right submenu to be drawn by setting its nGUIIndices slot to
+	its appropriate value and the rest of the submenu slots to 0.
+
+	After that, renderItemSprite is called once with the "selector" placeholder item (variant of air) to be
+	drawn on top of the selected submenu icon.
+
+void initInventory(void)
+	Initialize the inventory meshes and put their index values in the inbetween submenuSpriteIndices buffer.
+
+	First, all slots are specified. Note that, as with hotbar, slots are "mirrored" so as to share some vertices.
+	I (analyzers) honestly have no clue why I did this as the cost of a few vertices is negligible, but whatever.
+
+	Next, submenu icons (henceforth referred to simply as "icons") are drawn on top of the slots.
+
+	Finally, each icon layout is accessed from the iconlayouts array (populated by parseGUIdata) and iterated
+	through. Every line, which is a block handle, is passed through namemap (see renderutils) to get its
+	id:variant pair, which is then itself logged into the submenus array for future reference.
+
+	A sprite is then drawn for that id:variant pair inside its slot.
+
+	After an icon has finished being rendered, the temporary sprite buffers are meshAppended to the icon's
+	guiVAO entry and then reset. Effectively, this uses the renderItemSprite function to create the icon's
+	layout once, which is then re-accessed later (see renderInventory).
+
+	Finally, the item sprite buffers are reset one last time before exiting.
+
+	Note that we can only "steal" the item sprite function/buffers because initInventory is called before any
+	other processes which use it, and then it resets them back.

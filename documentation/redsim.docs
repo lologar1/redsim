@@ -1,0 +1,39 @@
+enum Gamestate
+	The RSM game may be in one of four states at any given moment:
+
+	NORMAL (able to move and interact with the world)
+	MENU (game setting configurations and save file options (TODO))
+	INVENTORY (hotbar configuration from inventory picker)
+	COMMAND (give textual commands for, among other things, large-scale world manipulation)
+
+Gamestate gamestate
+	Holds the global gamestate
+
+void rsm_move(vec3 position)
+	Change the position vector (reference to the client's camera's position) according to current user input,
+	taking into account collisions and momentum.
+
+	First calculate deltaTime since last frame (factor to multiply position offset).
+
+	Then, calculate speed with regards to deltaTime, capped at its max value. Also scale down the speed vector
+	to simulate air deceleration.
+
+	To handle collisions, a volumetric iteration (stopping each unit) of the player's bounding box is done
+	to check which blocks it may collide against. AABB intersection is used.
+
+	Note: bounding boxes are scaled down by a small offset to avoid phasing through as rotation and translocation
+	may nudge it slightly into another block due to float imprecision.
+
+	Momentum is stopped (speed = 0) on the axis of collision.
+
+	Finally, position is changed by the fractionnal speed.
+
+int AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2)
+	Returns -1 if there is an intersection, otherwise returns the axis (xyz <-> 012) that does not intersect.
+	Priority given to x, then y, then z, but in practice only one axis does not intersect when the function is
+	called.
+
+int64_t chunkOffsetConvertFloat(float absoluteComponent)
+uint64_t blockOffsetConvertFloat(float absoluteComponent)
+	Converts an absolute position (x, y or z) into a grid-aligned offset for either chunks or blocks within
+	a chunk.

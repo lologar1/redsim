@@ -15,7 +15,7 @@ float compositionQuad[] = {
 
 unsigned int screenWidth = WINDOW_WIDTH, screenHeight = WINDOW_HEIGHT;
 
-void render(GLFWwindow* window) {
+void render(GLFWwindow *window) {
 	/* Setup renderer within window window and start rendering loop */
 
 	/* Set callback functions */
@@ -287,7 +287,7 @@ void render(GLFWwindow* window) {
 	glfwTerminate();
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	/* Resize viewport when this function (window resize) is called.
 	 * This function is called when the window is first displayed too. */
 
