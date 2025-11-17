@@ -43,16 +43,18 @@ void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 		case RSM_KEY_COMMAND:
 			if (gamestate == NORMAL) gamestate = COMMAND;
 			break;
-		case RSM_KEY_HOTSLOT0: hotbarIndex = 0; break;
-		case RSM_KEY_HOTSLOT1: hotbarIndex = 1; break;
-		case RSM_KEY_HOTSLOT2: hotbarIndex = 2; break;
-		case RSM_KEY_HOTSLOT3: hotbarIndex = 3; break;
-		case RSM_KEY_HOTSLOT4: hotbarIndex = 4; break;
-		case RSM_KEY_HOTSLOT5: hotbarIndex = 5; break;
-		case RSM_KEY_HOTSLOT6: hotbarIndex = 6; break;
-		case RSM_KEY_HOTSLOT7: hotbarIndex = 7; break;
-		case RSM_KEY_HOTSLOT8: hotbarIndex = 8; break;
-		case RSM_KEY_HOTSLOT9: hotbarIndex = 9; break;
+		case RSM_KEY_HOTSLOT0: hotslotIndex = 0; break;
+		case RSM_KEY_HOTSLOT1: hotslotIndex = 1; break;
+		case RSM_KEY_HOTSLOT2: hotslotIndex = 2; break;
+		case RSM_KEY_HOTSLOT3: hotslotIndex = 3; break;
+		case RSM_KEY_HOTSLOT4: hotslotIndex = 4; break;
+		case RSM_KEY_HOTSLOT5: hotslotIndex = 5; break;
+		case RSM_KEY_HOTSLOT6: hotslotIndex = 6; break;
+		case RSM_KEY_HOTSLOT7: hotslotIndex = 7; break;
+		case RSM_KEY_HOTSLOT8: hotslotIndex = 8; break;
+		case RSM_KEY_HOTSLOT9: hotslotIndex = 9; break;
+		case RSM_KEY_HOTBAR_INCREMENT: hotbarIndex = (hotbarIndex + 1) % RSM_HOTBAR_COUNT; break;
+		case RSM_KEY_HOTBAR_DECREMENT: hotbarIndex = (hotbarIndex - 1) % RSM_HOTBAR_COUNT; break;
 	}
 
 	/* Handle cursor status after a potential gamestate change */
@@ -106,6 +108,8 @@ void processMouseInput(GLFWwindow *window, int button, int action, int mods) {
 				case RSM_BUTTON_RIGHTCLICK: RSM_RIGHTCLICK = action == GLFW_PRESS ? 1 : 0; break;
 				case RSM_BUTTON_MIDDLECLICK: RSM_MIDDLECLICK = action == GLFW_PRESS ? 1 : 0; break;
 			}
+
+			rsm_interact();
 			break;
 
 		case INVENTORY:
@@ -125,8 +129,8 @@ void processMouseInput(GLFWwindow *window, int button, int action, int mods) {
 				uid = submenus[inventoryIndex]
 					[(unsigned int) ((x - INV_BASE_X) / RSM_INVENTORY_SLOT_SIZE_PIXELS)]
 					[(unsigned int) ((y - INV_SLOTS_Y) / RSM_INVENTORY_SLOT_SIZE_PIXELS)];
-				hotbar[hotbarIndex][0] = uid >> 32;
-				hotbar[hotbarIndex][1] = uid & 0xFFFFFFFF;
+				hotbar[hotbarIndex][hotslotIndex][0] = GETID(uid);
+				hotbar[hotbarIndex][hotslotIndex][1] = GETVARIANT(uid);
 			}
 			break;
 
@@ -146,7 +150,7 @@ void processMouseScroll(GLFWwindow *window, double xoffset, double yoffset) {
 	(void) window;
 	(void) xoffset;
 
-	hotbarIndex = (hotbarIndex + (yoffset < 0 ? 1 : -1) + RSM_HOTBAR_SLOTS) % RSM_HOTBAR_SLOTS;
+	hotslotIndex = (hotslotIndex + (yoffset < 0 ? 1 : -1) + RSM_HOTBAR_SLOTS) % RSM_HOTBAR_SLOTS;
 
 	renderGUI();
 }

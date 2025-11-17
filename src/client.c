@@ -20,6 +20,9 @@ void client_init(void) {
 	chunkmap = usf_newhm();
 	meshmap = usf_newhm();
 
+	/* Generate datamap for default metadata values from disk */
+	datamap = usf_newhm();
+
 	/* Get block, mesh and bounding box data from disk */
 	namemap = usf_newhm(); /* Init namemap before populating it */
 	parseBlockdata();
@@ -27,6 +30,9 @@ void client_init(void) {
 	/* Allocate buffers for GUI and load its assets from disk */
 	parseGUIdata();
 	initGUI();
+
+	/* Allocate buffers for wiremesh */
+	initWiremesh();
 
 	/* TODO: Retrieve data from disk
 	 * And remesh all chunks */
@@ -112,9 +118,9 @@ void client_init(void) {
 	usf_inthmput(chunkmap, TOCHUNKINDEX(-1L, -1L, -1L), USFDATAP(c1));
 	usf_inthmput(chunkmap, TOCHUNKINDEX(0L, 0L, 1L), USFDATAP(c2));
 
-	remeshChunk(0, 0, 0);
-	remeshChunk(-1, -1, -1);
-	remeshChunk(0, 0, 1);
+	remeshChunk(0);
+	remeshChunk(TOCHUNKINDEX(-1, -1, -1));
+	remeshChunk(TOCHUNKINDEX(0, 0, 1));
 
 	/* END TESTBED */
 
@@ -155,6 +161,7 @@ void client_frameEvent(GLFWwindow *window) {
 	glm_vec3_normalize(orientation);
 
 	rsm_move(position);
+	rsm_updateWiremesh();
 }
 
 void client_getOrientationVector(vec3 ori) {

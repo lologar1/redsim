@@ -174,6 +174,7 @@ void render(GLFWwindow *window) {
 	glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 	glBlendEquation(GL_FUNC_ADD);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	/* Rendering variables */
 	float time, lastTime = 0.0f;
@@ -240,7 +241,13 @@ void render(GLFWwindow *window) {
 			glDrawElements(GL_TRIANGLES, meshes[i][2], GL_UNSIGNED_INT, 0);
 		}
 
+		/* Wireframe (highlighting) rendering */
+		glDisable(GL_CULL_FACE);
+		glBindVertexArray(wiremesh[0]);
+		glDrawElements(GL_LINES, wiremesh[1], GL_UNSIGNED_INT, 0);
+
 		/* Transparent rendering */
+		glEnable(GL_CULL_FACE);
 		glDepthMask(GL_FALSE); /* Don't affect depth buffer */
 		glClearBufferfv(GL_COLOR, 1, ACCUM_CLEAR);
 		glClearBufferfv(GL_COLOR, 2, REVEAL_CLEAR); /* Set reveal buffer to 1; others are reset to 0 by glClear */

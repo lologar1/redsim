@@ -28,6 +28,7 @@ void client_init(void)
 	Initialize important global variables such as chunkmap, hashmap, namemap, etc.
 	Call parsing functions (parseBlockdata, parseGUIdata) to read disk and populate structures.
 	Call initGUI() (see gui)
+	Call initWiremesh() (see redsim)
 	Call generateMeshlist() once to begin with chunks shown on screen
 	Call renderGUI() once to begin with GUI shown on screen
 

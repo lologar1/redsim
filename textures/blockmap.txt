@@ -1,3 +1,3 @@
 *air *SPRITE_SUBMENUSELECT *SPRITE_SELECTIONTOOL *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER
-*silicon_black *silicon_gray *silicon_silver *silicon_white *silicon_blue *silicon_cyan *silicon_azure *silicon_green *silicon_red *silicon_orange *silicon_yellow *silicon_lime *silicon_purple *silicon_magenta *silicon_pink *silicon_brown
+*silicon_black:1 *silicon_gray:1 *silicon_silver:1 *silicon_white:1 *silicon_blue:1 *silicon_cyan:1 *silicon_azure:1 *silicon_green:1 *silicon_red:1 *silicon_orange:1 *silicon_yellow:1 *silicon_lime:1 *silicon_purple:1 *silicon_magenta:1 *silicon_pink:1 *silicon_brown:1
 stone transstone

@@ -7,10 +7,11 @@ unsigned int nGUIIndices[MAX_GUI_PRIORITY];
 
 usf_hashmap *namemap; /* Name -> (id:variant) in the form of a uint64_t partitioned in 2 32-bit numbers */
 
-unsigned int hotbarIndex; /* Current slot */
+unsigned int hotbarIndex; /* Current hotbar */
+unsigned int hotslotIndex; /* Current slot */
 unsigned int inventoryIndex; /* Current submenu */
 
-uint64_t hotbar[RSM_HOTBAR_SLOTS][2]; /* Hotbar status id:variant */
+uint64_t hotbar[RSM_HOTBAR_COUNT][RSM_HOTBAR_SLOTS][2]; /* Hotbar status id:variant */
 uint64_t submenus[RSM_INVENTORY_ICONS][RSM_INVENTORY_SLOTS_HORIZONTAL][RSM_INVENTORY_SLOTS_VERTICAL];
 
 void initGUI(void) {
@@ -209,16 +210,16 @@ void renderHotbar(void) {
 
 	/* Slot selection */
 	float selection[] = {
-		HOTBAR_BASE + HSLOT_SIZE * hotbarIndex, 0.0f, pSlotSelection, 0.0f, guiAtlasAdjust(0.0f, pSlotSelection),
-		HOTBAR_BASE + HSLOT_SIZE * hotbarIndex, HSLOT_SIZE, pSlotSelection, 0.0f, guiAtlasAdjust(1.0f, pSlotSelection),
-		HOTBAR_BASE + HSLOT_SIZE * (hotbarIndex + 1), HSLOT_SIZE, pSlotSelection, 1.0f, guiAtlasAdjust(1.0f, pSlotSelection),
-		HOTBAR_BASE + HSLOT_SIZE * (hotbarIndex + 1), 0.0f, pSlotSelection, 1.0f, guiAtlasAdjust(0.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * hotslotIndex, 0.0f, pSlotSelection, 0.0f, guiAtlasAdjust(0.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * hotslotIndex, HSLOT_SIZE, pSlotSelection, 0.0f, guiAtlasAdjust(1.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * (hotslotIndex + 1), HSLOT_SIZE, pSlotSelection, 1.0f, guiAtlasAdjust(1.0f, pSlotSelection),
+		HOTBAR_BASE + HSLOT_SIZE * (hotslotIndex + 1), 0.0f, pSlotSelection, 1.0f, guiAtlasAdjust(0.0f, pSlotSelection),
 	};
 
 	meshAppend(pSlotSelection, selection, sizeof(selection)/sizeof(float), QUADI, QUADISIZE);
 
 	for (int j = 0; j < RSM_HOTBAR_SLOTS; j++) {
-		renderItemSprite(hotbar[j][0], hotbar[j][1],
+		renderItemSprite(hotbar[hotbarIndex][j][0], hotbar[hotbarIndex][j][1],
 				HOTBAR_BASE + HSLOT_SIZE * j + RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS,
 				RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS,
 				HSLOT_SIZE - 2 * RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS,
@@ -331,7 +332,7 @@ void initInventory(void) {
 
 		for (k = 0; k < nsprites; k++) {
 			itemuid = usf_strhmget(namemap, iconlayout[k]).u;
-			itemid = itemuid >> 32; itemvariant = itemuid & 0xFFFFFFFF;
+			itemid = GETID(itemuid); itemvariant = GETVARIANT(itemuid);
 
 			xslotoffset = k % RSM_INVENTORY_SLOTS_HORIZONTAL;
 			yslotoffset = k / RSM_INVENTORY_SLOTS_HORIZONTAL;

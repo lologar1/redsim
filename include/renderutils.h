@@ -5,6 +5,7 @@
 #include "chunkutils.h"
 #include "usfstring.h"
 #include "usfio.h"
+#include "redsim.h"
 
 #define CHUNKVOLUME (CHUNKSIZE * CHUNKSIZE * CHUNKSIZE)
 

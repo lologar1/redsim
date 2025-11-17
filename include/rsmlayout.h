@@ -29,6 +29,8 @@ extern float RSM_FLY_SPEED_CAP;
 #define RSM_BUTTON_RIGHTCLICK GLFW_MOUSE_BUTTON_RIGHT
 #define RSM_BUTTON_MIDDLECLICK GLFW_MOUSE_BUTTON_MIDDLE
 
+#define RSM_KEY_HOTBAR_INCREMENT GLFW_KEY_X
+#define RSM_KEY_HOTBAR_DECREMENT GLFW_KEY_Z
 #define RSM_KEY_HOTSLOT0 GLFW_KEY_1
 #define RSM_KEY_HOTSLOT1 GLFW_KEY_2
 #define RSM_KEY_HOTSLOT2 GLFW_KEY_3
@@ -53,6 +55,7 @@ extern float RSM_MOUSE_SENSITIVITY;
 #define FPS_CAP true
 #define VSYNC true
 
+extern float RSM_REACH;
 extern float RSM_FOV;
 extern unsigned int RENDER_DISTANCE;
 extern float RENDER_DISTANCE_NEAR;
@@ -82,6 +85,7 @@ extern float RENDER_DISTANCE_NEAR;
 #define RSM_MAX_SHADER_INFOLOG_LENGTH 512
 
 #define RSM_BIT_COLLISION (1UL << 0) /* Collidable */
+#define RSM_BIT_ROTATION (1UL << 1) /* Rotatable */
 
 extern char textureBasePath[10];
 extern char textureBlockPath[8];

@@ -15,6 +15,7 @@
 
 #define CHUNKCOORDMASK (0x1FFFFF)
 #define TOCHUNKINDEX(x, y, z) ((uint64_t) ((x) & CHUNKCOORDMASK) << 42 | (uint64_t) ((y) & CHUNKCOORDMASK) << 21 | (uint64_t) ((z) & CHUNKCOORDMASK))
+#define SIGNED21CAST64(n) ((n) | (n & (1 << 20) ? (uint64_t) ~CHUNKCOORDMASK : 0))
 
 typedef enum {
     NONE,
@@ -48,9 +49,9 @@ typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];
 /* Buffers serving as remeshing scratchpad ; alloc'd once in parseBlockdata */
 extern float *opaqueVertexBuffer, *transVertexBuffer;
 extern unsigned int *opaqueIndexBuffer, *transIndexBuffer;
-extern Blockmesh ***blockmeshes;
+extern Blockmesh **blockmeshes;
 
-void remeshChunk(int64_t x, int64_t y, int64_t z);
+void remeshChunk(uint64_t chunkindex);
 void updateMeshlist(void);
 void generateMeshlist(void);
 void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, Rotation rotation, int64_t x, int64_t y, int64_t z);

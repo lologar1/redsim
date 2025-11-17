@@ -20,7 +20,7 @@ void render(GLFWwindow *window)
 
 		Build lookat and perspective matricies from client variables.
 
-		Opaque rendering
+		Opaque rendering (incl. wireframe rendering)
 			Using rendering FBO
 			Cull faces
 			Depth test

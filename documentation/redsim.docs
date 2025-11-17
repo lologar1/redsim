@@ -6,6 +6,9 @@ enum Gamestate
 	INVENTORY (hotbar configuration from inventory picker)
 	COMMAND (give textual commands for, among other things, large-scale world manipulation)
 
+GLuint wiremesh[2]
+	Holds the special wireframe-rendered mesh for block highlighting and selection visualization.
+
 Gamestate gamestate
 	Holds the global gamestate
 
@@ -37,3 +40,13 @@ int64_t chunkOffsetConvertFloat(float absoluteComponent)
 uint64_t blockOffsetConvertFloat(float absoluteComponent)
 	Converts an absolute position (x, y or z) into a grid-aligned offset for either chunks or blocks within
 	a chunk.
+
+void initWiremesh(void)
+	Initialize buffers for the wiremesh.
+
+void rsm_updateWiremesh(void)
+	Updates the wiremesh with current selection and block highlighting.
+
+	Note that UID 0:0 is the only ID 0 which loads a texture, which is used for wireframe colors. The UV
+	coordinates map to either the left or right side of the texture (selection and block highlighting color
+	respectively).

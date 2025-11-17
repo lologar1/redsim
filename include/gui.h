@@ -27,8 +27,8 @@ typedef enum {
 
 extern GLuint guiAtlas, guiVAO[MAX_GUI_PRIORITY];
 extern usf_hashmap *namemap;
-extern unsigned int hotbarIndex, inventoryIndex, nGUIIndices[MAX_GUI_PRIORITY];
-extern uint64_t hotbar[RSM_HOTBAR_SLOTS][2];
+extern unsigned int hotslotIndex, hotbarIndex, inventoryIndex, nGUIIndices[MAX_GUI_PRIORITY];
+extern uint64_t hotbar[RSM_HOTBAR_COUNT][RSM_HOTBAR_SLOTS][2];
 extern uint64_t submenus[RSM_INVENTORY_ICONS][RSM_INVENTORY_SLOTS_HORIZONTAL][RSM_INVENTORY_SLOTS_VERTICAL];
 
 void initGUI(void); /* OpenGL stuff for GUI */

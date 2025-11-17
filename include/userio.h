@@ -12,6 +12,9 @@ extern int RSM_RIGHT;
 extern int RSM_LEFT;
 extern int RSM_DOWN;
 extern int RSM_UP;
+extern int RSM_LEFTCLICK;
+extern int RSM_RIGHTCLICK;
+extern int RSM_MIDDLECLICK;
 extern float mouseX;
 extern float mouseY;
 

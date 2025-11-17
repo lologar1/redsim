@@ -1,22 +1,23 @@
 #include "chunkutils.h"
 
-Blockmesh ***blockmeshes; /* Populated by parseBlockdata */
+Blockmesh **blockmeshes; /* Populated by parseBlockdata */
 
 /* Temporary buffers for vertices/indices scratchpad */
 float *opaqueVertexBuffer, *transVertexBuffer;
 unsigned int *opaqueIndexBuffer, *transIndexBuffer;
-void remeshChunk(int64_t x, int64_t y, int64_t z) {
+void remeshChunk(uint64_t chunkindex) {
 	/* Generate appropriate mesh array (VAO) for a given chunk and set it in meshmap */
-	uint64_t chunkindex;
+	int64_t x, y, z;
 	GLuint *mesh, opaqueVAO, transVAO, opaqueVBO, transVBO, opaqueEBO, transEBO;
 	unsigned int a, b, c;
 	Chunkdata *chunk;
 	Blockdata block;
 
-	chunkindex = TOCHUNKINDEX(x, y, z);
-
 	chunk = (Chunkdata *) usf_inthmget(chunkmap, chunkindex).p;
 
+	x = SIGNED21CAST64(chunkindex >> 42);
+	y = SIGNED21CAST64((chunkindex >> 21) & CHUNKCOORDMASK);
+	z = SIGNED21CAST64(chunkindex & CHUNKCOORDMASK);
 	if (chunk == NULL) {
 		fprintf(stderr, "Chunk at %lu %lu %lu does not exist ; aborting.\n", x, y, z);
 		exit(RSM_EXIT_NOCHUNK);
@@ -189,7 +190,7 @@ void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, R
 	 * of type id of variant variant with rotation rotation at position xyz */
 
 	Blockmesh *template;
-	template = blockmeshes[id][variant];
+	template = &blockmeshes[id][variant];
 
 	/* Copy state to scratchpad ; safe as buffer sizes are checked in parsing (renderutils) */
 	memcpy(blockmesh->opaqueVertices, template->opaqueVertices, sizeof(float) * template->count[0]);
