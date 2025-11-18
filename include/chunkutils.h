@@ -15,6 +15,10 @@
 
 #define CHUNKCOORDMASK (0x1FFFFF)
 #define TOCHUNKINDEX(x, y, z) ((uint64_t) ((x) & CHUNKCOORDMASK) << 42 | (uint64_t) ((y) & CHUNKCOORDMASK) << 21 | (uint64_t) ((z) & CHUNKCOORDMASK))
+#define COORDSTOCHUNKINDEX(v) \
+	TOCHUNKINDEX(chunkOffsetConvertFloat(v[0]), chunkOffsetConvertFloat(v[1]), chunkOffsetConvertFloat(v[2]))
+#define COORDSTOBLOCKDATA(v, chunk) \
+	 (&(*chunk)[blockOffsetConvertFloat(v[0])][blockOffsetConvertFloat(v[1])][blockOffsetConvertFloat(v[2])])
 #define SIGNED21CAST64(n) ((n) | (n & (1 << 20) ? (uint64_t) ~CHUNKCOORDMASK : 0))
 
 typedef enum {
@@ -57,6 +61,7 @@ void generateMeshlist(void);
 void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, Rotation rotation, int64_t x, int64_t y, int64_t z);
 void translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation);
 void rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter);
+Blockdata *coordsToBlock(vec3 coords, uint64_t *chunkindex);
 
 void pathcat(char *destination, int n, ...);
 

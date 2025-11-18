@@ -25,6 +25,8 @@ typedef enum {
 extern usf_hashmap *datamap;
 extern Gamestate gamestate;
 extern GLuint wiremesh[2];
+extern vec3 *playerBBOffsets;
+extern unsigned int nPlayerBBOffsets;
 
 void rsm_move(vec3 position);
 int AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2);

@@ -260,6 +260,23 @@ void rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter) {
 	}
 }
 
+Blockdata *coordsToBlock(vec3 coords, uint64_t *chunkindex) {
+	/* Return the blockdata matching these absolute world offsets. If it is provided, also set chunk to
+	 * the chunk of the block. The chunk is created as empty if it doesn't exist */
+	uint64_t index;
+	Chunkdata *chunkdata;
+
+	index = COORDSTOCHUNKINDEX(coords);
+
+	/* Get chunk and allocate it if null */
+	if ((chunkdata = (Chunkdata *) usf_inthmget(chunkmap, index).p) == NULL)
+		usf_inthmput(chunkmap, index, USFDATAP(chunkdata = calloc(1, sizeof(Chunkdata))));
+
+	if (chunkindex) *chunkindex = index; /* Pass chunk index */
+
+	return COORDSTOBLOCKDATA(coords, chunkdata); /* Return blockdata */
+}
+
 void pathcat(char *destination, int n, ...) {
 	/* Concatenates a path into destination */
 	va_list args;

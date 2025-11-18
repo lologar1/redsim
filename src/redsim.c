@@ -4,13 +4,11 @@ usf_hashmap *datamap;
 
 Gamestate gamestate = NORMAL;
 Blockdata *lookingAt, *lookingAdjacent;
-uint64_t lookingChunk, lookingAdjChunk;
+uint64_t lookingChunkIndex, lookingAdjChunkIndex;
 GLuint wiremesh[2];
 
-#define VECTOCHUNKINDEX(v) \
-	TOCHUNKINDEX(chunkOffsetConvertFloat(v[0]), chunkOffsetConvertFloat(v[1]), chunkOffsetConvertFloat(v[2]))
-#define VECTOBLOCKDATA(v, chunk) \
-	(&(*chunk)[blockOffsetConvertFloat(v[0])][blockOffsetConvertFloat(v[1])][blockOffsetConvertFloat(v[2])])
+vec3 *playerBBOffsets;
+unsigned int nPlayerBBOffsets;
 
 void rsm_move(vec3 position) {
 	/* Change player position each frame according to movement) */
@@ -26,7 +24,7 @@ void rsm_move(vec3 position) {
 	lastTime = glfwGetTime();
 
 	/* Deltas to travel this frame */
-	vec3 momentum;
+	vec3 movement;
 
 	/* Now update speed for next frame */
 	if (RSM_RIGHT) speed[0] += RSM_FLY_X_ACCELERATION * deltaTime;
@@ -42,118 +40,100 @@ void rsm_move(vec3 position) {
 	/* Air deceleration */
 	glm_vec3_scale_as(speed, glm_vec3_norm(speed) * powf(RSM_FLY_FRICTION, deltaTime), speed);
 
-	glm_vec3_copy(speed, momentum);
-	glm_vec3_scale(momentum, deltaTime, momentum);
-	glm_vec3_rotate(momentum, -glm_rad(yaw), UPVECTOR);
+	glm_vec3_copy(speed, movement);
+	glm_vec3_scale(movement, deltaTime, movement);
+	glm_vec3_rotate(movement, -glm_rad(yaw), UPVECTOR);
 
 	/* Collision handling */
-	Chunkdata *chunkdata;
 	Blockdata *blockdata;
 	float boundingbox[6];
-	vec3 blockposition, offset, newPosition, playerCornerNew, playerCornerOld, boxcenter;
+	vec3 blockposition, *offset, newPosition, playerCornerNew, playerCornerOld, boxcenter;
 	mat4 rotation;
+	int axis;
 
-	/* Future position of the player */
-	glm_vec3_add(position, momentum, newPosition);
-
-	/* Position of the base of the player bounding box */
-	glm_vec3_add(PLAYER_BOUNDINGBOX_RELATIVE_CORNER, newPosition, playerCornerNew);
+	/* Old player position bounding box base */
 	glm_vec3_add(PLAYER_BOUNDINGBOX_RELATIVE_CORNER, position, playerCornerOld);
 
-	/* Iterate through all blocks which might impede the player ; this algo. is inefficient for
-	 * large bounding boxes because it also iterates on blocks inside, but it is easier to understand
-	 * and implement and since the default player bounding box is small enough that it's the same, I'm
-	 * using volumetric iteration */
-	for (offset[0] = PLAYER_BOUNDINGBOX_DIMENSIONS[0]; offset[0] > -1.0f; offset[0]--) {
-		for (offset[1] = PLAYER_BOUNDINGBOX_DIMENSIONS[1]; offset[1] > -1.0f; offset[1]--) {
-			for (offset[2] = PLAYER_BOUNDINGBOX_DIMENSIONS[2]; offset[2] > -1.0f; offset[2]--) {
-				/* Blockposition now contains the absolute world position of the block in question.
-				 * To retrieve it, first get the chunk (and check if it exists) then the offset inside that */
-				glm_vec3_add(playerCornerNew, offset, blockposition);
+	/* Move in X, Y and Z to prevent edge collision bugs. This does mean that the player needs a certain
+	 * clearance to move which depends on the framerate, but this value should be small at normal FPS and
+	 * the normal player BB size isn't a multiple of 1 so it's fine */
+	for (axis = 0; axis < 3; axis++) {
+		/* Future position of the player */
+		glm_vec3_copy(position, newPosition); newPosition[axis] += movement[axis];
+		glm_vec3_add(PLAYER_BOUNDINGBOX_RELATIVE_CORNER, newPosition, playerCornerNew);
 
-				chunkdata = (Chunkdata *) usf_inthmget(chunkmap, VECTOCHUNKINDEX(blockposition)).p;
+		for (offset = playerBBOffsets; offset - playerBBOffsets < nPlayerBBOffsets; offset++) {
+			/* Blockposition now contains the absolute world position of the block in question.
+			 * To retrieve it, first get the chunk (and check if it exists) then the offset inside that */
+			glm_vec3_add(playerCornerNew, *offset, blockposition);
 
-				if (chunkdata == NULL) continue; /* Chunk is empty */
+			blockdata = coordsToBlock(blockposition, NULL);
+			if (!(blockdata->metadata & RSM_BIT_COLLISION)) continue; /* Block has no collision */
 
-				blockdata = VECTOBLOCKDATA(blockposition, chunkdata);
+			/* Get bounding box data and check it against player bounding box */
+			memcpy(boundingbox, boundingboxes[blockdata->id][blockdata->variant], sizeof(float [6]));
+			glm_vec3_floor(blockposition, blockposition);
+			glm_vec3_add(boundingbox, blockposition, boundingbox);
 
-				if (!(blockdata->metadata & RSM_BIT_COLLISION)) continue; /* Block has no collision */
+			/* To prevent phasing through a float imprecision-induced offset boundingbox poking in an
+			 * adjacent block, downsize it by an adjusted offset first */
+			glm_vec3_adds(boundingbox, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox);
+			glm_vec3_subs(boundingbox+3, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox+3);
 
-				/* Get bounding box data and check it against player bounding box */
-				memcpy(boundingbox, boundingboxes[blockdata->id][blockdata->variant], sizeof(float [6]));
-				glm_vec3_floor(blockposition, blockposition);
-				glm_vec3_add(boundingbox, blockposition, boundingbox);
+			if (blockdata->rotation > NORTH) { /* NONE is 0, and both NORTH and NONE do not modify base model */
+				/* Find diametrically opposite corner */
+				glm_vec3_add(boundingbox, boundingbox+3, boundingbox+3);
 
-				/* To prevent phasing through a float imprecision-induced offset boundingbox poking in an
-				 * adjacent block, downsize it by an adjusted offset first */
-				glm_vec3_adds(boundingbox, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox);
-				glm_vec3_subs(boundingbox+3, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox+3);
+				glm_vec3_adds(boundingbox, 0.5f, boxcenter);
+				rotationMatrix(rotation, blockdata->rotation, boxcenter);
+				glm_mat4_mulv3(rotation, boundingbox, 1.0f, boundingbox);
+				glm_mat4_mulv3(rotation, boundingbox+3, 1.0f, boundingbox+3);
 
-				if (blockdata->rotation != NONE) {
-					/* Find diametrically opposite corner */
-					glm_vec3_add(boundingbox, boundingbox+3, boundingbox+3);
-
-					glm_vec3_adds(boundingbox, 0.5f, boxcenter);
-					rotationMatrix(rotation, blockdata->rotation, boxcenter);
-					glm_mat4_mulv3(rotation, boundingbox, 1.0f, boundingbox);
-					glm_mat4_mulv3(rotation, boundingbox+3, 1.0f, boundingbox+3);
-
-					/* Find new dimensions */
-					glm_vec3_sub(boundingbox+3, boundingbox, boundingbox+3);
-				}
-
-				if (AABBIntersect(boundingbox, boundingbox+3, playerCornerNew,
-							PLAYER_BOUNDINGBOX_DIMENSIONS) != -1) /* If all axes intersect */
-					continue;
-
-				/* Axis which will intersect in the future. Note that a perfect 45 degree angle can
-				 * enable a player to phase through a box as only one axis is checked, but that is either
-				 * too unlikely (and the player can get out safely) or simply not permitted as pitch/yaw are
-				 * ultimately decoded from discrete mouse inputs, which, due to float precision,
-				 * may not be able to produce this effect */
-				int miss = AABBIntersect(boundingbox, boundingbox+3, playerCornerOld,
-						PLAYER_BOUNDINGBOX_DIMENSIONS);
-
-				if (miss == -1) continue; /* Moving inside a block ; let the player escape! */
-
-				if (boundingbox[miss] + boundingbox[miss+3] < playerCornerOld[miss]) {
-					/* Player is "above" */
-					momentum[miss] = -(playerCornerOld[miss] - (boundingbox[miss] + boundingbox[miss+3]))
-						+ BLOCK_BOUNDINGBOX_SAFE_DISTANCE;
-				} else {
-					/* Player is "under */
-					momentum[miss] = boundingbox[miss] - (playerCornerOld[miss] +
-						PLAYER_BOUNDINGBOX_DIMENSIONS[miss]) - BLOCK_BOUNDINGBOX_SAFE_DISTANCE;
-				}
-
-				/* Match speed to orientation, kill component and replace it */
-				glm_vec3_rotate(speed, -glm_rad(yaw), UPVECTOR);
-				speed[miss] = 0.0f; /* Kill speed for that component */
-				glm_vec3_rotate(speed, glm_rad(yaw), UPVECTOR);
+				/* Find new dimensions */
+				glm_vec3_sub(boundingbox+3, boundingbox, boundingbox+3);
 			}
+
+			/* Landing position is not inside a block; no collision occurs */
+			if (!AABBIntersect(boundingbox, boundingbox+3, playerCornerNew, PLAYER_BOUNDINGBOX_DIMENSIONS))
+				continue;
+
+			/* Find axis which did not match before movement (axis to cancel movement on) */
+			if (AABBIntersect(boundingbox, boundingbox+3, playerCornerOld, PLAYER_BOUNDINGBOX_DIMENSIONS))
+				continue; /* Player is moving inside block; do not block movement */
+
+			if (boundingbox[axis] + boundingbox[axis+3] < playerCornerOld[axis]) {
+				/* Player is "above" */
+				movement[axis] = -(playerCornerOld[axis] - (boundingbox[axis] + boundingbox[axis+3]))
+					+ BLOCK_BOUNDINGBOX_SAFE_DISTANCE;
+			} else {
+				/* Player is "under */
+				movement[axis] = boundingbox[axis] - (playerCornerOld[axis] +
+					PLAYER_BOUNDINGBOX_DIMENSIONS[axis]) - BLOCK_BOUNDINGBOX_SAFE_DISTANCE;
+			}
+
+			/* Match speed to orientation, kill component and replace it */
+			glm_vec3_rotate(speed, -glm_rad(yaw), UPVECTOR);
+			speed[axis] = 0.0f; /* Kill speed for that component */
+			glm_vec3_rotate(speed, glm_rad(yaw), UPVECTOR);
 		}
 	}
 
-	glm_vec3_add(position, momentum, position); /* This affects player position */
+	glm_vec3_add(position, movement, position); /* This affects player position */
 }
 
 int AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2) {
-	/* Returns either the axis which a bounding box doesn't intersect another (prio xyz)
-	 * Or -1 if all axes intersect */
+	/* Returns whether or not two 3D boxes intersect on all 3 axes */
 
 	/* First normalize dimensions and corner */
-	if (dim1[0] < 0.0f) { dim1[0] = fabsf(dim1[0]); corner1[0] -= dim1[0]; }
-	if (dim1[1] < 0.0f) { dim1[1] = fabsf(dim1[1]); corner1[1] -= dim1[1]; }
-	if (dim1[2] < 0.0f) { dim1[2] = fabsf(dim1[2]); corner1[2] -= dim1[2]; }
-
-	if (dim2[0] < 0.0f) { dim2[0] = fabsf(dim2[0]); corner1[0] -= dim2[0]; }
-	if (dim2[1] < 0.0f) { dim2[1] = fabsf(dim2[1]); corner1[1] -= dim2[1]; }
-	if (dim2[2] < 0.0f) { dim2[2] = fabsf(dim2[2]); corner1[2] -= dim2[2]; }
+#define NORMALIZEDIM(dim, corner, i) if (dim[i] < 0.0f) { dim[i] = fabsf(dim[i]); corner[i] -= dim[i]; }
+	NORMALIZEDIM(dim1, corner1, 0); NORMALIZEDIM(dim1, corner1, 1); NORMALIZEDIM(dim1, corner1, 2);
+	NORMALIZEDIM(dim2, corner2, 0); NORMALIZEDIM(dim2, corner2, 1); NORMALIZEDIM(dim2, corner2, 2);
 
 #define AXISCOMPARE(i) \
-	if ((corner1[i]) + (dim1[i]) < (corner2[i]) || (corner1[i]) > (corner2[i]) + (dim2[i])) return i
+	if ((corner1[i]) + (dim1[i]) < (corner2[i]) || (corner1[i]) > (corner2[i]) + (dim2[i])) return 0;
 	AXISCOMPARE(0); AXISCOMPARE(1); AXISCOMPARE(2);
-	return -1; /* Does intersect */
+
+	return 1;
 }
 
 int64_t chunkOffsetConvertFloat(float absoluteComponent) {
@@ -196,7 +176,6 @@ void rsm_updateWiremesh(void) {
 	 * the air.png (or whatever name ID 0 is) as UID 0:0 is the only ID 0 which loads a texture (for this
 	 * purpose). By convention, the left side is selection while the right side is block highlighting */
 	float sx, sy, sz, sa, sb, sc;
-	Chunkdata *chunkdata;
 
 	/* Selection coords and dimensions */
 	sa = selection[0]; sb = selection[1]; sc = selection[2];
@@ -215,40 +194,33 @@ void rsm_updateWiremesh(void) {
 #define STEP(i) direction[i] > 0 ? 1.0f : -1.0f
 	vec3 step = { STEP(0), STEP(1), STEP(2) };
 
-	/* tDelta is the offset to t equivalent to moving one unit in that direction */
+	/* tDelta is the step size (in tspace) per unit moved in realspace */
 #define TDELTA(i) direction[i] == 0 ? INFINITY : fabsf(1.0f / direction[i])
 	vec3 tDelta = { TDELTA(0), TDELTA(1), TDELTA(2) };
 
-	/* tMax is the current progress (from 0.0f to 1.0f) until we reach looking */
+	/* tMax is the current progress (from 0.0f to 1.0f) until we reach looking in tspace */
 #define TMAX(i) tDelta[i] * ((step[i] > 0 ? (gridpos[i] + 1) - pos[i] : pos[i] - gridpos[i]))
 	vec3 tMax = { TMAX(0), TMAX(1), TMAX(2) };
 
 	int axis;
 	do {
-		lookingChunk = VECTOCHUNKINDEX(gridpos);
-		chunkdata = (Chunkdata *) usf_inthmget(chunkmap, lookingChunk).p;
+		lookingAt = coordsToBlock(gridpos, &lookingChunkIndex);
 
-		if (chunkdata == NULL) /* Allocate chunk if it doesn't exist */
-			usf_inthmput(chunkmap, lookingChunk, USFDATAP(chunkdata = calloc(1, sizeof(Chunkdata))));
-
-		lookingAt = VECTOBLOCKDATA(gridpos, chunkdata);
 		if (lookingAt->id) goto brk; /* Block exists and isn't air */
 
 		/* Determine which axis is crossed next, update t */
 		if (tMax[0] < tMax[1]) axis = (tMax[0] < tMax[2]) ? 0 : 2;
 		else axis = (tMax[1] < tMax[2]) ? 1 : 2;
 
-		lookingAdjChunk = VECTOCHUNKINDEX(gridpos);
-		lookingAdjacent = VECTOBLOCKDATA(gridpos, (Chunkdata *) usf_inthmget(chunkmap, lookingAdjChunk).p);
+		/* Update face position with the one we just entered */
+		lookingAdjChunkIndex = lookingChunkIndex;
+		lookingAdjacent = lookingAt;
 
 		gridpos[axis] += step[axis];
 		tMax[axis] += tDelta[axis];
 	} while (glm_vec3_min(tMax) < 1.0f);
 	/* Once more to catch final step */
-	lookingChunk = VECTOCHUNKINDEX(gridpos);
-	if ((chunkdata = (Chunkdata *) usf_inthmget(chunkmap, lookingChunk).p) == NULL)
-		usf_inthmput(chunkmap, lookingChunk, USFDATAP(chunkdata = calloc(1, sizeof(Chunkdata))));
-	lookingAt = VECTOBLOCKDATA(gridpos, chunkdata);
+	lookingAt = coordsToBlock(gridpos, &lookingChunkIndex);
 brk:
 
 	/* Normals set to point upwards as to not be illegal (still processed by opaque fragment shader) */
@@ -306,7 +278,7 @@ void rsm_interact(void) {
 	if (RSM_LEFTCLICK) {
 		RSM_LEFTCLICK = 0; /* Consume */
 		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
-		remeshChunk(lookingChunk);
+		remeshChunk(lookingChunkIndex);
 		return;
 	}
 
@@ -325,12 +297,19 @@ void rsm_interact(void) {
 		lookingAdjacent->metadata = metadata;
 
 		if (metadata & RSM_BIT_ROTATION) {
-			/* Block is rotatable so rotate it according to placement angle */
+			/* Block is rotatable so rotate it according to placement angle.
+			 * 45 degree offset because quadrants do not align with orientation placement fields. */
+			float rot = fmodf((yaw - 45.0f), 360.0f);
+			if (rot < 0.0f) rot = 360.0f - fabsf(rot);
 
-		}
+			if (rot < 90.0f) lookingAdjacent->rotation = NORTH;
+			else if (rot < 180.0f) lookingAdjacent->rotation = EAST;
+			else if (rot < 270.0f) lookingAdjacent->rotation = SOUTH;
+			else lookingAdjacent->rotation = WEST;
+		} else lookingAdjacent->rotation = NONE;
 
-		remeshChunk(lookingChunk);
-		remeshChunk(lookingAdjChunk);
+		remeshChunk(lookingChunkIndex);
+		remeshChunk(lookingAdjChunkIndex);
 	}
 
 	if (RSM_MIDDLECLICK & lookingAt->id) { /* Pipette tool; don't consume as it only modifies a hotbar slot */

@@ -34,6 +34,28 @@ void client_init(void) {
 	/* Allocate buffers for wiremesh */
 	initWiremesh();
 
+	/* Calculate player bounding box offsets to check for block collision.
+	 * Cast and add 2 to simulate ceil and account for last corner */
+	nPlayerBBOffsets = ((size_t) PLAYER_BOUNDINGBOX_DIMENSIONS[0] + 2) *
+		((size_t) PLAYER_BOUNDINGBOX_DIMENSIONS[1] + 2) * 2 + (size_t) PLAYER_BOUNDINGBOX_DIMENSIONS[2];
+	playerBBOffsets = malloc(nPlayerBBOffsets * sizeof(vec3));
+
+	/* Volumetric iteration and skip inside. A bit inefficient, but only done once. */
+	vec3 offset, *offsetPtr;
+	offsetPtr = playerBBOffsets;
+	for (offset[0] = PLAYER_BOUNDINGBOX_DIMENSIONS[0]; offset[0] > -1.0f; offset[0]--) {
+		for (offset[1] = PLAYER_BOUNDINGBOX_DIMENSIONS[1]; offset[1] > -1.0f; offset[1]--) {
+			for (offset[2] = PLAYER_BOUNDINGBOX_DIMENSIONS[2]; offset[2] > -1.0f; offset[2]--) {
+				if (!(offset[0] == PLAYER_BOUNDINGBOX_DIMENSIONS[0] || offset[0] <= 0.0f
+							|| offset[1] == PLAYER_BOUNDINGBOX_DIMENSIONS[1] || offset[1] <= 0.0f
+							|| offset[2] == PLAYER_BOUNDINGBOX_DIMENSIONS[2] || offset[2] <= 0.0f))
+					continue; /* Only want points across the boundary */
+
+				memcpy(offsetPtr++, offset, sizeof(vec3));
+			}
+		}
+	}
+
 	/* TODO: Retrieve data from disk
 	 * And remesh all chunks */
 
