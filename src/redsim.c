@@ -282,7 +282,7 @@ void rsm_interact(void) {
 		return;
 	}
 
-	metadata = usf_inthmget(datamap, uid).u;
+	metadata = usf_inthmget(datamap, uid).u; /* 0 if not specified */
 	if (RSM_RIGHTCLICK) {
 		RSM_RIGHTCLICK = 0;
 
@@ -292,7 +292,7 @@ void rsm_interact(void) {
 
 		if (lookingAdjacent == NULL) return; /* May happen right after init if spawned in a block */
 
-		lookingAdjacent->id = GETID(uid);
+		if ((lookingAdjacent->id = GETID(uid)) == 0) return; /* Avoid littering when 'placing' items (id 0) */
 		lookingAdjacent->variant = GETVARIANT(uid);
 		lookingAdjacent->metadata = metadata;
 
@@ -302,17 +302,17 @@ void rsm_interact(void) {
 			float rot = fmodf((yaw - 45.0f), 360.0f);
 			if (rot < 0.0f) rot = 360.0f - fabsf(rot);
 
-			if (rot < 90.0f) lookingAdjacent->rotation = NORTH;
-			else if (rot < 180.0f) lookingAdjacent->rotation = EAST;
-			else if (rot < 270.0f) lookingAdjacent->rotation = SOUTH;
-			else lookingAdjacent->rotation = WEST;
+			if (rot < 90.0f) lookingAdjacent->rotation = WEST;
+			else if (rot < 180.0f) lookingAdjacent->rotation = NORTH;
+			else if (rot < 270.0f) lookingAdjacent->rotation = EAST;
+			else lookingAdjacent->rotation = SOUTH;
 		} else lookingAdjacent->rotation = NONE;
 
 		remeshChunk(lookingChunkIndex);
 		remeshChunk(lookingAdjChunkIndex);
 	}
 
-	if (RSM_MIDDLECLICK & lookingAt->id) { /* Pipette tool; don't consume as it only modifies a hotbar slot */
+	if (RSM_MIDDLECLICK && lookingAt->id) { /* Pipette tool; don't consume as it only modifies a hotbar slot */
 		hotbar[hotbarIndex][hotslotIndex][0] = lookingAt->id;
 		hotbar[hotbarIndex][hotslotIndex][1] = lookingAt->variant;
 	}

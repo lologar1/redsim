@@ -66,14 +66,14 @@ void client_init(void) {
 		.id = 1,
 		.variant = 0,
 		.rotation = NONE,
-		.metadata = 1
+		.metadata = 7
 	};
 
 	Blockdata t0 = {
 		.id = 2,
 		.variant = 0,
 		.rotation = NORTH,
-		.metadata = 0
+		.metadata = 7
 	};
 	Blockdata t1 = {
 		.id = 2,
@@ -116,6 +116,12 @@ void client_init(void) {
 	Chunkdata *c1 = calloc(1, sizeof(Chunkdata));
 	Chunkdata *c2 = calloc(1, sizeof(Chunkdata));
 
+	Chunkdata *p0 = calloc(1, sizeof(Chunkdata));
+	Chunkdata *p1 = calloc(1, sizeof(Chunkdata));
+	Chunkdata *p2 = calloc(1, sizeof(Chunkdata));
+	Chunkdata *p3 = calloc(1, sizeof(Chunkdata));
+	Chunkdata *p4 = calloc(1, sizeof(Chunkdata));
+
 	//(*c0)[0][0][0] = t0;
 	(*c0)[5][5][5] = b0;
 	//(*c0)[1][0][0] = t6;
@@ -125,6 +131,21 @@ void client_init(void) {
 	(*c1)[0][0][0] = b0;
 	//(*c1)[CHUNKSIZE-1][CHUNKSIZE-1][CHUNKSIZE-1] = t0;
 	//(*c1)[CHUNKSIZE-1][CHUNKSIZE-2][CHUNKSIZE-1] = b0;
+
+	for (int x = 0; x < CHUNKSIZE; x++) {
+		for (int y = 0; y < CHUNKSIZE; y++) {
+			for (int z = 0; z < CHUNKSIZE; z++) {
+				(*c2)[x][y][z] = t0;
+			}
+		}
+	}
+	for (int x = 0; x < CHUNKSIZE; x++) {
+		for (int y = 0; y < CHUNKSIZE; y++) {
+			for (int z = 0; z < CHUNKSIZE; z++) {
+				(*c1)[x][y][z] = b0;
+			}
+		}
+	}
 
 	(*c2)[0][0][0] = t0;
 	(*c2)[0][0][2] = t1;
@@ -139,10 +160,33 @@ void client_init(void) {
 	usf_inthmput(chunkmap, TOCHUNKINDEX(0L, 0L, 0L), USFDATAP(c0));
 	usf_inthmput(chunkmap, TOCHUNKINDEX(-1L, -1L, -1L), USFDATAP(c1));
 	usf_inthmput(chunkmap, TOCHUNKINDEX(0L, 0L, 1L), USFDATAP(c2));
+	for (int x = 0; x < CHUNKSIZE; x++) {
+		for (int y = 0; y < CHUNKSIZE; y += 2) {
+			for (int z = 0; z < CHUNKSIZE; z++) {
+				(*p0)[x][y][z] = b0;
+				(*p1)[x][y][z] = b0;
+				(*p2)[x][y][z] = b0;
+				(*p3)[x][y][z] = b0;
+				(*p4)[x][y][z] = b0;
+			}
+		}
+	}
+	usf_inthmput(chunkmap, TOCHUNKINDEX(1L, 1L, 1L), USFDATAP(p0));
+	usf_inthmput(chunkmap, TOCHUNKINDEX(2L, 1L, 1L), USFDATAP(p1));
+	usf_inthmput(chunkmap, TOCHUNKINDEX(3L, 1L, 1L), USFDATAP(p2));
+	usf_inthmput(chunkmap, TOCHUNKINDEX(4L, 1L, 1L), USFDATAP(p3));
+	usf_inthmput(chunkmap, TOCHUNKINDEX(5L, 1L, 1L), USFDATAP(p4));
 
 	remeshChunk(0);
 	remeshChunk(TOCHUNKINDEX(-1, -1, -1));
 	remeshChunk(TOCHUNKINDEX(0, 0, 1));
+
+	remeshChunk(TOCHUNKINDEX(1, 1, 1));
+	remeshChunk(TOCHUNKINDEX(2, 1, 1));
+	remeshChunk(TOCHUNKINDEX(3, 1, 1));
+	remeshChunk(TOCHUNKINDEX(4, 1, 1));
+	remeshChunk(TOCHUNKINDEX(5, 1, 1));
+	printf("Test scene loaded\n");
 
 	/* END TESTBED */
 

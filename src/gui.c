@@ -62,7 +62,8 @@ void parseGUIdata(void) {
 		/* Append texture for this element to the atlas */
 		pathcat(guitexturepath, 3, guiPath, element, textureFormatExtension);
 
-		atlasAppend(guitexturepath, RSM_GUI_TEXTURE_SIZE_PIXELS, &guiAtlasData, &guiAtlasSize);
+		atlasAppend(guitexturepath, RSM_GUI_TEXTURE_SIZE_PIXELS, RSM_GUI_TEXTURE_SIZE_PIXELS,
+				&guiAtlasData, &guiAtlasSize);
 
 		/* Check for icons */
 		if (!(nelement >= PICON && nelement < PICON + RSM_INVENTORY_ICONS)) continue;

@@ -1,9 +1,9 @@
 #include "rsmlayout.h"
 
 /* Default layout */
-float RSM_FLY_X_ACCELERATION = 50.0f;
-float RSM_FLY_Y_ACCELERATION = 50.0f;
-float RSM_FLY_Z_ACCELERATION = 50.0f;
+float RSM_FLY_X_ACCELERATION = 45.0f;
+float RSM_FLY_Y_ACCELERATION = 45.0f;
+float RSM_FLY_Z_ACCELERATION = 45.0f;
 float RSM_FLY_FRICTION = 0.01f;
 float RSM_FLY_SPEED_CAP = 23.0f;
 
@@ -11,7 +11,7 @@ float RSM_FLY_SPEED_CAP = 23.0f;
 
 float RSM_MOUSE_SENSITIVITY = 0.1f;
 
-float RSM_REACH = 3.5f;
+float RSM_REACH = 3.2f;
 float RSM_FOV = 120.0f;
 unsigned int RENDER_DISTANCE = 8;
 float RENDER_DISTANCE_NEAR = 0.1f;

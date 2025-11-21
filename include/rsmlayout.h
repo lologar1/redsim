@@ -52,8 +52,8 @@ extern float RSM_MOUSE_SENSITIVITY;
 #define RSM_INVENTORY_ICONS 4
 
 #define RSM_FPS 240.0f
-#define FPS_CAP true
-#define VSYNC true
+#define FPS_CAP false
+#define VSYNC false
 
 extern float RSM_REACH;
 extern float RSM_FOV;
@@ -69,7 +69,6 @@ extern float RENDER_DISTANCE_NEAR;
 #define RSM_BLOCK_TEXTURE_SIZE_PIXELS 32
 #define RSM_GUI_TEXTURE_SIZE_PIXELS 64
 #define RSM_SPRITE_TEXTURE_SIZE_PIXELS 16
-#define RSM_ICON_TEXTURE_SIZE_PIXELS 16
 
 #define RSM_GUI_SCALING_FACTOR 1.0f
 #define RSM_CROSSHAIR_SIZE_PIXELS (RSM_GUI_SCALING_FACTOR * 32)
@@ -83,9 +82,11 @@ extern float RENDER_DISTANCE_NEAR;
 #define RSM_MAX_BLOCKMESH_INDICES 2048
 #define RSM_MAX_PATH_NAME_LENGTH 512
 #define RSM_MAX_SHADER_INFOLOG_LENGTH 512
+#define RSM_MAX_BLOCKMESH_TEXTURETILES 8
 
 #define RSM_BIT_COLLISION (1UL << 0) /* Collidable */
 #define RSM_BIT_ROTATION (1UL << 1) /* Rotatable */
+#define RSM_BIT_FULLBLOCK (1UL << 2) /* Cull triangles if neighbors hide faces (needs to match fullblock mesh) */
 
 extern char textureBasePath[10];
 extern char textureBlockPath[8];

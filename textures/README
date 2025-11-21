@@ -1,8 +1,14 @@
 === Block texture mapping documentation ===
-Each line in blockmap.txt maps a unique block ID (starting from 0) to its block handle.
+Each line in blockmap.txt maps a unique block ID (starting from 0) to its block handles.
 Variants live on the same line and are separated by a single space character, without a terminating space.
-The handle is used to retrieve the corresponding texture files only. This is to make textures more human-readable and explicit instead of relying on knowing block IDs for each texture.
-If an identifier starts with * (star), then a corresponding item sprite is assigned to it. The sprites must be packed in their own GUI texture bundles from right to left, up to down, according to the order in blockmap.
+
+If a handle starts with *, then a corresponding item sprite is assumed to exist. The sprites must be packed in their own GUI texture bundles from right to left, up to down, according to the order their handles appear in blockmap.
+
+If a handle contains $, then the decimal number following it is taken as the number of textures that block uses. The default is 1.
+
+If a handle contains :, then the decimal number following it is taken as the metadata for that handle. The default is 0.
+
+Note that the texture tile specification ($) must come before the metadata specification (:), otherwise it will get ignored.
 
 Inside blocks/ lives two or three files per texture, named [handle].png, [handle].mesh and [handle].boundingbox.
 

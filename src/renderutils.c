@@ -59,11 +59,11 @@ GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	return programID;
 }
 
-void atlasAppend(char *meshname, int texSize, unsigned char **atlasptr, GLsizei *atlassize) {
+void atlasAppend(char *meshname, int texSizeX, int texSizeY, unsigned char **atlasptr, GLsizei *atlassize) {
 	/* Creates a texture atlas (in the texAtlasData temporary buffer)
 	 * and dynamically adjust both the buffer and atlas dimension variables. */
 
-	stbi_set_flip_vertically_on_load(1); /* Right images */
+	stbi_set_flip_vertically_on_load(1); /* Right images so Y=0 is on bottom */
 
 	int width, height, ncolorchannels;
 	unsigned char *imagedata;
@@ -75,15 +75,16 @@ void atlasAppend(char *meshname, int texSize, unsigned char **atlasptr, GLsizei 
 		exit(RSM_EXIT_NOTEXTURE);
 	}
 
-	if (width != (int) texSize || height != (int) texSize) {
-		fprintf(stderr, "Texture at %s does not match required size %u, aborting.\n", meshname, texSize);
+	if (width != (int) texSizeX || height != (int) texSizeY) {
+		fprintf(stderr, "Texture at %s does not match required size %u by %u, aborting.\n",
+				meshname, texSizeX, texSizeY);
 		exit(RSM_EXIT_BADTEXTURE);
 	}
 
 	/* Grow texture atlas by the size of the image and append it.
 	 * We can avoid storing which image maps to where by assuming a linear
-	 * strip of texSize by texSize  */
-	unsigned int texsz = texSize * texSize * 4;
+	 * strip (vertical) of texSize by texSize  */
+	size_t texsz = texSizeX * texSizeY * 4;
 	*atlasptr = realloc(*atlasptr, *atlassize + texsz);
 	memcpy(*atlasptr + *atlassize, imagedata, texsz);
 	*atlassize += texsz;
@@ -126,7 +127,7 @@ void parseBlockdata(void) {
 
 	/* Iterate through ids and variants and create appropriate blockmesh templates */
 	uint64_t id, nvariants, nvariant, uid;
-	uint64_t texid, ntextures, spriteid;
+	uint64_t texid, spriteid, ntextiles;
 	Blockmesh template;
 	char **variants, *variant, *metadata;
 
@@ -136,8 +137,17 @@ void parseBlockdata(void) {
 	Vertex vertexdata; /* Scratchpad for loading raw vertex data from file */
 
 	/* Precompute number of textures to get right UV coordinate mappings */
-	for (ntextures = id = 1; id < nblocks; id++) /* Skip id 0 (only one texture ; rest are sprite placeholders */
-		ntextures += usf_scount(blockmap[id], ' ') + 1;
+	char *override;
+	uint64_t ntextures, overrides;
+	for (ntextures = id = 1; id < nblocks; id++) { /* Skip id 0 (only one texture for wiremesh */
+		/* For each $ override, add its texture tile count, then add 1 for each default handle */
+		for (overrides = 0, override = strchr(blockmap[id], '$'); override; override = strchr(override, '$')) {
+			ntextures += strtoul(++override, NULL, 10); /* Increment override here for next iteration */
+			overrides++;
+		}
+
+		ntextures += usf_scount(blockmap[id], ' ') + 1 - overrides; /* Take default declarations into account */
+	}
 
 	unsigned char *texAtlasData = NULL; /* Temporary buffer */
 	GLsizei texAtlasSize = 0; /* Buffer size in bytes */
@@ -154,12 +164,13 @@ void parseBlockdata(void) {
 		/* calloc to avoid having uninitialized data in no-collision blocks */
 		boundingboxes[id] = calloc(nvariants, sizeof(float [6]));
 
-		for (nvariant = 0; nvariant < nvariants; nvariant++, texid++) {
+		for (nvariant = 0; nvariant < nvariants; nvariant++, texid += ntextiles) {
 			uid = ASUID(id, nvariant); /* Unique id:variant identifier */
 
 			memset(&template, 0, sizeof(Blockmesh)); /* Reset template for this UID */
 			variant = variants[nvariant];
 
+			/* Find all block declaration parameters (*, :, $) */
 			if (variant[0] == '*') {
 				spriteids[id][nvariant] = spriteid++; /* To get sprite from specific identifier (id+variant) */
 				variant++;
@@ -167,27 +178,34 @@ void parseBlockdata(void) {
 
 			if ((metadata = strchr(variant, ':'))) { /* Block has default metadata */
 				*metadata++ = '\0'; /* Cut name here */
-				usf_inthmput(datamap, uid, USFDATAU(atoi(metadata))); /* O.K. as illegal int returns 0 */
+				usf_inthmput(datamap, uid, USFDATAU(strtoul(metadata, NULL, 10)));
 			}
 
-			/* Log it into namemap for future reference */
+			if ((metadata = strchr(variant, '$'))) { /* Texture is bigger than one image */
+				*metadata++ = '\0';
+				if ((ntextiles = strtoul(metadata, NULL, 10)) > RSM_MAX_BLOCKMESH_TEXTURETILES) {
+					fprintf(stderr, "Block %lu variant %lu exceeds maximum texture tile count at %lu > %u, "
+							"aborting.\n", id, nvariant, ntextiles, RSM_MAX_BLOCKMESH_TEXTURETILES);
+					exit(RSM_EXIT_EXCBUF);
+				}
+			} else ntextiles = 1; /* One texture tile used */
+
+			/* Log only the handle into namemap for future reference */
 			usf_strhmput(namemap, variant, USFDATAU(uid));
 
 			/* Allow for SPRITE_PLACEHOLDERs in blockmap not taking space in the atlas */
 			if (id == 0 && nvariant) {
-				texid--; /* OK since not air ; nvariant isn't 0 so texid is at least 1 */
+				ntextiles = 0; /* Not allocating a texture tile for this placeholder */
 				continue;
 			}
 
 			/* If it exists, will parse this block's bounding box to boundingboxes */
 			parseBoundingBox(variant, id, nvariant);
 
-			/* TODO: permit multiple textures per variant with some form like $[num]variantname and
-			 * out-of-bounds UV values */
-
 			/* Append texture for this mesh to the atlas */
 			pathcat(meshtexturepath, 3, texMeshPath, variant, textureFormatExtension);
-			atlasAppend(meshtexturepath, RSM_BLOCK_TEXTURE_SIZE_PIXELS, &texAtlasData, &texAtlasSize);
+			atlasAppend(meshtexturepath, RSM_BLOCK_TEXTURE_SIZE_PIXELS,
+					RSM_BLOCK_TEXTURE_SIZE_PIXELS * ntextiles, &texAtlasData, &texAtlasSize);
 
 			/* Now build the template using raw mesh data from the text file */
 			pathcat(meshdatapath, 3, texMeshPath, variant, meshFormatExtension);
@@ -224,7 +242,7 @@ void parseBlockdata(void) {
 				template.INDEXSECTION = realloc(template.INDEXSECTION, \
 						(template.count[COUNTSECTION] + nindices) * sizeof(unsigned int)); \
 				for (n = 0; n < nindices; n++) \
-					template.INDEXSECTION[template.count[COUNTSECTION] + n] = atof(indices[n]); \
+					template.INDEXSECTION[template.count[COUNTSECTION] + n] = strtof(indices[n], NULL); \
 				template.count[COUNTSECTION] += nindices; \
 				free(indices);
 					case 'i':

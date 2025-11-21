@@ -92,6 +92,44 @@ void remeshChunk(uint64_t chunkindex) {
 				getBlockmesh(&blockmesh, block.id, block.variant, block.rotation,
 						x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
 
+				/* For fullblock (must be all opaque) culling, meshdata must be four vertices per face and
+				 * respect the order : front, left, back, right, top, bottom */
+				if (block.metadata & RSM_BIT_FULLBLOCK) { /* Cull faces depending on neighbors */
+					i = 0; /* Valid faces processed */
+					static float culled[4 * 8 * 6]; /* Scratchpad buffer for valid faces */
+
+					/* Checks the block at X, Y, Z, and cull vertices at index FACE if it is a FULLBLOCK. */
+#define CHECKFACE(X, Y, Z, FACE) \
+					/* If block is unobstructed or on chunkborder (don't bother checking other chunks) */ \
+					if (!((X) < CHUNKSIZE && (Y) < CHUNKSIZE && (Z) < CHUNKSIZE \
+							&& ((*chunk)[X][Y][Z].metadata & RSM_BIT_FULLBLOCK))) { \
+						\
+						memcpy(culled + 32 * i, blockmesh.opaqueVertices + 32 * (FACE-1), 32 * sizeof(float)); \
+						i++; \
+					}
+
+					/* Find new face after rotation (arrays defined NORTH, WEST, SOUTH, EAST, UP, DOWN) */
+					static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
+					static const Rotation FROMWEST[7] = { WEST, WEST, NORTH, EAST, SOUTH, WEST, WEST };
+					static const Rotation FROMSOUTH[7] = { SOUTH, SOUTH, WEST, NORTH, EAST, UP, DOWN };
+					static const Rotation FROMEAST[7] = { EAST, EAST, SOUTH, WEST, NORTH, EAST, EAST };
+					static const Rotation FROMUP[7] = { UP, UP, UP, UP, UP, NORTH, SOUTH };
+					static const Rotation FROMDOWN[7] = { DOWN, DOWN, DOWN, DOWN, DOWN, SOUTH, NORTH };
+
+					/* Note that the rotation is decremented by 1 in CHECKFACE to yield true face index */
+					CHECKFACE(a, b, c + 1, FROMNORTH[block.rotation]);
+					CHECKFACE(a + 1, b, c, FROMWEST[block.rotation]);
+					CHECKFACE(a, b, c - 1, FROMSOUTH[block.rotation]);
+					CHECKFACE(a - 1, b, c, FROMEAST[block.rotation]);
+					CHECKFACE(a, b + 1, c, FROMUP[block.rotation]);
+					CHECKFACE(a, b - 1, c, FROMDOWN[block.rotation]);
+					memcpy(blockmesh.opaqueVertices, culled, 32 * i * sizeof(float));
+
+					/* Adjust index count. O.K. since indices are agnostic of vertices and all triangles in the
+					 * fullblock mesh are rendered according to the same pattern */
+					blockmesh.count[2] = 6 * i;
+				}
+
 				/* Adjust indices with running total. All vertices assumed to be used at least once */
 				for (i = 0; i < blockmesh.count[2]; i++) blockmesh.opaqueIndices[i] += runningOpaqueIndexOffset;
 				for (i = 0; i < blockmesh.count[3]; i++) blockmesh.transIndices[i] += runningTransIndexOffset;
@@ -247,10 +285,10 @@ void rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter) {
 			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), UPVECTOR);
 			break;
 		case UP:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), RIGHTVECTOR);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), RIGHTVECTOR);
 			break;
 		case DOWN:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), RIGHTVECTOR);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), RIGHTVECTOR);
 			break;
 		case NONE:
 		case NORTH:

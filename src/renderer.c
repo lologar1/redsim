@@ -175,6 +175,7 @@ void render(GLFWwindow *window) {
 
 	glBlendEquation(GL_FUNC_ADD);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glFrontFace(GL_CW);
 
 	/* Rendering variables */
 	float time, lastTime = 0.0f;
