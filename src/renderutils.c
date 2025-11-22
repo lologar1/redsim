@@ -6,8 +6,9 @@ float (**boundingboxes)[6];
 GLuint textureAtlas;
 uint64_t **spriteids; /* Note that getting a sprite from an item which doesn't have one will yield the first. */
 
-/* Shader stuff */
+size_t ov_bufsiz, tv_bufsiz, oi_bufsiz, ti_bufsiz; /* Remeshing buffer sizes */
 
+/* Shader stuff */
 GLuint createShader(GLenum shaderType, char *shaderSource) {
 	/* Creates a shader from source shaderSource of type shaderType and compiles
 	 * it, logging errors to stderr and returning the shader ID */
@@ -62,7 +63,6 @@ GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 void atlasAppend(char *meshname, int texSizeX, int texSizeY, unsigned char **atlasptr, GLsizei *atlassize) {
 	/* Creates a texture atlas (in the texAtlasData temporary buffer)
 	 * and dynamically adjust both the buffer and atlas dimension variables. */
-
 	stbi_set_flip_vertically_on_load(1); /* Right images so Y=0 is on bottom */
 
 	int width, height, ncolorchannels;
@@ -75,16 +75,16 @@ void atlasAppend(char *meshname, int texSizeX, int texSizeY, unsigned char **atl
 		exit(RSM_EXIT_NOTEXTURE);
 	}
 
-	if (width != (int) texSizeX || height != (int) texSizeY) {
+	if (width != texSizeX || height != texSizeY) {
 		fprintf(stderr, "Texture at %s does not match required size %u by %u, aborting.\n",
 				meshname, texSizeX, texSizeY);
 		exit(RSM_EXIT_BADTEXTURE);
 	}
 
-	/* Grow texture atlas by the size of the image and append it.
-	 * We can avoid storing which image maps to where by assuming a linear
-	 * strip (vertical) of texSize by texSize  */
+	/* Grow texture atlas by the size of the image (+ padding) and append it. We can avoid storing which
+	 * image maps to where by assuming a linear strip (vertical) of texSize by texSize  */
 	size_t texsz = texSizeX * texSizeY * 4;
+
 	*atlasptr = realloc(*atlasptr, *atlassize + texsz);
 	memcpy(*atlasptr + *atlassize, imagedata, texsz);
 	*atlassize += texsz;
@@ -92,7 +92,6 @@ void atlasAppend(char *meshname, int texSizeX, int texSizeY, unsigned char **atl
 	stbi_image_free(imagedata);
 }
 
-size_t max_ov_size, max_tv_size, max_oi_size, max_ti_size;
 void parseBlockdata(void) {
 	/* Create a texture atlas (and set it to textureAtlas, which is used by the renderer) which
 	 * corresponds neatly with adjusted coordinates of meshes, which should then be set as templates
@@ -223,14 +222,17 @@ void parseBlockdata(void) {
 
 				switch (vectordata[0]) {
 #define ATLASADJUST(y) ((y * RSM_BLOCK_TEXTURE_SIZE_PIXELS + RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid) \
-					/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS))
+		/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS))
+
+#define CLAMP(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
+
 #define VERTEXADJUST(COUNTSECTION, VERTEXSECTION) \
-				loadVertexData(vertexdata, vectordata + 1); \
-				vertexdata[7] = ATLASADJUST(vertexdata[7]); \
-				template.VERTEXSECTION = realloc(template.VERTEXSECTION, \
-						(template.count[COUNTSECTION] + (sizeof(Vertex)/sizeof(float))) * sizeof(float)); \
-				memcpy(template.VERTEXSECTION + template.count[COUNTSECTION], vertexdata, sizeof(Vertex)); \
-				template.count[COUNTSECTION] += sizeof(Vertex)/sizeof(float);
+		loadVertexData(vertexdata, vectordata + 1); \
+		vertexdata[7] = ATLASADJUST(CLAMP(vertexdata[7], RSM_TEXTURE_PADDING, 1 - RSM_TEXTURE_PADDING)); \
+		template.VERTEXSECTION = realloc(template.VERTEXSECTION, \
+				(template.count[COUNTSECTION] + (sizeof(Vertex)/sizeof(float))) * sizeof(float)); \
+		memcpy(template.VERTEXSECTION + template.count[COUNTSECTION], vertexdata, sizeof(Vertex)); \
+		template.count[COUNTSECTION] += sizeof(Vertex)/sizeof(float);
 					case 'o':
 						VERTEXADJUST(0, opaqueVertices);
 						break;
@@ -238,13 +240,13 @@ void parseBlockdata(void) {
 						VERTEXADJUST(1, transVertices);
 						break;
 #define INDEXADJUST(COUNTSECTION, INDEXSECTION) \
-				indices = usf_scsplit(vectordata + 1, ' ', &nindices); \
-				template.INDEXSECTION = realloc(template.INDEXSECTION, \
-						(template.count[COUNTSECTION] + nindices) * sizeof(unsigned int)); \
-				for (n = 0; n < nindices; n++) \
-					template.INDEXSECTION[template.count[COUNTSECTION] + n] = strtof(indices[n], NULL); \
-				template.count[COUNTSECTION] += nindices; \
-				free(indices);
+		indices = usf_scsplit(vectordata + 1, ' ', &nindices); \
+		template.INDEXSECTION = realloc(template.INDEXSECTION, \
+				(template.count[COUNTSECTION] + nindices) * sizeof(unsigned int)); \
+		for (n = 0; n < nindices; n++) \
+			template.INDEXSECTION[template.count[COUNTSECTION] + n] = strtof(indices[n], NULL); \
+		template.count[COUNTSECTION] += nindices; \
+		free(indices);
 					case 'i':
 						INDEXADJUST(2, opaqueIndices);
 						break;
@@ -275,8 +277,8 @@ void parseBlockdata(void) {
 			}
 
 			/* Adjust maximum sizes for buffer allocation */
-			max_ov_size = MAX(max_ov_size, template.count[0]); max_tv_size = MAX(max_tv_size, template.count[1]);
-			max_oi_size = MAX(max_oi_size, template.count[2]); max_ti_size = MAX(max_ti_size, template.count[3]);
+			ov_bufsiz = MAX(ov_bufsiz, template.count[0]); tv_bufsiz = MAX(tv_bufsiz, template.count[1]);
+			oi_bufsiz = MAX(oi_bufsiz, template.count[2]); ti_bufsiz = MAX(ti_bufsiz, template.count[3]);
 
 			usf_freetxt(meshdata, meshdatalen);
 
@@ -287,27 +289,22 @@ void parseBlockdata(void) {
 		free(variants); /* Alloc'd by usf_scsplit so no new allocations for substrings */
 	}
 
-	/* Allocate vertex/index buffers for chunk remeshing, done once */
-	max_ov_size *= sizeof(float) * CHUNKVOLUME; max_tv_size *= sizeof(float) * CHUNKVOLUME;
-	max_oi_size *= sizeof(unsigned int) * CHUNKVOLUME; max_ti_size *= sizeof(unsigned int) * CHUNKVOLUME;
-
-	/* Scratchpad buffers used by remeshing */
-	opaqueVertexBuffer = malloc(max_ov_size); transVertexBuffer = malloc(max_tv_size);
-	opaqueIndexBuffer = malloc(max_oi_size); transIndexBuffer = malloc(max_ti_size);
+	/* Size in bytes of each remeshing scratchpad buffer (to alloc buffers in rawmesh) */
+	ov_bufsiz *= sizeof(float) * CHUNKVOLUME; tv_bufsiz *= sizeof(float) * CHUNKVOLUME;
+	oi_bufsiz *= sizeof(unsigned int) * CHUNKVOLUME; ti_bufsiz *= sizeof(unsigned int) * CHUNKVOLUME;
 
 	fprintf(stderr, "Scratchpad buffer sizes for remeshing (vertex opaque/trans, index opaque/trans): "
 			"%.2fMB, %.2fMB, %.2fMB, %.2fMB\n",
-			max_ov_size/1e6, max_tv_size/1e6, max_oi_size/1e6, max_ti_size/1e6);
+			ov_bufsiz/1e6, tv_bufsiz/1e6, oi_bufsiz/1e6, ti_bufsiz/1e6);
 
 	/* Generate and bind atlas to OpenGL renderer */
 	glGenTextures(1, &textureAtlas);
 	glBindTexture(GL_TEXTURE_2D, textureAtlas);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RSM_BLOCK_TEXTURE_SIZE_PIXELS, texAtlasSize	/ (4 * RSM_BLOCK_TEXTURE_SIZE_PIXELS), 0, GL_RGBA, GL_UNSIGNED_BYTE, texAtlasData);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glGenerateMipmap(GL_TEXTURE_2D);
 
 	/* Cleanup */
 	free(texAtlasData);

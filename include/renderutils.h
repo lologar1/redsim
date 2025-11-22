@@ -15,6 +15,8 @@ extern float (**boundingboxes)[6];
 extern GLuint textureAtlas;
 extern uint64_t **spriteids;
 
+extern size_t ov_bufsiz, tv_bufsiz, oi_bufsiz, ti_bufsiz;
+
 typedef float Vertex[8];
 
 GLuint createShader(GLenum shaderType, char *shaderSource);

@@ -2,9 +2,11 @@
 #define REDSIM_H
 
 #include <math.h>
+#include <pthread.h>
 #include <cglm/cglm.h>
 #include "chunkutils.h"
 #include "usfhashmap.h"
+#include "usfqueue.h"
 #include "rsmlayout.h"
 #include "userio.h"
 #include "ret.h"
@@ -35,5 +37,6 @@ uint64_t blockOffsetConvertFloat(float absoluteComponent);
 void initWiremesh(void);
 void rsm_updateWiremesh(void);
 void rsm_interact(void);
+void rsm_checkMeshes(void);
 
 #endif

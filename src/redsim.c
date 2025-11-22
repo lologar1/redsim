@@ -144,8 +144,8 @@ int64_t chunkOffsetConvertFloat(float absoluteComponent) {
 uint64_t blockOffsetConvertFloat(float absoluteComponent) {
 	/* Converts a float absoluteComponent to its block offset (within a chunk) equivalent */
 	return absoluteComponent < 0 ?
-		CHUNKSIZE - (uint64_t) fabsf(floorf(absoluteComponent)) % CHUNKSIZE :
-		(uint64_t) fabsf(absoluteComponent) % CHUNKSIZE;
+		CHUNKSIZE - 1 - ((uint64_t) -floorf(absoluteComponent) - 1) % CHUNKSIZE :
+		(uint64_t) absoluteComponent % CHUNKSIZE;
 }
 
 void initWiremesh(void) {
@@ -308,12 +308,81 @@ void rsm_interact(void) {
 			else lookingAdjacent->rotation = SOUTH;
 		} else lookingAdjacent->rotation = NONE;
 
-		remeshChunk(lookingChunkIndex);
 		remeshChunk(lookingAdjChunkIndex);
+		remeshChunk(lookingChunkIndex);
 	}
 
 	if (RSM_MIDDLECLICK && lookingAt->id) { /* Pipette tool; don't consume as it only modifies a hotbar slot */
 		hotbar[hotbarIndex][hotslotIndex][0] = lookingAt->id;
 		hotbar[hotbarIndex][hotslotIndex][1] = lookingAt->variant;
 	}
+}
+
+void rsm_checkMeshes(void) {
+	/* Check if there are new meshes to be sent to the GPU */
+	Rawmesh *rawmesh;
+	uint64_t chunkindex;
+	GLuint *mesh;
+	GLint VBO;
+
+	pthread_mutex_lock(&meshlock);
+
+	while ((rawmesh = (Rawmesh *) usf_dequeue(meshqueue).p)) { /* For every new mesh this frame */
+		chunkindex = rawmesh->chunkindex;
+		mesh = (GLuint *) usf_inthmget(meshmap, chunkindex).p;
+
+		if (mesh == NULL) {
+			/* Initialize GL buffers for the mesh */
+			GLuint opaqueVAO, transVAO, opaqueVBO, transVBO, opaqueEBO, transEBO;
+			mesh = malloc(4 * sizeof(GLuint));
+
+			/* Generate buffers */
+			glGenVertexArrays(1, &opaqueVAO); glGenVertexArrays(1, &transVAO);
+			glGenBuffers(1, &opaqueVBO); glGenBuffers(1, &transVBO);
+			glGenBuffers(1, &opaqueEBO); glGenBuffers(1, &transEBO);
+
+			/* Set attributes */
+			glBindVertexArray(opaqueVAO);
+			glBindBuffer(GL_ARRAY_BUFFER, opaqueVBO); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, opaqueEBO);
+			glEnableVertexAttribArray(0); /* Vertex position */
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
+			glEnableVertexAttribArray(1); /* Normals */
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
+			glEnableVertexAttribArray(2); /* Texture mappings */
+			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
+			glBindVertexArray(transVAO);
+			glBindBuffer(GL_ARRAY_BUFFER, transVBO); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, transEBO);
+			glEnableVertexAttribArray(0); /* Vertex position */
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
+			glEnableVertexAttribArray(1); /* Normals */
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
+			glEnableVertexAttribArray(2); /* Texture mappings */
+			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
+
+			glBindVertexArray(0); /* Unbind to avoid modification */
+			mesh[0] = opaqueVAO; mesh[1] = transVAO;
+			usf_inthmput(meshmap, chunkindex, USFDATAP(mesh)); /* Set mesh */
+		}
+
+		glBindVertexArray(mesh[0]); /* Opaque */
+		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO); /* Query VBO */
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, rawmesh->nOV*sizeof(float), rawmesh->opaqueVertexBuffer, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, rawmesh->nOI * sizeof(unsigned int), rawmesh->opaqueIndexBuffer, GL_DYNAMIC_DRAW);
+		glBindVertexArray(mesh[1]); /* Trans */
+		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, rawmesh->nTV * sizeof(float), rawmesh->transVertexBuffer, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, rawmesh->nTI * sizeof(unsigned int), rawmesh->transIndexBuffer, GL_DYNAMIC_DRAW);
+		glBindVertexArray(0); /* Unbind */
+
+		/* Set mesh element counts */
+		mesh[2] = rawmesh->nOI; mesh[3] = rawmesh->nTI;
+
+		/* Free scratchpad buffers */
+		free(rawmesh->opaqueVertexBuffer); /* All scratchpads stem from this one allocation */
+		free(rawmesh);
+	}
+
+	pthread_mutex_unlock(&meshlock);
 }

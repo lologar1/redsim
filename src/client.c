@@ -12,6 +12,9 @@ usf_hashmap *meshmap; /* Maps XYZ (21 bits) to corresponding chunk mesh (array o
 GLuint **meshes; /* Stores current meshmap pointers for rendering */
 int nmesh; /* How many meshes to render */
 
+pthread_mutex_t meshlock;
+usf_queue *meshqueue;
+
 void client_init(void) {
 	fprintf(stderr, "Initializing client...\n");
 
@@ -33,6 +36,10 @@ void client_init(void) {
 
 	/* Allocate buffers for wiremesh */
 	initWiremesh();
+
+	/* Allocate stuff for asynchronous remeshing */
+	pthread_mutex_init(&meshlock, NULL); /* TODO: learn what the attributes here do */
+	meshqueue = usf_newqueue();
 
 	/* Calculate player bounding box offsets to check for block collision.
 	 * Cast and add 2 to simulate ceil and account for last corner */
@@ -228,6 +235,7 @@ void client_frameEvent(GLFWwindow *window) {
 
 	rsm_move(position);
 	rsm_updateWiremesh();
+	rsm_checkMeshes();
 }
 
 void client_getOrientationVector(vec3 ori) {

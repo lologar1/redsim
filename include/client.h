@@ -2,6 +2,7 @@
 #define CLIENT_H
 
 #include <glad/glad.h>
+#include <pthread.h>
 #include <math.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
@@ -10,13 +11,20 @@
 #include "userio.h"
 #include "renderutils.h"
 #include "gui.h"
+#include "usfhashmap.h"
+#include "usfqueue.h"
 
 /* Client procedures */
 extern float pitch, yaw;
 extern vec3 orientation, position;
+
 extern usf_hashmap *chunkmap, *meshmap;
+
 extern GLuint **meshes;
 extern int nmesh;
+
+extern pthread_mutex_t meshlock;
+extern usf_queue *meshqueue;
 
 void client_init(void);
 

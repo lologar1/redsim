@@ -1,11 +1,13 @@
 #ifndef CHUNKUTILS_H
 #define CHUNKUTILS_H
 
+#include <pthread.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
 #include <stdarg.h>
 #include "usfhashmap.h"
+#include "usfqueue.h"
 #include "rsmlayout.h"
 #include "client.h"
 
@@ -50,11 +52,19 @@ typedef struct {
 
 typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];
 
+typedef struct Rawmesh { /* Raw data remeshed asynchronously, passed to main thread to dump in GL buffers */
+	uint64_t chunkindex;
+	float *opaqueVertexBuffer, *transVertexBuffer;
+	unsigned int *opaqueIndexBuffer, *transIndexBuffer;
+	unsigned int nOV, nTV, nOI, nTI;
+} Rawmesh;
+
 /* Buffers serving as remeshing scratchpad ; alloc'd once in parseBlockdata */
 extern float *opaqueVertexBuffer, *transVertexBuffer;
 extern unsigned int *opaqueIndexBuffer, *transIndexBuffer;
 extern Blockmesh **blockmeshes;
 
+void *pushRawmesh(void *chunkindexptr);
 void remeshChunk(uint64_t chunkindex);
 void updateMeshlist(void);
 void generateMeshlist(void);

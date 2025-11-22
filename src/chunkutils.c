@@ -5,79 +5,56 @@ Blockmesh **blockmeshes; /* Populated by parseBlockdata */
 /* Temporary buffers for vertices/indices scratchpad */
 float *opaqueVertexBuffer, *transVertexBuffer;
 unsigned int *opaqueIndexBuffer, *transIndexBuffer;
-void remeshChunk(uint64_t chunkindex) {
-	/* Generate appropriate mesh array (VAO) for a given chunk and set it in meshmap */
+
+void *pushRawmesh(void *chunkindexptr) {
+	/* Push a new rawmesh to meshqueue for transfer to the GPU. Called asynchronously */
+	uint64_t chunkindex;
 	int64_t x, y, z;
-	GLuint *mesh, opaqueVAO, transVAO, opaqueVBO, transVBO, opaqueEBO, transEBO;
 	unsigned int a, b, c;
 	Chunkdata *chunk;
 	Blockdata block;
 
-	chunk = (Chunkdata *) usf_inthmget(chunkmap, chunkindex).p;
+	chunkindex = (* (uint64_t *) chunkindexptr);
 
+	/* Get chunk index */
 	x = SIGNED21CAST64(chunkindex >> 42);
 	y = SIGNED21CAST64((chunkindex >> 21) & CHUNKCOORDMASK);
 	z = SIGNED21CAST64(chunkindex & CHUNKCOORDMASK);
-	if (chunk == NULL) {
-		fprintf(stderr, "Chunk at %lu %lu %lu does not exist ; aborting.\n", x, y, z);
+
+	if ((chunk = (Chunkdata *) usf_inthmget(chunkmap, chunkindex).p) == NULL) {
+		fprintf(stderr, "Chunk at %lu %lu %lu does not exist, aborting.\n", x, y, z);
 		exit(RSM_EXIT_NOCHUNK);
 	}
 
-	mesh = (GLuint *) usf_inthmget(meshmap, chunkindex).p;
+	float culled[4 * 8 * 6]; /* Face culling buffer and rotation information */
+	static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
+	static const Rotation FROMWEST[7] = { WEST, WEST, NORTH, EAST, SOUTH, WEST, WEST };
+	static const Rotation FROMSOUTH[7] = { SOUTH, SOUTH, WEST, NORTH, EAST, UP, DOWN };
+	static const Rotation FROMEAST[7] = { EAST, EAST, SOUTH, WEST, NORTH, EAST, EAST };
+	static const Rotation FROMUP[7] = { UP, UP, UP, UP, UP, NORTH, SOUTH };
+	static const Rotation FROMDOWN[7] = { DOWN, DOWN, DOWN, DOWN, DOWN, SOUTH, NORTH };
 
-	if (mesh == NULL) {
-		/* No mesh is generated for this chunk; initialize GL structures */
-		mesh = (GLuint *) malloc(4 * sizeof(GLuint));
-
-		/* Generate buffers */
-		glGenVertexArrays(1, &opaqueVAO);
-		glGenVertexArrays(1, &transVAO);
-		glGenBuffers(1, &opaqueVBO);
-		glGenBuffers(1, &transVBO);
-		glGenBuffers(1, &opaqueEBO);
-		glGenBuffers(1, &transEBO);
-
-		/* Set attributes */
-		glBindVertexArray(opaqueVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, opaqueVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, opaqueEBO);
-		glEnableVertexAttribArray(0); /* Vertex position */
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
-		glEnableVertexAttribArray(1); /* Normals */
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
-		glEnableVertexAttribArray(2); /* Texture mappings */
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
-
-		glBindVertexArray(transVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, transVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, transEBO);
-		glEnableVertexAttribArray(0); /* Vertex position */
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
-		glEnableVertexAttribArray(1); /* Normals */
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
-		glEnableVertexAttribArray(2); /* Texture mappings */
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
-
-		glBindVertexArray(0); /* Unbind to avoid modification */
-		mesh[0] = opaqueVAO;
-		mesh[1] = transVAO;
-		usf_inthmput(meshmap, chunkindex, USFDATAP(mesh)); /* Set mesh */
-	}
-
-	/* Scratchpad for getting correctly-translated blockmeshes */
-	static float ov_buf[RSM_MAX_BLOCKMESH_VERTICES], tv_buf[RSM_MAX_BLOCKMESH_VERTICES];
-	static unsigned int oi_buf[RSM_MAX_BLOCKMESH_INDICES], ti_buf[RSM_MAX_BLOCKMESH_INDICES];
-	static Blockmesh blockmesh = {
+	/* Template blockmesh */
+	float ov_buf[RSM_MAX_BLOCKMESH_VERTICES], tv_buf[RSM_MAX_BLOCKMESH_VERTICES];
+	unsigned int oi_buf[RSM_MAX_BLOCKMESH_INDICES], ti_buf[RSM_MAX_BLOCKMESH_INDICES];
+	Blockmesh blockmesh = {
 		.opaqueVertices = ov_buf, .transVertices = tv_buf,
 		.opaqueIndices = oi_buf, .transIndices = ti_buf
 	};
 
-	/* Adjust indices for each blockmesh added */
+	/* Index offsets for each blockmesh added to the rawmesh */
 	unsigned int runningOpaqueIndexOffset, runningTransIndexOffset, i;
 	runningOpaqueIndexOffset = runningTransIndexOffset = 0;
 
-	float *ov_bufptr = opaqueVertexBuffer, *tv_bufptr = transVertexBuffer;
-	unsigned int *oi_bufptr = opaqueIndexBuffer, *ti_bufptr = transIndexBuffer;
+	/* Scratchpad buffers for the entire mesh. Allocating maximum buffer size to avoid dynamic handling, as
+	 * although it is a large allocation, it is always the same size, avoiding fragmentation */
+	Rawmesh *rawmesh = malloc(sizeof(Rawmesh));
+	char *buffers = malloc(ov_bufsiz + tv_bufsiz + oi_bufsiz + ti_bufsiz); /* char for ptr arithmetic */
+	rawmesh->chunkindex = chunkindex;
+	float *ov_bufptr = rawmesh->opaqueVertexBuffer = (float *) buffers;
+	float *tv_bufptr = rawmesh->transVertexBuffer = (float *) (buffers += ov_bufsiz);
+	unsigned int *oi_bufptr = rawmesh->opaqueIndexBuffer = (unsigned int *) (buffers += tv_bufsiz);
+	unsigned int *ti_bufptr = rawmesh->transIndexBuffer = (unsigned int *) (buffers += oi_bufsiz);
 
 	for (a = 0; a < CHUNKSIZE; a++) {
 		for (b = 0; b < CHUNKSIZE; b++) {
@@ -96,7 +73,6 @@ void remeshChunk(uint64_t chunkindex) {
 				 * respect the order : front, left, back, right, top, bottom */
 				if (block.metadata & RSM_BIT_FULLBLOCK) { /* Cull faces depending on neighbors */
 					i = 0; /* Valid faces processed */
-					static float culled[4 * 8 * 6]; /* Scratchpad buffer for valid faces */
 
 					/* Checks the block at X, Y, Z, and cull vertices at index FACE if it is a FULLBLOCK. */
 #define CHECKFACE(X, Y, Z, FACE) \
@@ -107,14 +83,6 @@ void remeshChunk(uint64_t chunkindex) {
 						memcpy(culled + 32 * i, blockmesh.opaqueVertices + 32 * (FACE-1), 32 * sizeof(float)); \
 						i++; \
 					}
-
-					/* Find new face after rotation (arrays defined NORTH, WEST, SOUTH, EAST, UP, DOWN) */
-					static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
-					static const Rotation FROMWEST[7] = { WEST, WEST, NORTH, EAST, SOUTH, WEST, WEST };
-					static const Rotation FROMSOUTH[7] = { SOUTH, SOUTH, WEST, NORTH, EAST, UP, DOWN };
-					static const Rotation FROMEAST[7] = { EAST, EAST, SOUTH, WEST, NORTH, EAST, EAST };
-					static const Rotation FROMUP[7] = { UP, UP, UP, UP, UP, NORTH, SOUTH };
-					static const Rotation FROMDOWN[7] = { DOWN, DOWN, DOWN, DOWN, DOWN, SOUTH, NORTH };
 
 					/* Note that the rotation is decremented by 1 in CHECKFACE to yield true face index */
 					CHECKFACE(a, b, c + 1, FROMNORTH[block.rotation]);
@@ -136,8 +104,7 @@ void remeshChunk(uint64_t chunkindex) {
 				runningOpaqueIndexOffset += blockmesh.count[0] / (sizeof(Vertex) / sizeof(float));
 				runningTransIndexOffset += blockmesh.count[1] / (sizeof(Vertex) / sizeof(float));
 
-				/* Copy to scratchpad while updating pointers */
-				/* TODO: cull if block is present on one side */
+				/* Copy to rawmesh while updating pointers */
 				memcpy(ov_bufptr, blockmesh.opaqueVertices, blockmesh.count[0] * sizeof(float));
 				memcpy(tv_bufptr, blockmesh.transVertices, blockmesh.count[1] * sizeof(float));
 				memcpy(oi_bufptr, blockmesh.opaqueIndices, blockmesh.count[2] * sizeof(unsigned int));
@@ -150,26 +117,38 @@ void remeshChunk(uint64_t chunkindex) {
 		}
 	}
 
-	unsigned int nOV = ov_bufptr - opaqueVertexBuffer, nTV = tv_bufptr - transVertexBuffer,
-				 nOI = oi_bufptr - opaqueIndexBuffer, nTI = ti_bufptr - transIndexBuffer;
+	/* Set member counts */
+	rawmesh->nOV = ov_bufptr - rawmesh->opaqueVertexBuffer;
+	rawmesh->nTV = tv_bufptr - rawmesh->transVertexBuffer;
+	rawmesh->nOI = oi_bufptr - rawmesh->opaqueIndexBuffer;
+	rawmesh->nTI = ti_bufptr - rawmesh->transIndexBuffer;
 
-	GLint buffer; /* VAOs don't store VBO bindings, but only attributes. This is why we have to query it manually */
-	glBindVertexArray(mesh[0]); /* Opaque VAO */
-	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buffer); /* Query buffer for this VAO */
-	glBindBuffer(GL_ARRAY_BUFFER, buffer); /* We need the VBO to be able to copy vertex data */
-	glBufferData(GL_ARRAY_BUFFER, nOV * sizeof(float), opaqueVertexBuffer, GL_DYNAMIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, nOI * sizeof(unsigned int), opaqueIndexBuffer, GL_DYNAMIC_DRAW);
+	pthread_mutex_lock(&meshlock);
+	usf_enqueue(meshqueue, USFDATAP(rawmesh));
+	pthread_mutex_unlock(&meshlock);
 
-	glBindVertexArray(mesh[1]); /* Trans VAO */
-	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, nTV * sizeof(float), transVertexBuffer, GL_DYNAMIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, nTI * sizeof(unsigned int), transIndexBuffer, GL_DYNAMIC_DRAW);
+	free(chunkindexptr); /* Cleanup argument; it was allocated to allow for thread detachment from callee */
+	return NULL;
+}
 
-	glBindVertexArray(0); /* Unbind when done */
+void remeshChunk(uint64_t chunkindex) {
+	/* Asynchronously pushes a new rawmesh to be sent to the GPU */
+	int rc;
+	pthread_t id;
+	uint64_t *arg;
 
-	/* Set number of elements to draw for this chunk */
-	mesh[2] = nOI; mesh[3] = nTI;
+	arg = malloc(sizeof(uint64_t)); /* Allow thread to operate separately; it cleans up its argument after */
+	*arg = chunkindex;
+
+	if ((rc = pthread_create(&id, NULL, pushRawmesh, arg))) {
+		fprintf(stderr, "Error creating thread (async remesh): error code %d, aborting.\n", rc);
+		exit(RSM_EXIT_THREADFAIL);
+	}
+
+	if ((rc = pthread_detach(id))) { /* Since thread is detached, cleanup is automatic */
+		fprintf(stderr, "Error detaching thread (async remesh): error code %d, aborting.\n", rc);
+		exit(RSM_EXIT_THREADFAIL);
+	}
 }
 
 void updateMeshlist(void) {
