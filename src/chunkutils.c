@@ -2,10 +2,6 @@
 
 Blockmesh **blockmeshes; /* Populated by parseBlockdata */
 
-/* Temporary buffers for vertices/indices scratchpad */
-float *opaqueVertexBuffer, *transVertexBuffer;
-unsigned int *opaqueIndexBuffer, *transIndexBuffer;
-
 void *pushRawmesh(void *chunkindexptr) {
 	/* Push a new rawmesh to meshqueue for transfer to the GPU. Called asynchronously */
 	uint64_t chunkindex;
@@ -131,7 +127,7 @@ void *pushRawmesh(void *chunkindexptr) {
 	return NULL;
 }
 
-void remeshChunk(uint64_t chunkindex) {
+void async_remeshChunk(uint64_t chunkindex) {
 	/* Asynchronously pushes a new rawmesh to be sent to the GPU */
 	int rc;
 	pthread_t id;

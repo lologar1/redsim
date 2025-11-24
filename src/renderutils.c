@@ -100,11 +100,11 @@ void parseBlockdata(void) {
 
 	/* Allocs one byte extra since there are two \0 chars, but that's fine.
 	 * Concatenate base path (textures/) with subpaths */
-	char texMeshPath[sizeof(textureBasePath) + sizeof(textureBlockPath)];
-	char blockmapPath[sizeof(textureBasePath) + sizeof(textureBlockmapPath)];
+	char texMeshPath[sizeof(RESOURCE_BASE_PATH) + sizeof(TEXTURE_BLOCK_PATH)];
+	char blockmapPath[sizeof(RESOURCE_BASE_PATH) + sizeof(BLOCKMAP_PATH)];
 
-	strcpy(texMeshPath, textureBasePath); strcat(texMeshPath, textureBlockPath);
-	strcpy(blockmapPath, textureBasePath); strcat(blockmapPath, textureBlockmapPath);
+	strcpy(texMeshPath, RESOURCE_BASE_PATH); strcat(texMeshPath, TEXTURE_BLOCK_PATH);
+	strcpy(blockmapPath, RESOURCE_BASE_PATH); strcat(blockmapPath, BLOCKMAP_PATH);
 
 	fprintf(stderr, "Loading blockmeshes from directory %s\n", texMeshPath);
 	fprintf(stderr, "Loading blockmap from file %s\n", blockmapPath);
@@ -202,12 +202,12 @@ void parseBlockdata(void) {
 			parseBoundingBox(variant, id, nvariant);
 
 			/* Append texture for this mesh to the atlas */
-			pathcat(meshtexturepath, 3, texMeshPath, variant, textureFormatExtension);
+			pathcat(meshtexturepath, 3, texMeshPath, variant, TEXTURE_EXTENSION);
 			atlasAppend(meshtexturepath, RSM_BLOCK_TEXTURE_SIZE_PIXELS,
 					RSM_BLOCK_TEXTURE_SIZE_PIXELS * ntextiles, &texAtlasData, &texAtlasSize);
 
 			/* Now build the template using raw mesh data from the text file */
-			pathcat(meshdatapath, 3, texMeshPath, variant, meshFormatExtension);
+			pathcat(meshdatapath, 3, texMeshPath, variant, MESH_EXTENSION);
 			meshdata = usf_ftot(meshdatapath, &meshdatalen);
 			if (meshdata == NULL) {
 				fprintf(stderr, "Error reading raw mesh data at %s (Does it exist?), aborting.\n", meshdatapath);
@@ -215,20 +215,18 @@ void parseBlockdata(void) {
 			}
 
 			/* Loop through mesh data specification lines and adjust tex coords before appending to template */
-			uint64_t nindices, n;
+			uint64_t nindices, n, tileoffset; /* tileoffset used for multi-texture meshes */
 			char **indices;
-			for (d = 0; d < meshdatalen; d++) {
+			for (tileoffset = d = 0; d < meshdatalen; d++) {
 				vectordata = meshdata[d];
 
 				switch (vectordata[0]) {
-#define ATLASADJUST(y) ((y * RSM_BLOCK_TEXTURE_SIZE_PIXELS + RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid) \
+#define ATLASADJUST(y) (((y) * RSM_BLOCK_TEXTURE_SIZE_PIXELS + RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid) \
 		/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS))
-
-#define CLAMP(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
-
+#define texy vertexdata[7] /* V-pos of texture UV */
 #define VERTEXADJUST(COUNTSECTION, VERTEXSECTION) \
 		loadVertexData(vertexdata, vectordata + 1); \
-		vertexdata[7] = ATLASADJUST(CLAMP(vertexdata[7], RSM_TEXTURE_PADDING, 1 - RSM_TEXTURE_PADDING)); \
+		texy = ATLASADJUST(USF_CLAMP(texy, RSM_TEXTURE_PADDING, 1 - RSM_TEXTURE_PADDING) + tileoffset); \
 		template.VERTEXSECTION = realloc(template.VERTEXSECTION, \
 				(template.count[COUNTSECTION] + (sizeof(Vertex)/sizeof(float))) * sizeof(float)); \
 		memcpy(template.VERTEXSECTION + template.count[COUNTSECTION], vertexdata, sizeof(Vertex)); \
@@ -252,6 +250,13 @@ void parseBlockdata(void) {
 						break;
 					case 'e':
 						INDEXADJUST(3, transIndices);
+						break;
+					case '$':
+						if ((tileoffset = strtoul(vectordata + 1, NULL, 10)) > RSM_MAX_BLOCKMESH_TEXTURETILES) {
+							fprintf(stderr, "Block %lu variant %lu exceeds maximum texture tile count at %lu > "
+									"%u, aborting.\n", id, nvariant, ntextiles, RSM_MAX_BLOCKMESH_TEXTURETILES);
+							exit(RSM_EXIT_EXCBUF);
+						}
 						break;
 					case '#': /* To allow for comments. Other chars would work but would trigger error message */
 					case '\n':
@@ -301,10 +306,12 @@ void parseBlockdata(void) {
 	glGenTextures(1, &textureAtlas);
 	glBindTexture(GL_TEXTURE_2D, textureAtlas);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RSM_BLOCK_TEXTURE_SIZE_PIXELS, texAtlasSize	/ (4 * RSM_BLOCK_TEXTURE_SIZE_PIXELS), 0, GL_RGBA, GL_UNSIGNED_BYTE, texAtlasData);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
+	glGenerateMipmap(GL_TEXTURE_2D);
 
 	/* Cleanup */
 	free(texAtlasData);
@@ -327,7 +334,7 @@ void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant) {
 
 	char boundingboxpath[RSM_MAX_PATH_NAME_LENGTH];
 
-	pathcat(boundingboxpath, 4, textureBasePath, textureBlockPath, boxname, boundingboxFormatExtension);
+	pathcat(boundingboxpath, 4, RESOURCE_BASE_PATH, TEXTURE_BLOCK_PATH, boxname, BOUNDINGBOX_EXTENSION);
 
 	char *boundingbox;
 	boundingbox = usf_ftos(boundingboxpath, NULL);

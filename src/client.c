@@ -71,7 +71,7 @@ void client_init(void) {
 	/* TESTBED */
 	Blockdata b0 = {
 		.id = 1,
-		.variant = 0,
+		.variant = 4,
 		.rotation = NONE,
 		.metadata = 7
 	};
@@ -95,10 +95,10 @@ void client_init(void) {
 		.metadata = 0
 	};
 	Blockdata t3 = {
-		.id = 2,
-		.variant = 0,
+		.id = 1,
+		.variant = 6,
 		.rotation = WEST,
-		.metadata = 0
+		.metadata = 7
 	};
 	Blockdata t4 = {
 		.id = 2,
@@ -114,7 +114,7 @@ void client_init(void) {
 	};
 	Blockdata t6 = {
 		.id = 1,
-		.variant = 1,
+		.variant = 8,
 		.rotation = DOWN,
 		.metadata = 1
 	};
@@ -170,9 +170,9 @@ void client_init(void) {
 	for (int x = 0; x < CHUNKSIZE; x++) {
 		for (int y = 0; y < CHUNKSIZE; y += 2) {
 			for (int z = 0; z < CHUNKSIZE; z++) {
-				(*p0)[x][y][z] = b0;
+				(*p0)[x][y][z] = t3;
 				(*p1)[x][y][z] = b0;
-				(*p2)[x][y][z] = b0;
+				(*p2)[x][y][z] = t6;
 				(*p3)[x][y][z] = b0;
 				(*p4)[x][y][z] = b0;
 			}
@@ -184,15 +184,15 @@ void client_init(void) {
 	usf_inthmput(chunkmap, TOCHUNKINDEX(4L, 1L, 1L), USFDATAP(p3));
 	usf_inthmput(chunkmap, TOCHUNKINDEX(5L, 1L, 1L), USFDATAP(p4));
 
-	remeshChunk(0);
-	remeshChunk(TOCHUNKINDEX(-1, -1, -1));
-	remeshChunk(TOCHUNKINDEX(0, 0, 1));
+	async_remeshChunk(0);
+	async_remeshChunk(TOCHUNKINDEX(-1, -1, -1));
+	async_remeshChunk(TOCHUNKINDEX(0, 0, 1));
 
-	remeshChunk(TOCHUNKINDEX(1, 1, 1));
-	remeshChunk(TOCHUNKINDEX(2, 1, 1));
-	remeshChunk(TOCHUNKINDEX(3, 1, 1));
-	remeshChunk(TOCHUNKINDEX(4, 1, 1));
-	remeshChunk(TOCHUNKINDEX(5, 1, 1));
+	async_remeshChunk(TOCHUNKINDEX(1, 1, 1));
+	async_remeshChunk(TOCHUNKINDEX(2, 1, 1));
+	async_remeshChunk(TOCHUNKINDEX(3, 1, 1));
+	async_remeshChunk(TOCHUNKINDEX(4, 1, 1));
+	async_remeshChunk(TOCHUNKINDEX(5, 1, 1));
 	printf("Test scene loaded\n");
 
 	/* END TESTBED */

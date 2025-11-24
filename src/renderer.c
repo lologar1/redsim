@@ -22,6 +22,7 @@ void render(GLFWwindow *window) {
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, processMouseMovement);
 	glfwSetKeyCallback(window, processKey);
+	glfwSetCharCallback(window, processChar);
 	glfwSetMouseButtonCallback(window, processMouseInput);
 	glfwSetScrollCallback(window, processMouseScroll);
 

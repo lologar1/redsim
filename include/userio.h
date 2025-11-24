@@ -5,6 +5,7 @@
 #include "gui.h"
 #include "rsmlayout.h"
 #include "renderer.h"
+#include "command.h"
 
 extern int RSM_FORWARD;
 extern int RSM_BACKWARD;
@@ -19,9 +20,9 @@ extern float mouseX;
 extern float mouseY;
 
 /* For mouse movements, lives in client */
-extern float pitch;
-extern float yaw;
+extern float pitch, yaw;
 
+void processChar(GLFWwindow *window, unsigned int codepoint);
 void processKey(GLFWwindow *window, int key, int scancode, int action, int mods);
 void processMouseMovement(GLFWwindow *window, double xpos, double ypos);
 void processMouseInput(GLFWwindow *window, int button, int action, int mods);

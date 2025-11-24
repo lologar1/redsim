@@ -59,13 +59,10 @@ typedef struct Rawmesh { /* Raw data remeshed asynchronously, passed to main thr
 	unsigned int nOV, nTV, nOI, nTI;
 } Rawmesh;
 
-/* Buffers serving as remeshing scratchpad ; alloc'd once in parseBlockdata */
-extern float *opaqueVertexBuffer, *transVertexBuffer;
-extern unsigned int *opaqueIndexBuffer, *transIndexBuffer;
 extern Blockmesh **blockmeshes;
 
 void *pushRawmesh(void *chunkindexptr);
-void remeshChunk(uint64_t chunkindex);
+void async_remeshChunk(uint64_t chunkindex);
 void updateMeshlist(void);
 void generateMeshlist(void);
 void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, Rotation rotation, int64_t x, int64_t y, int64_t z);

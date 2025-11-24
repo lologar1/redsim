@@ -17,6 +17,7 @@ BUILDING RSM
 		GLAD (included)
 		stb_image (included)
 		cglm (dependency)
+		FreeType (dependency)
 		usflib2 (dependency; can be found in my github)
 	usflib2 must be compiled then symlinked in the redsim/ directory (same level as the Makefile).
 

@@ -16,9 +16,11 @@ extern float RSM_FLY_Z_ACCELERATION;
 extern float RSM_FLY_FRICTION;
 extern float RSM_FLY_SPEED_CAP;
 
-#define RSM_KEY_MENU GLFW_KEY_ESCAPE
+#define RSM_KEY_CTRL_EXIT GLFW_KEY_Q
+#define RSM_KEY_MENU GLFW_KEY_CAPS_LOCK /* CAPS remapped to ESC on my computer */
 #define RSM_KEY_INVENTORY GLFW_KEY_E
-#define RSM_KEY_COMMAND GLFW_KEY_T
+#define RSM_KEY_COMMAND 0x74 /* ASCII 't' */
+#define RSM_KEY_CTRL_CLEARLOG GLFW_KEY_R
 #define RSM_KEY_FORWARD GLFW_KEY_W
 #define RSM_KEY_BACKWARD GLFW_KEY_S
 #define RSM_KEY_RIGHT GLFW_KEY_D
@@ -28,6 +30,8 @@ extern float RSM_FLY_SPEED_CAP;
 #define RSM_BUTTON_LEFTCLICK GLFW_MOUSE_BUTTON_LEFT
 #define RSM_BUTTON_RIGHTCLICK GLFW_MOUSE_BUTTON_RIGHT
 #define RSM_BUTTON_MIDDLECLICK GLFW_MOUSE_BUTTON_MIDDLE
+
+#define RSM_COMMAND_PREFIX "/"
 
 #define RSM_KEY_HOTBAR_INCREMENT GLFW_KEY_X
 #define RSM_KEY_HOTBAR_DECREMENT GLFW_KEY_Z
@@ -55,11 +59,15 @@ extern float RSM_MOUSE_SENSITIVITY;
 #define FPS_CAP true
 #define VSYNC true
 
+#define CHUNKSIZE 32
 extern float RSM_REACH;
 extern float RSM_FOV;
 extern unsigned int RENDER_DISTANCE;
 extern float RENDER_DISTANCE_NEAR;
-#define CHUNKSIZE 32
+
+extern float RSM_COMMAND_POS_X_PIXELS;
+extern float RSM_COMMAND_POS_Y_PIXELS;
+extern float RSM_COMMAND_TEXT_SIZE;
 
 #define PLAYER_BOUNDINGBOX_RELATIVE_CORNER ((vec3) {-0.3f, -1.6f, -0.3f})
 #define PLAYER_BOUNDINGBOX_DIMENSIONS ((vec3) {0.6f, 1.8f, 0.6f})
@@ -70,6 +78,7 @@ extern float RENDER_DISTANCE_NEAR;
 #define RSM_BLOCK_TEXTURE_SIZE_PIXELS 32
 #define RSM_GUI_TEXTURE_SIZE_PIXELS 64
 #define RSM_SPRITE_TEXTURE_SIZE_PIXELS 16
+#define RSM_CHARACTER_TEXTURE_SIZE_PIXELS 16
 
 #define RSM_GUI_SCALING_FACTOR 1.0f
 #define RSM_CROSSHAIR_SIZE_PIXELS (RSM_GUI_SCALING_FACTOR * 32)
@@ -78,26 +87,31 @@ extern float RENDER_DISTANCE_NEAR;
 #define RSM_INVENTORY_ICON_SIZE_PIXELS (RSM_INVENTORY_SLOT_SIZE_PIXELS * 3)
 #define RSM_HOTBAR_SLOT_SPRITE_OFFSET_PIXELS (RSM_GUI_SCALING_FACTOR * 10)
 #define RSM_INVENTORY_SLOT_SPRITE_OFFSET_PIXELS (RSM_GUI_SCALING_FACTOR * 8)
+#define RSM_COMMAND_TEXT_SCALING (RSM_GUI_SCALING_FACTOR * RSM_COMMAND_TEXT_SIZE)
 
 #define RSM_MAX_BLOCKMESH_VERTICES 512
 #define RSM_MAX_BLOCKMESH_INDICES 2048
 #define RSM_MAX_PATH_NAME_LENGTH 512
 #define RSM_MAX_SHADER_INFOLOG_LENGTH 512
 #define RSM_MAX_BLOCKMESH_TEXTURETILES 8
+#define RSM_MAX_COMMAND_LENGTH 32
+#define RSM_MAX_COMMAND_LOG_LINES 24
 
 #define RSM_BIT_COLLISION (1UL << 0) /* Collidable */
 #define RSM_BIT_ROTATION (1UL << 1) /* Rotatable */
 #define RSM_BIT_FULLBLOCK (1UL << 2) /* Cull triangles if neighbors hide faces (needs to match fullblock mesh) */
 
-extern char textureBasePath[10];
-extern char textureBlockPath[8];
-extern char textureGuiPath[5];
-extern char textureBlockmapPath[13];
-extern char textureGuimapPath[11];
-extern char meshFormatExtension[6];
-extern char textureFormatExtension[5];
-extern char boundingboxFormatExtension[13];
-extern char layoutFormatExtension[7];
+#define TYPEFACE_PATH "typefaces/"
+#define RESOURCE_BASE_PATH "textures/"
+#define TEXTURE_BLOCK_PATH "blocks/"
+#define TEXTURE_GUI_PATH "gui/"
+#define FONT_PATH "arial.ttf"
+#define BLOCKMAP_PATH "blockmap.txt"
+#define GUIMAP_PATH "guimap.txt"
+#define MESH_EXTENSION ".mesh"
+#define TEXTURE_EXTENSION ".png"
+#define BOUNDINGBOX_EXTENSION ".boundingbox"
+#define LAYOUT_EXTENSION ".layout"
 
 typedef enum RSM_EXITCODE {
 	RSM_EXIT_NORMAL = 0,
@@ -113,7 +127,8 @@ typedef enum RSM_EXITCODE {
 	RSM_EXIT_BADVERTEXDATA,
 	RSM_EXIT_BADBOUNDINGBOXDATA,
 	RSM_EXIT_NOCHUNK,
-	RSM_EXIT_THREADFAIL
+	RSM_EXIT_THREADFAIL,
+	RSM_EXIT_TEXTFAIL
 } RSM_EXITCODE;
 
 #endif

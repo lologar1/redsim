@@ -1,6 +1,11 @@
 #include "gui.h"
 
+FT_Library ft;
+FT_Face typeface;
+
 GLuint guiAtlas;
+Textchar textchars[128]; /* Hold rendering info for each ASCII 0-127 */
+float lineheight;
 
 GLuint guiVBO[MAX_GUI_PRIORITY], guiEBO[MAX_GUI_PRIORITY], guiVAO[MAX_GUI_PRIORITY];
 unsigned int nGUIIndices[MAX_GUI_PRIORITY];
@@ -36,14 +41,115 @@ void initGUI(void) {
 	initInventory(); /* Create base inventory mesh once */
 }
 
+void initFont(unsigned char **guiatlas, GLsizei *atlassize) {
+	/* Add character font to guiAtlas and create char structs for text rendering */
+	FT_GlyphSlot glyph;
+
+	if (FT_Init_FreeType(&ft)) {
+		fprintf(stderr, "Error initializing FreeType library, aborting.\n");
+		exit(RSM_EXIT_TEXTFAIL);
+	}
+
+	char typefacePath[RSM_MAX_PATH_NAME_LENGTH];
+	pathcat(typefacePath, 2, TYPEFACE_PATH, FONT_PATH);
+
+	if (FT_New_Face(ft, typefacePath, 0, &typeface)) {
+		fprintf(stderr, "Error retrieving typeface at %s, aborting.\n", typefacePath);
+		exit(RSM_EXIT_TEXTFAIL);
+	}
+
+	FT_Set_Pixel_Sizes(typeface, RSM_CHARACTER_TEXTURE_SIZE_PIXELS, RSM_CHARACTER_TEXTURE_SIZE_PIXELS);
+	lineheight = typeface->size->metrics.height / 64;
+
+	/* Load first 128 ASCII characters (8 64x64 textures) into the guiAtlas texture */
+#define FONT_TEXSZ (RSM_CHARACTER_TEXTURE_SIZE_PIXELS * RSM_CHARACTER_TEXTURE_SIZE_PIXELS)
+#define CHARS_PER_TEXTURE ((RSM_GUI_TEXTURE_SIZE_PIXELS * RSM_GUI_TEXTURE_SIZE_PIXELS) / (RSM_CHARACTER_TEXTURE_SIZE_PIXELS * RSM_CHARACTER_TEXTURE_SIZE_PIXELS))
+#define CHARS_PER_LINE (RSM_GUI_TEXTURE_SIZE_PIXELS / RSM_CHARACTER_TEXTURE_SIZE_PIXELS)
+	unsigned char chartexture[CHARS_PER_TEXTURE][FONT_TEXSZ]; /* Grayscale */
+#define CHAR_TEXTURES (128 / CHARS_PER_TEXTURE)
+	unsigned char charatlas[sizeof(chartexture) * 4 * CHAR_TEXTURES]; /* Same format as guiAtlas */
+
+	unsigned char c;
+	unsigned int nsubtexture, nchartexture;
+	Textchar *tc;
+
+	for (c = 0; c < 128; c++) {
+		nsubtexture = c % CHARS_PER_TEXTURE;
+		nchartexture = c / CHARS_PER_TEXTURE;
+
+		if (FT_Load_Char(typeface, c, FT_LOAD_RENDER)) {
+			fprintf(stderr, "Error rendering character %c (%d), aborting.\n", c, (int) c);
+			exit(RSM_EXIT_TEXTFAIL);
+		}
+
+		glyph = typeface->glyph;
+
+#define XOFFSET ((RSM_CHARACTER_TEXTURE_SIZE_PIXELS - USF_MIN(RSM_CHARACTER_TEXTURE_SIZE_PIXELS, glyph->bitmap.width)) / 2)
+#define YOFFSET ((RSM_CHARACTER_TEXTURE_SIZE_PIXELS - USF_MIN(RSM_CHARACTER_TEXTURE_SIZE_PIXELS, glyph->bitmap.rows)) / 2)
+		memset(chartexture[nsubtexture], 0, FONT_TEXSZ); /* Padding */
+		for (unsigned int row = 0; row < glyph->bitmap.rows; row++) {
+			for (unsigned int col = 0; col < glyph->bitmap.width; col++) {
+				chartexture[nsubtexture][(row + YOFFSET) * RSM_CHARACTER_TEXTURE_SIZE_PIXELS + col + XOFFSET] =
+					glyph->bitmap.buffer[row * glyph->bitmap.pitch + col];
+			}
+		}
+#define CHAR_STRIDE ((float) RSM_CHARACTER_TEXTURE_SIZE_PIXELS / RSM_GUI_TEXTURE_SIZE_PIXELS)
+		float sox, soy;
+		sox = (nsubtexture % CHARS_PER_LINE) * CHAR_STRIDE;
+		soy = (nsubtexture / CHARS_PER_LINE) * CHAR_STRIDE + CHAR_STRIDE;
+
+		tc = textchars + c;
+
+#define UOFFSET ((float) XOFFSET / RSM_GUI_TEXTURE_SIZE_PIXELS)
+#define VOFFSET ((float) YOFFSET / RSM_GUI_TEXTURE_SIZE_PIXELS)
+		tc->uv[0] = sox + UOFFSET;
+		tc->uv[1] = guiAtlasAdjust(soy - VOFFSET, MAX_GUI_PRIORITY + nchartexture);
+		tc->uv[2] = sox + CHAR_STRIDE - UOFFSET;
+		tc->uv[3] = guiAtlasAdjust(soy + VOFFSET - CHAR_STRIDE, MAX_GUI_PRIORITY + nchartexture);
+
+		tc->size[0] = glyph->bitmap.width; tc->size[1] = glyph->bitmap.rows;
+		tc->bearing[0] = glyph->bitmap_left; tc->bearing[1] = glyph->bitmap_top;
+		tc->advance = glyph->advance.x / 64;
+
+		if (nsubtexture == CHARS_PER_TEXTURE - 1) {
+			/* Dump to atlas */
+			unsigned int subtexture, pixelindex;
+			for (subtexture = 0; subtexture < CHARS_PER_TEXTURE; subtexture++) {
+				for (pixelindex = 0; pixelindex < FONT_TEXSZ; pixelindex++) {
+					/* Macro hell... each padded glyph is packed into atlases of GUI textures, which are
+					 * themselves packed into a bigger gui atlas. Hard to understand. */
+#define ATLASOFFSET (nchartexture * RSM_GUI_TEXTURE_SIZE_PIXELS * RSM_GUI_TEXTURE_SIZE_PIXELS * 4)
+#define CHAROFFSET (((subtexture / CHARS_PER_LINE) * CHARS_PER_LINE * FONT_TEXSZ + \
+			(subtexture % CHARS_PER_LINE) * RSM_CHARACTER_TEXTURE_SIZE_PIXELS) * 4)
+#define PIXELOFFSET (((pixelindex / RSM_CHARACTER_TEXTURE_SIZE_PIXELS) * RSM_GUI_TEXTURE_SIZE_PIXELS + \
+		pixelindex % RSM_CHARACTER_TEXTURE_SIZE_PIXELS) * 4)
+					/* Copy color to RGB channels (what guiAtlas wants) */
+					memset(&charatlas[ATLASOFFSET + CHAROFFSET + PIXELOFFSET],
+							chartexture[subtexture][pixelindex], 3);
+					charatlas[ATLASOFFSET + CHAROFFSET + PIXELOFFSET + 3] = chartexture[subtexture][pixelindex]
+						? 255 : 0; /* Transparent on background */
+				}
+			}
+		}
+	}
+
+	/* Copy to actual guiAtlas */
+	*guiatlas = realloc(*guiatlas, *atlassize + sizeof(charatlas));
+	memcpy(*guiatlas + *atlassize, charatlas, sizeof(charatlas));
+	*atlassize += sizeof(charatlas);
+
+	FT_Done_Face(typeface);
+	FT_Done_FreeType(ft);
+}
+
 char *iconlayouts[RSM_INVENTORY_ICONS]; /* For use by inventory init ; free'd then */
 void parseGUIdata(void) {
 	/* Create GUI texture atlas and parse GUI elements from disk */
-	char guiPath[sizeof(textureBasePath) + sizeof(textureGuiPath)];
-	char guimapPath[sizeof(textureBasePath) + sizeof(textureGuimapPath)];
+	char guiPath[sizeof(RESOURCE_BASE_PATH) + sizeof(TEXTURE_GUI_PATH)];
+	char guimapPath[sizeof(RESOURCE_BASE_PATH) + sizeof(GUIMAP_PATH)];
 
-	pathcat(guiPath, 2, textureBasePath, textureGuiPath);
-	pathcat(guimapPath, 2, textureBasePath, textureGuimapPath);
+	pathcat(guiPath, 2, RESOURCE_BASE_PATH, TEXTURE_GUI_PATH);
+	pathcat(guimapPath, 2, RESOURCE_BASE_PATH, GUIMAP_PATH);
 
 	char *guimap, **elements, *element;
 	uint64_t nelement, nelements;
@@ -60,7 +166,7 @@ void parseGUIdata(void) {
 		element = elements[nelement];
 
 		/* Append texture for this element to the atlas */
-		pathcat(guitexturepath, 3, guiPath, element, textureFormatExtension);
+		pathcat(guitexturepath, 3, guiPath, element, TEXTURE_EXTENSION);
 
 		atlasAppend(guitexturepath, RSM_GUI_TEXTURE_SIZE_PIXELS, RSM_GUI_TEXTURE_SIZE_PIXELS,
 				&guiAtlasData, &guiAtlasSize);
@@ -68,7 +174,7 @@ void parseGUIdata(void) {
 		/* Check for icons */
 		if (!(nelement >= PICON && nelement < PICON + RSM_INVENTORY_ICONS)) continue;
 		/* Reuse same buffer for this name. A bit unpretty, but what do you want */
-		pathcat(guitexturepath, 3, guiPath, element, layoutFormatExtension);
+		pathcat(guitexturepath, 3, guiPath, element, LAYOUT_EXTENSION);
 
 		if ((iconlayouts[nelement - PICON] = usf_ftos(guitexturepath, NULL)) == NULL) {
 			fprintf(stderr, "Cannot find inventory submenu layout at %s, aborting.\n", guitexturepath);
@@ -78,6 +184,9 @@ void parseGUIdata(void) {
 
 	free(elements);
 	free(guimap); /* Will free the char **elements split substrings */
+
+	/* Generate font and add packed textures here */
+	initFont(&guiAtlasData, &guiAtlasSize);
 
 	glGenTextures(1, &guiAtlas);
 	glBindTexture(GL_TEXTURE_2D, guiAtlas);
@@ -92,15 +201,15 @@ void parseGUIdata(void) {
 
 float guiAtlasAdjust(float y, GUIPriority priority) {
 	return (y * RSM_GUI_TEXTURE_SIZE_PIXELS + RSM_GUI_TEXTURE_SIZE_PIXELS * priority)
-		/ (MAX_GUI_PRIORITY * RSM_GUI_TEXTURE_SIZE_PIXELS);
+		/ ((MAX_GUI_PRIORITY + CHAR_TEXTURES) * RSM_GUI_TEXTURE_SIZE_PIXELS);
 }
 
 void meshAppend(unsigned int priority, float *v, unsigned int sizev, unsigned int *i, unsigned int sizei) {
 	glBindVertexArray(guiVAO[priority]);
 	glBindBuffer(GL_ARRAY_BUFFER, guiVBO[priority]);
 	glBufferData(GL_ARRAY_BUFFER, sizev * sizeof(float), v, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizei * sizeof(unsigned int), i, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	nGUIIndices[priority] = sizei;
@@ -121,11 +230,95 @@ void renderGUI(void) {
 	renderCrosshair();
 	renderHotbar();
 	renderInventory(); /* Will handle itself */
+	renderCommand();
 
 	meshAppend(pItemIcons0, spritevbuf, sizesv, spriteibuf, sizesi);
 
 	free(spritevbuf);
 	free(spriteibuf);
+}
+
+unsigned int drawText(char *str, float *vbuf, unsigned int *ibuf, unsigned int ioffset, float x, float y, float scale, GUIPriority priority) {
+	/* Add the adjusted quads to a vbuf and ibuf for text rendering of string str. Note that both of these
+	 * buffers should be big enough to handle the string (4 vertices + 6 indices per char.
+	 * Indices start at offset ioffset.
+	 * Important: vbuf and ibuf must point to the place where the quads will be rendered! */
+	unsigned char *c, nchars;
+	float letter, line, xpos, ypos;
+	float width, height;
+	Textchar *tc;
+
+	for (letter = x, nchars = line = 0, c = (unsigned char *) str; *c; c++) {
+		if (*c > 127) continue;
+		tc = textchars + *c;
+
+		if (*c == '\n') {
+			line += lineheight * scale;
+			letter = x;
+			continue;
+		}
+
+		if (isspace(*c)) {
+			letter += tc->advance * scale;
+			continue;
+		}
+
+		nchars++; /* Rendered this char */
+
+		xpos = letter + tc->bearing[0] * scale; ypos = (y - line) - (tc->size[1] - tc->bearing[1]) * scale;
+		width = tc->size[0] * scale; height = tc->size[1] * scale;
+
+		float v[5 * 4] = {
+			xpos, ypos, priority, tc->uv[0], tc->uv[1],
+			xpos, ypos + height, priority, tc->uv[0], tc->uv[3],
+			xpos + width, ypos + height, priority, tc->uv[2], tc->uv[3],
+			xpos + width, ypos, priority, tc->uv[2], tc->uv[1]
+		};
+
+		unsigned int i[6] = {0 + ioffset, 1 + ioffset, 2 + ioffset, 0 + ioffset, 2 + ioffset, 3 + ioffset};
+
+		memcpy(vbuf, v, sizeof(v));
+		memcpy(ibuf, i, sizeof(i));
+
+		letter += tc->advance * scale;
+		ioffset += 4;
+		vbuf += sizeof(v)/sizeof(float); ibuf += sizeof(i)/sizeof(unsigned int);
+	}
+
+	return nchars;
+}
+
+void renderCommand(void) {
+	/* Draw command logs and command buffer if gamestate is COMMAND */
+
+	/* 5 floats per vertex * 4 vertices per char, times log lines plus buffer. 6 indices/char for i */
+	static float v[RSM_MAX_COMMAND_LENGTH * (RSM_MAX_COMMAND_LOG_LINES + 1) * 20];
+	static unsigned int i[RSM_MAX_COMMAND_LENGTH * (RSM_MAX_COMMAND_LOG_LINES + 1) * 6];
+
+	float *vptr;
+	unsigned int *iptr, ioffset;
+
+	/* Hijacking the pItemIcons1 layer (mesh), as it is never used (all icons go in pItemIcons0) */
+	unsigned int nlog, nchars;
+
+	char *s;
+	for (vptr = v, iptr = i, ioffset = nlog = 0; nlog < RSM_MAX_COMMAND_LOG_LINES; nlog++) {
+		s = cmdlog[((uint64_t) (logptr - cmdlog) + nlog) % RSM_MAX_COMMAND_LOG_LINES];
+
+		nchars = drawText(s, vptr, iptr, ioffset, RSM_COMMAND_POS_X_PIXELS,
+				RSM_COMMAND_POS_Y_PIXELS + (RSM_MAX_COMMAND_LOG_LINES - nlog) * lineheight,
+				RSM_COMMAND_TEXT_SCALING, pItemIcons1);
+
+		vptr += nchars * 20; iptr += nchars * 6; ioffset += nchars * 4;
+	}
+
+	if (gamestate == COMMAND) {
+		nchars = drawText(cmdbuffer, vptr, iptr, ioffset, RSM_COMMAND_POS_X_PIXELS, RSM_COMMAND_POS_Y_PIXELS,
+				RSM_COMMAND_TEXT_SCALING, pItemIcons1);
+		vptr += nchars * 20; iptr += nchars * 6;
+	}
+
+	meshAppend(pItemIcons1, v, vptr - v, i, iptr - i);
 }
 
 void renderItemSprite(uint64_t id, uint64_t variant, float x, float y, float w, float h) {
@@ -171,7 +364,7 @@ void renderItemSprite(uint64_t id, uint64_t variant, float x, float y, float w, 
 
 void renderCrosshair(void) {
 	/* Draw crosshair */
-	float v[] = {
+	float v[5 * 4] = {
 		WINDOW_WIDTH/2 - RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 - RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 0.0f, guiAtlasAdjust(0.0f, pCrosshair),
 		WINDOW_WIDTH/2 - RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 + RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 0.0f, guiAtlasAdjust(1.0f, pCrosshair),
 		WINDOW_WIDTH/2 + RSM_CROSSHAIR_SIZE_PIXELS, WINDOW_HEIGHT/2 + RSM_CROSSHAIR_SIZE_PIXELS, pCrosshair, 1.0f, guiAtlasAdjust(1.0f, pCrosshair),

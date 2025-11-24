@@ -278,7 +278,7 @@ void rsm_interact(void) {
 	if (RSM_LEFTCLICK) {
 		RSM_LEFTCLICK = 0; /* Consume */
 		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
-		remeshChunk(lookingChunkIndex);
+		async_remeshChunk(lookingChunkIndex);
 		return;
 	}
 
@@ -308,8 +308,8 @@ void rsm_interact(void) {
 			else lookingAdjacent->rotation = SOUTH;
 		} else lookingAdjacent->rotation = NONE;
 
-		remeshChunk(lookingAdjChunkIndex);
-		remeshChunk(lookingChunkIndex);
+		async_remeshChunk(lookingAdjChunkIndex);
+		async_remeshChunk(lookingChunkIndex);
 	}
 
 	if (RSM_MIDDLECLICK && lookingAt->id) { /* Pipette tool; don't consume as it only modifies a hotbar slot */
@@ -362,6 +362,8 @@ void rsm_checkMeshes(void) {
 			glBindVertexArray(0); /* Unbind to avoid modification */
 			mesh[0] = opaqueVAO; mesh[1] = transVAO;
 			usf_inthmput(meshmap, chunkindex, USFDATAP(mesh)); /* Set mesh */
+
+			updateMeshlist(); /* Include just created mesh in view */
 		}
 
 		glBindVertexArray(mesh[0]); /* Opaque */

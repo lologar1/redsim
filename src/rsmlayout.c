@@ -16,13 +16,6 @@ float RSM_FOV = 120.0f;
 unsigned int RENDER_DISTANCE = 8;
 float RENDER_DISTANCE_NEAR = 0.1f;
 
-/* Attention! Make sure to set constant sizes in rsmlayout.h otherwise compiler will complain */
-char textureBasePath[] = "textures/";
-char textureBlockPath[] = "blocks/";
-char textureGuiPath[] = "gui/";
-char textureBlockmapPath[] = "blockmap.txt";
-char textureGuimapPath[] = "guimap.txt";
-char meshFormatExtension[] = ".mesh";
-char textureFormatExtension[] = ".png";
-char boundingboxFormatExtension[] = ".boundingbox";
-char layoutFormatExtension[] = ".layout";
+float RSM_COMMAND_POS_X_PIXELS = 16.0f;
+float RSM_COMMAND_POS_Y_PIXELS = 16.0f;
+float RSM_COMMAND_TEXT_SIZE = 1.5f;

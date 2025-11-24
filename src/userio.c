@@ -11,6 +11,25 @@ int RSM_RIGHTCLICK;
 int RSM_MIDDLECLICK;
 
 float mouseX, mouseY;
+int RSM_DEFER_SET_STATE_COMMAND = 0;
+
+void processChar(GLFWwindow *window, unsigned int codepoint) {
+	/* Handle char inputs for command mode */
+	char c = (char) codepoint;
+
+	if (gamestate != COMMAND) {
+		/* If RSM_KEY_COMMAND is a char, the swap logic is here. If not, it is in key callback */
+		if (c == RSM_KEY_COMMAND && gamestate == NORMAL) {
+			gamestate = COMMAND;
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			renderGUI();
+		}
+		return;
+	}
+
+	cmd_parseChar(c); /* Invalid characters rejected */
+	renderGUI();
+}
 
 void processKey(GLFWwindow *window, int key, int scancode, int action, int mods) {
 	/* Set appropriate user input variables for keypresses */
@@ -18,8 +37,26 @@ void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 	(void) scancode;
 	(void) mods;
 
-	if (action == GLFW_REPEAT) return; /* Do not handle repeat events */
+	/* Priority keypress (escape) to switch back to NORMAL mode */
+	if (action == GLFW_PRESS && key == RSM_KEY_MENU) {
+		if (gamestate == NORMAL) gamestate = MENU;
+		else gamestate = NORMAL;
+	}
 
+	/* Non-characters that affect the command prompt */
+	if (gamestate == COMMAND && action != GLFW_RELEASE) {
+		switch (key) {
+			case GLFW_KEY_BACKSPACE: cmd_parseChar('\b'); break;
+			case GLFW_KEY_ENTER: cmd_parseChar('\n'); break;
+			case GLFW_KEY_TAB: cmd_parseChar('\t'); break;
+		}
+
+		goto ctrl; /* All further keypresses handled by char callback */
+	}
+
+	if (action == GLFW_REPEAT) return; /* Don't handle repeat events */
+
+	/* Movement */
 	switch (key) {
 		case RSM_KEY_FORWARD: RSM_FORWARD = action == GLFW_PRESS ? 1 : 0; break;
 		case RSM_KEY_BACKWARD: RSM_BACKWARD = action == GLFW_PRESS ? 1 : 0; break;
@@ -29,19 +66,15 @@ void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 		case RSM_KEY_UP: RSM_UP = action == GLFW_PRESS ? 1 : 0; break;
 	}
 
-	/* Now handle only first time key press */
-	if (action == GLFW_RELEASE) return;
+	if (action != GLFW_PRESS) return; /* Only handle first key presses */
 
 	switch (key) {
-		case RSM_KEY_MENU:
-			if (gamestate == NORMAL) gamestate = MENU;
-			else gamestate = NORMAL;
-			break;
 		case RSM_KEY_INVENTORY:
 			if (gamestate == NORMAL) gamestate = INVENTORY;
 			break;
 		case RSM_KEY_COMMAND:
-			if (gamestate == NORMAL) gamestate = COMMAND;
+			/* If the key is also a character, then the switch logic is in the char callback! */
+			// if (gamestate == NORMAL) gamestate = COMMAND;
 			break;
 		case RSM_KEY_HOTSLOT0: hotslotIndex = 0; break;
 		case RSM_KEY_HOTSLOT1: hotslotIndex = 1; break;
@@ -57,6 +90,22 @@ void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 		case RSM_KEY_HOTBAR_DECREMENT: hotbarIndex = (hotbarIndex - 1) % RSM_HOTBAR_COUNT; break;
 	}
 
+ctrl:
+	/* CTRL keys */
+	if (!(mods & GLFW_MOD_CONTROL)) goto skip;
+	switch (key) {
+		case RSM_KEY_CTRL_CLEARLOG:
+			if (gamestate == COMMAND) {
+				memset(cmdbuffer, 0, sizeof(cmdbuffer));
+				cmdchar = cmdbuffer;
+			} else memset(cmdlog, 0, sizeof(cmdlog));
+			break;
+		case RSM_KEY_CTRL_EXIT:
+			glfwSetWindowShouldClose(window, GLFW_TRUE);
+			break;
+	}
+
+skip:
 	/* Handle cursor status after a potential gamestate change */
 	if (gamestate == NORMAL) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
