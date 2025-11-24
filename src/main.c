@@ -45,6 +45,9 @@ int main() {
 	renderer_initShaders();
 
 	renderer_render(window);
+
+	client_terminate(); /* Dealloc everything */
+	glfwDestroyWindow(window);
 	glfwTerminate(); /* On window close */
 
 	printf("Process exited normally.\n");

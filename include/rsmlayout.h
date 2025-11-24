@@ -8,7 +8,7 @@
 /* When rendering, pixel offsets (for the GUI for example) are all relative to these width and height values */
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
-#define WINDOW_NAME "Redsim V0.1"
+#define WINDOW_NAME "Redsim V0.7"
 
 extern float RSM_FLY_X_ACCELERATION;
 extern float RSM_FLY_Y_ACCELERATION;

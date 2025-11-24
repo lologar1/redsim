@@ -32,4 +32,6 @@ void client_frameEvent(GLFWwindow *window);
 void client_getOrientationVector(vec3 ori);
 void client_getPosition(vec3 pos);
 
+void client_terminate(void);
+
 #endif

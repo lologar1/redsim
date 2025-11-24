@@ -15,9 +15,14 @@ float compositionQuad[] = {
 
 unsigned int screenWidth = WINDOW_WIDTH, screenHeight = WINDOW_HEIGHT;
 
+/* Shader programs */
 GLuint vertexShader, opaqueFragmentShader, transFragmentShader, compositionVertexShader,
 	   compositionFragmentShader, guiVertexShader, guiFragmentShader, opaqueShader,
 	   transShader, compositionShader, guiShader;
+
+/* Framebuffer stuff */
+GLuint FBO, GUIFBO;
+GLuint opaqueColorTex, accTex, revealTex, depthTex, guiColorTex, guiDepthTex;
 
 void renderer_initShaders(void) {
 	/* Compile shaders from GLSL programs and link them */
@@ -64,7 +69,6 @@ void renderer_render(GLFWwindow *window) {
 	 * then render transparent scene (with depth check) to both accTex
 	 * and revealTex (for WB-OIT algorithm) and finally composite them
 	 * both and draw to screen framebuffer */
-	GLuint opaqueColorTex, depthTex, accTex, revealTex;
 
 	/* Opaque color buffer */
 	glGenTextures(1, &opaqueColorTex);
@@ -94,7 +98,6 @@ void renderer_render(GLFWwindow *window) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	GLuint FBO;
 	glGenFramebuffers(1, &FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
@@ -120,7 +123,6 @@ void renderer_render(GLFWwindow *window) {
 
 	/* Draw any GUI elements to the GUI buffer (will get blended as a transparent layer in the
 	 * composition stage) with depth check (only draw "closest" (priority) GUI elements) */
-	GLuint guiColorTex, guiDepthTex;
 
 	/* GUI color buffer */
 	glGenTextures(1, &guiColorTex);
@@ -136,7 +138,6 @@ void renderer_render(GLFWwindow *window) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	GLuint GUIFBO;
 	glGenFramebuffers(1, &GUIFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, GUIFBO);
 
@@ -300,7 +301,6 @@ void renderer_render(GLFWwindow *window) {
 		glfwSwapBuffers(window); /* Render what's been drawn */
 	    glfwPollEvents(); /* Update state and call appropriate callback functions for user input */
 	}
-	glfwTerminate();
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {

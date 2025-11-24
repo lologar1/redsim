@@ -245,3 +245,73 @@ void client_getOrientationVector(vec3 ori) {
 void client_getPosition(vec3 pos) {
 	glm_vec3_copy(position, pos);
 }
+
+extern GLuint opaqueShader, transShader, compositionShader, guiShader, FBO, GUIFBO,
+	   opaqueColorTex, accTex, revealTex, depthTex, guiColorTex, guiDepthTex; /* For destruction */
+void client_terminate(void) {
+	/* Free RSM resources before program exit */
+	uint64_t i, j;
+	GLuint *mesh;
+	usf_data *entry;
+
+	/* Free GL memory */
+	for (i = 0; i < meshmap->capacity; i++) {
+		if ((entry = meshmap->array[i]) == NULL || entry == (usf_data *) meshmap) continue;
+		mesh = (GLuint *) entry[1].p;
+		deallocateVAO(mesh[0]);
+		deallocateVAO(mesh[1]);
+	}
+	glDeleteTextures(1, &textureAtlas);
+	glDeleteTextures(1, &opaqueColorTex);
+	glDeleteTextures(1, &accTex);
+	glDeleteTextures(1, &revealTex);
+	glDeleteTextures(1, &depthTex);
+	glDeleteFramebuffers(1, &FBO);
+
+	deallocateVAO(wiremesh[0]);
+
+	for (i = 0; i < MAX_GUI_PRIORITY; i++) deallocateVAO(guiVAO[i]);
+	glDeleteTextures(1, &guiAtlas);
+	glDeleteTextures(1, &guiColorTex);
+	glDeleteTextures(1, &guiDepthTex);
+	glDeleteFramebuffers(1, &GUIFBO);
+
+	glDeleteProgram(opaqueShader);
+	glDeleteProgram(transShader);
+	glDeleteProgram(compositionShader);
+	glDeleteProgram(guiShader);
+
+	for (i = 0; i < MAX_BLOCK_ID; i++) {
+		/* Free blockmesh templates */
+		Blockmesh *bm;
+		for (j = 0; j < MAX_BLOCK_VARIANT[i]; j++) {
+			if ((bm = &blockmeshes[i][j]) == NULL) continue;
+
+			free(bm->opaqueVertices);
+			free(bm->transVertices);
+			free(bm->opaqueIndices);
+			free(bm->transIndices);
+		}
+
+		free(blockmeshes[i]);
+		free(spriteids[i]);
+		free(boundingboxes[i]);
+	}
+	free(MAX_BLOCK_VARIANT);
+
+	free(blockmeshes);
+	free(spriteids);
+	free(boundingboxes);
+
+	free(meshes); /* Meshlist components free'd in hashmap deallocation */
+
+	usf_freehmptr(chunkmap);
+	usf_freehmptr(meshmap);
+	usf_freehm(datamap);
+	usf_freestrhm(namemap);
+
+	usf_freequeueptr(meshqueue);
+	pthread_mutex_destroy(&meshlock);
+
+	free(playerBBOffsets);
+}

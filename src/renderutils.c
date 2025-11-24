@@ -6,6 +6,7 @@ float (**boundingboxes)[6];
 GLuint textureAtlas;
 uint64_t **spriteids; /* Note that getting a sprite from an item which doesn't have one will yield the first. */
 
+uint64_t MAX_BLOCK_ID, *MAX_BLOCK_VARIANT;
 size_t ov_bufsiz, tv_bufsiz, oi_bufsiz, ti_bufsiz; /* Remeshing buffer sizes */
 
 /* Shader stuff */
@@ -104,9 +105,9 @@ void parseBlockdata(void) {
 	fprintf(stderr, "Loading blockmap from file %s\n", blockmapPath);
 
 	char **blockmap;
-	uint64_t nblocks;
 
-	blockmap = usf_ftot(blockmapPath, &nblocks);
+	blockmap = usf_ftot(blockmapPath, &MAX_BLOCK_ID);
+	MAX_BLOCK_VARIANT = malloc(MAX_BLOCK_ID * sizeof(uint64_t));
 
 	if (blockmap == NULL) {
 		fprintf(stderr, "Error reading blockmap at %s (Does it exist?), aborting.\n", blockmapPath);
@@ -114,9 +115,9 @@ void parseBlockdata(void) {
 	}
 
 	/* Alloc ID indirection layer (equivalent to number of defined meshes (lines) in blockmap */
-	blockmeshes = malloc(nblocks * sizeof(Blockmesh *));
-	boundingboxes = malloc(nblocks * sizeof(float (*)[6]));
-	spriteids = malloc(nblocks * sizeof(uint64_t *));
+	blockmeshes = malloc(MAX_BLOCK_ID * sizeof(Blockmesh *));
+	boundingboxes = malloc(MAX_BLOCK_ID * sizeof(float (*)[6]));
+	spriteids = malloc(MAX_BLOCK_ID * sizeof(uint64_t *));
 
 	/* Iterate through ids and variants and create appropriate blockmesh templates */
 	uint64_t id, nvariants, nvariant, uid;
@@ -132,7 +133,7 @@ void parseBlockdata(void) {
 	/* Precompute number of textures to get right UV coordinate mappings */
 	char *override;
 	uint64_t ntextures, overrides;
-	for (ntextures = id = 1; id < nblocks; id++) { /* Skip id 0 (only one texture for wiremesh */
+	for (ntextures = id = 1; id < MAX_BLOCK_ID; id++) { /* Skip id 0 (only one texture for wiremesh */
 		/* For each $ override, add its texture tile count, then add 1 for each default handle */
 		for (overrides = 0, override = strchr(blockmap[id], '$'); override; override = strchr(override, '$')) {
 			ntextures += strtoul(++override, NULL, 10); /* Increment override here for next iteration */
@@ -146,12 +147,13 @@ void parseBlockdata(void) {
 	GLsizei texAtlasSize = 0; /* Buffer size in bytes */
 
 	/* Now load mesh data */
-	for (spriteid = texid = id = 0; id < nblocks; id++) {
+	for (spriteid = texid = id = 0; id < MAX_BLOCK_ID; id++) {
 		/* Read specifications from file */
 		blockmap[id][strlen(blockmap[id]) - 1] = '\0'; /* Remove trailing \n */
 		variants = usf_scsplit(blockmap[id], ' ', &nvariants);
+		MAX_BLOCK_VARIANT[id] = nvariants;
 
-		blockmeshes[id] = malloc(nvariants * sizeof(Blockmesh));
+		blockmeshes[id] = calloc(nvariants, sizeof(Blockmesh));
 		spriteids[id] = calloc(nvariants, sizeof(uint64_t));
 
 		/* calloc to avoid having uninitialized data in no-collision blocks */
@@ -276,8 +278,8 @@ void parseBlockdata(void) {
 			}
 
 			/* Adjust maximum sizes for buffer allocation */
-			ov_bufsiz = MAX(ov_bufsiz, template.count[0]); tv_bufsiz = MAX(tv_bufsiz, template.count[1]);
-			oi_bufsiz = MAX(oi_bufsiz, template.count[2]); ti_bufsiz = MAX(ti_bufsiz, template.count[3]);
+			ov_bufsiz = USF_MAX(ov_bufsiz, template.count[0]); tv_bufsiz = USF_MAX(tv_bufsiz, template.count[1]);
+			oi_bufsiz = USF_MAX(oi_bufsiz, template.count[2]); ti_bufsiz = USF_MAX(ti_bufsiz, template.count[3]);
 
 			usf_freetxt(meshdata, meshdatalen);
 
@@ -309,7 +311,7 @@ void parseBlockdata(void) {
 
 	/* Cleanup */
 	free(texAtlasData);
-	usf_freetxt(blockmap, nblocks);
+	usf_freetxt(blockmap, MAX_BLOCK_ID);
 }
 
 void loadVertexData(Vertex vertex, char *vector) {
@@ -343,4 +345,16 @@ void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant) {
 	}
 
 	free(boundingbox); /* Cleanup disk file */
+}
+
+void deallocateVAO(GLuint VAO) {
+	/* Frees the memory (VBO and EBO) associated with a VAO */
+	GLint VBO, EBO;
+	GLuint VBOid, EBOid; /* For some reason getting buffers from VAO returns signed ids */
+
+	glBindVertexArray(VAO);
+	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO); VBOid = (GLuint) VBO;
+	glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &EBO); EBOid = (GLuint) EBO;
+	glDeleteVertexArrays(1, &VAO); glDeleteBuffers(1, &VBOid); glDeleteBuffers(1, &EBOid);
+	glBindVertexArray(0);
 }
