@@ -10,7 +10,7 @@ int RSM_LEFTCLICK;
 int RSM_RIGHTCLICK;
 int RSM_MIDDLECLICK;
 
-float mouseX, mouseY;
+double mouseX, mouseY;
 
 void processChar(GLFWwindow *window, unsigned int codepoint) {
 	/* Handle char inputs for command mode */
@@ -111,6 +111,9 @@ skip:
 	/* Handle cursor status after a potential gamestate change */
 	if (gamestate == NORMAL) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+	glfwGetCursorPos(window, &mouseX, &mouseY); /* Prevent mouse teleporting after cursor capture change */
+	mouseY = screenHeight - mouseY; /* Y axis swap */
 }
 
 void processMouseMovement(GLFWwindow *window, double xpos, double ypos) {
@@ -119,8 +122,8 @@ void processMouseMovement(GLFWwindow *window, double xpos, double ypos) {
 	(void) window;
 	ypos = screenHeight - ypos; /* Y axis swap */
 
-	float xoffset = xpos - mouseX;
-	float yoffset = ypos - mouseY;
+	double xoffset = xpos - mouseX;
+	double yoffset = ypos - mouseY;
 
 	mouseX = xpos; mouseY = ypos; /* Reversed to account for Y axis swap */
 

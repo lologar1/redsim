@@ -319,15 +319,17 @@ void renderCommand(void) {
 	for (vptr = v, iptr = i, ioffset = nlog = 0; nlog < RSM_MAX_COMMAND_LOG_LINES; nlog++) {
 		s = cmdlog[((uint64_t) (logptr - cmdlog) + nlog) % RSM_MAX_COMMAND_LOG_LINES];
 
-		nchars = drawText(s, vptr, iptr, ioffset, RSM_COMMAND_POS_X_PIXELS,
-				RSM_COMMAND_POS_Y_PIXELS + (RSM_MAX_COMMAND_LOG_LINES-nlog) * lineheight*RSM_GUI_SCALING_FACTOR,
+		nchars = drawText(s, vptr, iptr, ioffset, RSM_COMMAND_POS_X_PIXELS * RSM_GUI_SCALING_FACTOR,
+				RSM_COMMAND_POS_Y_PIXELS * RSM_GUI_SCALING_FACTOR
+				+ (RSM_MAX_COMMAND_LOG_LINES - nlog) * lineheight * RSM_COMMAND_TEXT_SCALING,
 				RSM_COMMAND_TEXT_SCALING, pItemIcons1);
 
 		vptr += nchars * 20; iptr += nchars * 6; ioffset += nchars * 4;
 	}
 
 	if (gamestate == COMMAND) {
-		nchars = drawText(cmdbuffer, vptr, iptr, ioffset, RSM_COMMAND_POS_X_PIXELS, RSM_COMMAND_POS_Y_PIXELS,
+		nchars = drawText(cmdbuffer, vptr, iptr, ioffset, RSM_COMMAND_POS_X_PIXELS * RSM_GUI_SCALING_FACTOR,
+				RSM_COMMAND_POS_Y_PIXELS * RSM_GUI_SCALING_FACTOR,
 				RSM_COMMAND_TEXT_SCALING, pItemIcons1);
 		vptr += nchars * 20; iptr += nchars * 6;
 	}

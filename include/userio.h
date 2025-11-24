@@ -16,8 +16,7 @@ extern int RSM_UP;
 extern int RSM_LEFTCLICK;
 extern int RSM_RIGHTCLICK;
 extern int RSM_MIDDLECLICK;
-extern float mouseX;
-extern float mouseY;
+extern double mouseX, mouseY;
 
 /* For mouse movements, lives in client */
 extern float pitch, yaw;

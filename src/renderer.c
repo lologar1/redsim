@@ -1,7 +1,7 @@
 #include "renderer.h"
 
-#define ACCUM_CLEAR (float []) {0.0f, 0.0f, 0.0f, 0.0f}
-#define REVEAL_CLEAR (float []) {1.0f}
+#define ACCUM_CLEAR (float [4]) {0.0f, 0.0f, 0.0f, 0.0f}
+#define REVEAL_CLEAR (float [4]) {1.0f, 1.0f, 1.0f, 1.0f}
 
 float compositionQuad[] = {
 	/* Position		TexPos */
@@ -175,7 +175,7 @@ void renderer_render(GLFWwindow *window) {
 		/* Transparent rendering */
 		glDepthMask(GL_FALSE); /* Don't affect depth buffer */
 		glClearBufferfv(GL_COLOR, 1, ACCUM_CLEAR);
-		glClearBufferfv(GL_COLOR, 2, REVEAL_CLEAR); /* Set reveal buffer to 1; others are reset to 0 by glClear */
+		glClearBufferfv(GL_COLOR, 2, REVEAL_CLEAR); /* Set reveal buffer to 1 */
 		glEnable(GL_BLEND);
 		glUseProgram(transShader);
 		glUniformMatrix4fv(transViewLocation, 1, GL_FALSE, (float *) view);
