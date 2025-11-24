@@ -315,6 +315,7 @@ void rsm_interact(void) {
 	if (RSM_MIDDLECLICK && lookingAt->id) { /* Pipette tool; don't consume as it only modifies a hotbar slot */
 		hotbar[hotbarIndex][hotslotIndex][0] = lookingAt->id;
 		hotbar[hotbarIndex][hotslotIndex][1] = lookingAt->variant;
+		updateGUI();
 	}
 }
 

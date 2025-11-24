@@ -198,7 +198,7 @@ void client_init(void) {
 	/* END TESTBED */
 
 	generateMeshlist(); /* Subsequently called only on render distance change */
-	renderGUI(); /* Subsequently called only on GUI modification (from user input) */
+	updateGUI(); /* Subsequently called only on GUI modification (from user input) */
 }
 
 /* View stuff */
@@ -261,25 +261,20 @@ void client_terminate(void) {
 		deallocateVAO(mesh[0]);
 		deallocateVAO(mesh[1]);
 	}
+
 	glDeleteTextures(1, &textureAtlas);
-	glDeleteTextures(1, &opaqueColorTex);
-	glDeleteTextures(1, &accTex);
-	glDeleteTextures(1, &revealTex);
-	glDeleteTextures(1, &depthTex);
-	glDeleteFramebuffers(1, &FBO);
+	glDeleteTextures(1, &guiAtlas);
 
 	deallocateVAO(wiremesh[0]);
 
 	for (i = 0; i < MAX_GUI_PRIORITY; i++) deallocateVAO(guiVAO[i]);
-	glDeleteTextures(1, &guiAtlas);
-	glDeleteTextures(1, &guiColorTex);
-	glDeleteTextures(1, &guiDepthTex);
-	glDeleteFramebuffers(1, &GUIFBO);
 
 	glDeleteProgram(opaqueShader);
 	glDeleteProgram(transShader);
 	glDeleteProgram(compositionShader);
 	glDeleteProgram(guiShader);
+
+	renderer_freeBuffers();
 
 	for (i = 0; i < MAX_BLOCK_ID; i++) {
 		/* Free blockmesh templates */

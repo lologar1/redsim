@@ -16,7 +16,7 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	/* Create window */
-	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME, NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(1920, 1080, WINDOW_NAME, NULL, NULL);
 
 	if (window == NULL) {
 		fprintf(stderr, "Fatal error creating GLFW window, exiting.\n");
@@ -43,6 +43,7 @@ int main() {
 	fprintf(stderr, "Starting %s\n", WINDOW_NAME);
 	client_init();
 	renderer_initShaders();
+	renderer_initBuffers();
 
 	renderer_render(window);
 
@@ -50,6 +51,6 @@ int main() {
 	glfwDestroyWindow(window);
 	glfwTerminate(); /* On window close */
 
-	printf("Process exited normally.\n");
+	fprintf(stderr, "Process exited normally.\n");
 	exit(RSM_EXIT_NORMAL);
 }

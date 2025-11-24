@@ -13,7 +13,7 @@ float compositionQuad[] = {
 	1.0f,  1.0f,	1.0f, 1.0f
 };
 
-unsigned int screenWidth = WINDOW_WIDTH, screenHeight = WINDOW_HEIGHT;
+unsigned int screenWidth = 1080, screenHeight = 1920;
 
 /* Shader programs */
 GLuint vertexShader, opaqueFragmentShader, transFragmentShader, compositionVertexShader,
@@ -41,7 +41,7 @@ void renderer_initShaders(void) {
 }
 
 void renderer_render(GLFWwindow *window) {
-	/* Setup renderer within window window and start rendering loop */
+	/* Setup renderer and start rendering loop */
 
 	/* Set callback functions */
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -62,115 +62,23 @@ void renderer_render(GLFWwindow *window) {
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) 0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (2 * sizeof(float)));
-
 	glBindVertexArray(0);
 
-	/* Draw opaque scene to the opaque color buffer, saving depth data
-	 * then render transparent scene (with depth check) to both accTex
-	 * and revealTex (for WB-OIT algorithm) and finally composite them
-	 * both and draw to screen framebuffer */
-
-	/* Opaque color buffer */
-	glGenTextures(1, &opaqueColorTex);
-	glBindTexture(GL_TEXTURE_2D, opaqueColorTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	/* Accumulator buffer (nearest for interpolation) */
-    glGenTextures(1, &accTex);
-	glBindTexture(GL_TEXTURE_2D, accTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	/* Reveal buffer (R32F precision) */
-	glGenTextures(1, &revealTex);
-	glBindTexture(GL_TEXTURE_2D, revealTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RED, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	/* Depth buffer */
-	glGenTextures(1, &depthTex);
-	glBindTexture(GL_TEXTURE_2D, depthTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glGenFramebuffers(1, &FBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-
-	/* Attach color buffers */
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, opaqueColorTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, accTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, revealTex, 0);
-
-	/* Attach depth buffer */
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
-
-	GLenum drawBuffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-	glDrawBuffers(3, drawBuffers); /* Set fragment shader output to proper buffers */
-
-	/* Link textures with shader samplers */
+	/* Link textures with shader samplers ; the textures are set to their proper slots in renderer_initBuffers */
 	glUseProgram(opaqueShader);
 	glUniform1i(glGetUniformLocation(opaqueShader, "atlas"), 0);
 	glUseProgram(transShader);
 	glUniform1i(glGetUniformLocation(transShader, "atlas"), 0);
 
-	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		fprintf(stderr, "Error making rendering framebuffer (GL_FRAMEBUFFER_COMPLETE)\n");
-
-	/* Draw any GUI elements to the GUI buffer (will get blended as a transparent layer in the
-	 * composition stage) with depth check (only draw "closest" (priority) GUI elements) */
-
-	/* GUI color buffer */
-	glGenTextures(1, &guiColorTex);
-	glBindTexture(GL_TEXTURE_2D, guiColorTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	/* GUI depth buffer */
-	glGenTextures(1, &guiDepthTex);
-	glBindTexture(GL_TEXTURE_2D, guiDepthTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glGenFramebuffers(1, &GUIFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, GUIFBO);
-
-	/* Attach color buffer */
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, guiColorTex, 0);
-
-	/* Attach depth buffer */
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, guiDepthTex, 0);
-
 	/* Link textures with shader samplers. The reason for using attachment 4
 	 * is purely because the GUI was introduced after code for the rest was implemented */
 	glUseProgram(guiShader);
 	glUniform1i(glGetUniformLocation(guiShader, "atlas"), 4);
-	mat4 guiProject;
-	glm_ortho(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.0f, MAX_GUI_PRIORITY, guiProject);
-	glUniformMatrix4fv(glGetUniformLocation(guiShader, "projectionMatrix"), 1, GL_FALSE, (float *) guiProject);
-
-	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		fprintf(stderr, "Error making GUI framebuffer (GL_FRAMEBUFFER_COMPLETE)\n");
-
 	glUseProgram(compositionShader);
 	glUniform1i(glGetUniformLocation(compositionShader, "opaqueBuffer"), 1);
 	glUniform1i(glGetUniformLocation(compositionShader, "accBuffer"), 2);
 	glUniform1i(glGetUniformLocation(compositionShader, "revealBuffer"), 3);
 	glUniform1i(glGetUniformLocation(compositionShader, "guiBuffer"), 5);
-
-	/* Texture mapping */
-	glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, textureAtlas);
-	glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, opaqueColorTex);
-	glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, accTex);
-	glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, revealTex);
-	glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, guiAtlas);
-	glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, guiColorTex);
 
 	/* Add value in accumulation buffer; will divide by sum of alphas afterwards */
 	glBlendFuncSeparatei(1, GL_ONE, GL_ONE, GL_ONE, GL_ONE);
@@ -204,10 +112,14 @@ void renderer_render(GLFWwindow *window) {
 
 	/* Render loop */
 	while (!glfwWindowShouldClose(window)) {
-	/* TODO resize FBO/GUIFBO on window resize? */
 		if ((glError = glGetError())) {
 			fprintf(stderr, "OpenGL Error %d\n", glError);
 			exit(RSM_EXIT_GLERROR);
+		}
+
+		if (gui_scheduledUpdate) { /* Redraw requested by updateGUI */
+			renderGUI();
+			gui_scheduledUpdate = 0;
 		}
 
 		/* Framerate cap */
@@ -234,11 +146,10 @@ void renderer_render(GLFWwindow *window) {
 		glm_lookat(cameraPos, viewTarget, UPVECTOR, view);
 
 		/* Perspective projection matrix */
-		glm_perspective(glm_rad(RSM_FOV), (float) WINDOW_WIDTH / (float) WINDOW_HEIGHT,
+		glm_perspective(glm_rad(RSM_FOV), (float) screenWidth / (float) screenHeight,
 				RENDER_DISTANCE_NEAR, (float) RENDER_DISTANCE * CHUNKSIZE, perspective);
 
 		/* Rendering */
-		glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
 
@@ -291,7 +202,6 @@ void renderer_render(GLFWwindow *window) {
 
 		/* Composition */
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, screenWidth, screenHeight);
 		glDisable(GL_DEPTH_TEST); /* Don't clear as screen is overwritten and no depth test */
 		glDisable(GL_BLEND);
 		glUseProgram(compositionShader);
@@ -303,6 +213,124 @@ void renderer_render(GLFWwindow *window) {
 	}
 }
 
+void renderer_initBuffers(void) {
+	/* Create GL buffers for rendering */
+
+	/* Draw opaque scene to the opaque color buffer, saving depth data
+	 * then render transparent scene (with depth check) to both accTex
+	 * and revealTex (for WB-OIT algorithm) and finally composite them
+	 * both and draw to screen framebuffer */
+	/* Opaque color buffer */
+	glGenTextures(1, &opaqueColorTex);
+	glBindTexture(GL_TEXTURE_2D, opaqueColorTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	/* Accumulator buffer (nearest for interpolation) */
+    glGenTextures(1, &accTex);
+	glBindTexture(GL_TEXTURE_2D, accTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	/* Reveal buffer (R32F precision) */
+	glGenTextures(1, &revealTex);
+	glBindTexture(GL_TEXTURE_2D, revealTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, screenWidth, screenHeight, 0, GL_RED, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	/* Depth buffer */
+	glGenTextures(1, &depthTex);
+	glBindTexture(GL_TEXTURE_2D, depthTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, screenWidth, screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	/* Draw any GUI elements to the GUI buffer (will get blended as a transparent layer in the
+	 * composition stage) with depth check (only draw "closest" (priority) GUI elements) */
+
+	/* GUI color buffer */
+	glGenTextures(1, &guiColorTex);
+	glBindTexture(GL_TEXTURE_2D, guiColorTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	/* GUI depth buffer */
+	glGenTextures(1, &guiDepthTex);
+	glBindTexture(GL_TEXTURE_2D, guiDepthTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, screenWidth, screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	/* Framebuffer generation and linking */
+
+	glGenFramebuffers(1, &FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+	/* Attach color buffers */
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, opaqueColorTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, accTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, revealTex, 0);
+
+	/* Attach depth buffer */
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
+
+	GLenum drawBuffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+	glDrawBuffers(3, drawBuffers); /* Set fragment shader output to proper buffers */
+
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		fprintf(stderr, "Error making rendering framebuffer (GL_FRAMEBUFFER_COMPLETE)\n");
+
+	glGenFramebuffers(1, &GUIFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, GUIFBO);
+
+	/* Attach color buffer */
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, guiColorTex, 0);
+
+	/* Attach depth buffer */
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, guiDepthTex, 0);
+
+	glUseProgram(guiShader);
+	mat4 guiProject;
+	glm_ortho(0.0f, screenWidth, 0.0f, screenHeight, 0.0f, MAX_GUI_PRIORITY, guiProject);
+	glUniformMatrix4fv(glGetUniformLocation(guiShader, "projectionMatrix"), 1, GL_FALSE, (float *) guiProject);
+
+	GLenum guiDrawBuffer = GL_COLOR_ATTACHMENT0;
+	glDrawBuffers(1, &guiDrawBuffer);
+
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		fprintf(stderr, "Error making GUI framebuffer (GL_FRAMEBUFFER_COMPLETE)\n");
+
+	/* Texture mapping */
+	glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, textureAtlas);
+	glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, opaqueColorTex);
+	glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, accTex);
+	glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, revealTex);
+	glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, guiAtlas);
+	glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, guiColorTex);
+	glActiveTexture(GL_TEXTURE15); /* Avoid disconnecting textures on subsequent calls */
+	glViewport(0, 0, screenWidth, screenHeight);
+}
+
+void renderer_freeBuffers() {
+	/* Free rendering GL buffers */
+	/* Delete textures */
+    glDeleteTextures(1, &opaqueColorTex);
+    glDeleteTextures(1, &accTex);
+    glDeleteTextures(1, &revealTex);
+    glDeleteTextures(1, &depthTex);
+
+    glDeleteTextures(1, &guiColorTex);
+    glDeleteTextures(1, &guiDepthTex);
+
+	/* Delete framebuffers */
+	glDeleteFramebuffers(1, &FBO);
+	glDeleteFramebuffers(1, &GUIFBO);
+}
+
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	/* Resize viewport when this function (window resize) is called.
 	 * This function is called when the window is first displayed too. */
@@ -311,4 +339,9 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 
 	screenWidth = width;
 	screenHeight = height;
+
+	renderer_freeBuffers();
+	renderer_initBuffers();
+	buildInventory(); /* Regenerate menus at proper scale */
+	updateGUI(); /* Re-render with new size */
 }

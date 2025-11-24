@@ -40,26 +40,33 @@ typedef struct Textchar {
 
 extern FT_Library ft; /* FreeType library */
 extern FT_Face typeface;
+
 extern GLuint guiAtlas, guiVAO[MAX_GUI_PRIORITY];
 extern usf_hashmap *namemap;
+
 extern unsigned int hotslotIndex, hotbarIndex, inventoryIndex, nGUIIndices[MAX_GUI_PRIORITY];
 extern uint64_t hotbar[RSM_HOTBAR_COUNT][RSM_HOTBAR_SLOTS][2];
 extern uint64_t submenus[RSM_INVENTORY_ICONS][RSM_INVENTORY_SLOTS_HORIZONTAL][RSM_INVENTORY_SLOTS_VERTICAL];
 
+extern int gui_scheduledUpdate; /* Flag set by updateGUI, consumed each frame if need be */
+
 void initGUI(void);/* OpenGL stuff for GUI */
-void initFont(unsigned char **guiatlas, GLsizei *atlassize); /* Init textures for character rendering */
 void parseGUIdata(void); /* Create texture atlas and gui elements */
+void updateGUI(void); /* Calls renderGUI at most once per frame */
 
+/* Helpers */
+void renderGUI(void);
+void loadFont(unsigned char **guiatlas, GLsizei *atlassize); /* Init textures for character rendering */
 float guiAtlasAdjust(float y, GUIPriority priority);
-void meshAppend(unsigned int priority, float *v, unsigned int sizev, unsigned int *i, unsigned int sizei);
+void meshSet(unsigned int priority, float *v, unsigned int sizev, unsigned int *i, unsigned int sizei);
 
-void renderGUI(void); /* Render the GUI */
+/* Rendering */
 unsigned int drawText(char *str, float *vbuf, unsigned int *ibuf, unsigned int ioffset, float x, float y, float scale, GUIPriority priority);
 void renderCommand(void);
 void renderItemSprite(uint64_t id, uint64_t variant, float x, float y, float w, float h);
 void renderCrosshair(void);
 void renderHotbar(void);
 void renderInventory(void);
-void initInventory(void);
+void buildInventory(void);
 
 #endif
