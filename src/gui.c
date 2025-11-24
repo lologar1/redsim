@@ -50,9 +50,7 @@ void initFont(unsigned char **guiatlas, GLsizei *atlassize) {
 		exit(RSM_EXIT_TEXTFAIL);
 	}
 
-	char typefacePath[RSM_MAX_PATH_NAME_LENGTH];
-	pathcat(typefacePath, 2, TYPEFACE_PATH, FONT_PATH);
-
+#define typefacePath TYPEFACE_PATH FONT_PATH
 	if (FT_New_Face(ft, typefacePath, 0, &typeface)) {
 		fprintf(stderr, "Error retrieving typeface at %s, aborting.\n", typefacePath);
 		exit(RSM_EXIT_TEXTFAIL);
@@ -145,12 +143,8 @@ void initFont(unsigned char **guiatlas, GLsizei *atlassize) {
 char *iconlayouts[RSM_INVENTORY_ICONS]; /* For use by inventory init ; free'd then */
 void parseGUIdata(void) {
 	/* Create GUI texture atlas and parse GUI elements from disk */
-	char guiPath[sizeof(RESOURCE_BASE_PATH) + sizeof(TEXTURE_GUI_PATH)];
-	char guimapPath[sizeof(RESOURCE_BASE_PATH) + sizeof(GUIMAP_PATH)];
-
-	pathcat(guiPath, 2, RESOURCE_BASE_PATH, TEXTURE_GUI_PATH);
-	pathcat(guimapPath, 2, RESOURCE_BASE_PATH, GUIMAP_PATH);
-
+#define guiPath RESOURCE_BASE_PATH TEXTURE_GUI_PATH
+#define guimapPath RESOURCE_BASE_PATH GUIMAP_PATH
 	char *guimap, **elements, *element;
 	uint64_t nelement, nelements;
 

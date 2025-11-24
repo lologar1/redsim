@@ -42,7 +42,10 @@ int main() {
 	/* Start rendering and gameloop */
 	fprintf(stderr, "Starting %s\n", WINDOW_NAME);
 	client_init();
-	render(window);
+	renderer_initShaders();
+
+	renderer_render(window);
+	glfwTerminate(); /* On window close */
 
 	printf("Process exited normally.\n");
 	exit(RSM_EXIT_NORMAL);

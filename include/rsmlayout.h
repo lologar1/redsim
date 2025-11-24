@@ -17,7 +17,7 @@ extern float RSM_FLY_FRICTION;
 extern float RSM_FLY_SPEED_CAP;
 
 #define RSM_KEY_CTRL_EXIT GLFW_KEY_Q
-#define RSM_KEY_MENU GLFW_KEY_CAPS_LOCK /* CAPS remapped to ESC on my computer */
+#define RSM_KEY_MENU GLFW_KEY_ESCAPE
 #define RSM_KEY_INVENTORY GLFW_KEY_E
 #define RSM_KEY_COMMAND 0x74 /* ASCII 't' */
 #define RSM_KEY_CTRL_CLEARLOG GLFW_KEY_R

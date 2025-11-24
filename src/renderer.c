@@ -15,7 +15,27 @@ float compositionQuad[] = {
 
 unsigned int screenWidth = WINDOW_WIDTH, screenHeight = WINDOW_HEIGHT;
 
-void render(GLFWwindow *window) {
+GLuint vertexShader, opaqueFragmentShader, transFragmentShader, compositionVertexShader,
+	   compositionFragmentShader, guiVertexShader, guiFragmentShader, opaqueShader,
+	   transShader, compositionShader, guiShader;
+
+void renderer_initShaders(void) {
+	/* Compile shaders from GLSL programs and link them */
+	vertexShader = createShader(GL_VERTEX_SHADER, "shaders/vertexshader.glsl");
+	opaqueFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/opaquefragmentshader.glsl");
+	transFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/transfragmentshader.glsl");
+	compositionVertexShader = createShader(GL_VERTEX_SHADER, "shaders/compositionvertexshader.glsl");
+	compositionFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/compositionfragmentshader.glsl");
+	guiVertexShader = createShader(GL_VERTEX_SHADER, "shaders/guivertexshader.glsl");
+	guiFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/guifragmentshader.glsl");
+
+	opaqueShader = createShaderProgram(vertexShader, opaqueFragmentShader);
+	transShader = createShaderProgram(vertexShader, transFragmentShader);
+	compositionShader = createShaderProgram(compositionVertexShader, compositionFragmentShader);
+	guiShader = createShaderProgram(guiVertexShader, guiFragmentShader);
+}
+
+void renderer_render(GLFWwindow *window) {
 	/* Setup renderer within window window and start rendering loop */
 
 	/* Set callback functions */
@@ -26,27 +46,13 @@ void render(GLFWwindow *window) {
 	glfwSetMouseButtonCallback(window, processMouseInput);
 	glfwSetScrollCallback(window, processMouseScroll);
 
-	/* Compile shaders from GLSL programs and link them */
-	GLuint vertexShader = createShader(GL_VERTEX_SHADER, "shaders/vertexshader.glsl");
-	GLuint opaqueFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/opaquefragmentshader.glsl");
-	GLuint transFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/transfragmentshader.glsl");
-	GLuint compositionVertexShader = createShader(GL_VERTEX_SHADER, "shaders/compositionvertexshader.glsl");
-	GLuint compositionFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/compositionfragmentshader.glsl");
-	GLuint guiVertexShader = createShader(GL_VERTEX_SHADER, "shaders/guivertexshader.glsl");
-	GLuint guiFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/guifragmentshader.glsl");
-
-	GLuint opaqueShader = createShaderProgram(vertexShader, opaqueFragmentShader);
-	GLuint transShader = createShaderProgram(vertexShader, transFragmentShader);
-	GLuint compositionShader = createShaderProgram(compositionVertexShader, compositionFragmentShader);
-	GLuint guiShader = createShaderProgram(guiVertexShader, guiFragmentShader);
-
 	/* To render composition quad at the end of rendering */
 	GLuint compositionVAO, compositionVBO;
 	glGenVertexArrays(1, &compositionVAO);
 	glGenBuffers(1, &compositionVBO);
 	glBindVertexArray(compositionVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, compositionVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(compositionQuad), &compositionQuad, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(compositionQuad), compositionQuad, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) 0);
 	glEnableVertexAttribArray(1);
@@ -77,7 +83,7 @@ void render(GLFWwindow *window) {
 	/* Reveal buffer (R32F precision) */
 	glGenTextures(1, &revealTex);
 	glBindTexture(GL_TEXTURE_2D, revealTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RED, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RED, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -186,12 +192,18 @@ void render(GLFWwindow *window) {
 	vec3 cameraPos = {0.0f, 0.0f, 0.0f};
 	vec3 relativeViewTarget, viewTarget;
 
-	/* Render loop */
+	/* Shader locations */
+	GLint opaqueViewLocation, transViewLocation, opaqueProjLocation, transProjLocation;
+	opaqueViewLocation = glGetUniformLocation(opaqueShader, "viewMatrix");
+	transViewLocation = glGetUniformLocation(transShader, "viewMatrix");
+	opaqueProjLocation = glGetUniformLocation(opaqueShader, "projectionMatrix");
+	transProjLocation = glGetUniformLocation(transShader, "projectionMatrix");
+
 	GLenum glError;
 
+	/* Render loop */
 	while (!glfwWindowShouldClose(window)) {
-		/* Game loop */
-
+	/* TODO resize FBO/GUIFBO on window resize? */
 		if ((glError = glGetError())) {
 			fprintf(stderr, "OpenGL Error %d\n", glError);
 			exit(RSM_EXIT_GLERROR);
@@ -225,9 +237,9 @@ void render(GLFWwindow *window) {
 				RENDER_DISTANCE_NEAR, (float) RENDER_DISTANCE * CHUNKSIZE, perspective);
 
 		/* Rendering */
-		glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
-		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+		glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
 
 		/* Opaque rendering */
 		glEnable(GL_DEPTH_TEST);
@@ -236,8 +248,8 @@ void render(GLFWwindow *window) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_BLEND);
 		glUseProgram(opaqueShader);
-		glUniformMatrix4fv(glGetUniformLocation(opaqueShader, "viewMatrix"), 1, GL_FALSE, (float *) view);
-		glUniformMatrix4fv(glGetUniformLocation(opaqueShader, "projectionMatrix"), 1, GL_FALSE, (float *) perspective);
+		glUniformMatrix4fv(opaqueViewLocation, 1, GL_FALSE, (float *) view);
+		glUniformMatrix4fv(opaqueProjLocation, 1, GL_FALSE, (float *) perspective);
 		for (i = 0; i < nmesh; i++) {
 			glBindVertexArray(meshes[i][0]);
 			glDrawElements(GL_TRIANGLES, meshes[i][2], GL_UNSIGNED_INT, 0);
@@ -249,14 +261,13 @@ void render(GLFWwindow *window) {
 		glDrawElements(GL_LINES, wiremesh[1], GL_UNSIGNED_INT, 0);
 
 		/* Transparent rendering */
-		glEnable(GL_CULL_FACE);
 		glDepthMask(GL_FALSE); /* Don't affect depth buffer */
 		glClearBufferfv(GL_COLOR, 1, ACCUM_CLEAR);
 		glClearBufferfv(GL_COLOR, 2, REVEAL_CLEAR); /* Set reveal buffer to 1; others are reset to 0 by glClear */
 		glEnable(GL_BLEND);
 		glUseProgram(transShader);
-		glUniformMatrix4fv(glGetUniformLocation(transShader, "viewMatrix"), 1, GL_FALSE, (float *) view);
-		glUniformMatrix4fv(glGetUniformLocation(transShader, "projectionMatrix"), 1, GL_FALSE, (float *) perspective);
+		glUniformMatrix4fv(transViewLocation, 1, GL_FALSE, (float *) view);
+		glUniformMatrix4fv(transProjLocation, 1, GL_FALSE, (float *) perspective);
 		for (i = 0; i < nmesh; i++) {
 			glBindVertexArray(meshes[i][1]);
 			glDrawElements(GL_TRIANGLES, meshes[i][3], GL_UNSIGNED_INT, 0);
@@ -280,19 +291,15 @@ void render(GLFWwindow *window) {
 		/* Composition */
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, screenWidth, screenHeight);
-
-		/* Composite rendering and aftereffects */
 		glDisable(GL_DEPTH_TEST); /* Don't clear as screen is overwritten and no depth test */
 		glDisable(GL_BLEND);
 		glUseProgram(compositionShader);
 		glBindVertexArray(compositionVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6); /* Draw final quad */
 
-	    glfwPollEvents(); /* Update state and call appropriate callback functions for user input */
 		glfwSwapBuffers(window); /* Render what's been drawn */
+	    glfwPollEvents(); /* Update state and call appropriate callback functions for user input */
 	}
-
-	/* Window has been closed */
 	glfwTerminate();
 }
 

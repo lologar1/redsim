@@ -98,14 +98,8 @@ void parseBlockdata(void) {
 	 * in blockmeshes (indirection is id, then variant, which gives a pointer to the template itself).
 	 * Also handle collision bounding boxes */
 
-	/* Allocs one byte extra since there are two \0 chars, but that's fine.
-	 * Concatenate base path (textures/) with subpaths */
-	char texMeshPath[sizeof(RESOURCE_BASE_PATH) + sizeof(TEXTURE_BLOCK_PATH)];
-	char blockmapPath[sizeof(RESOURCE_BASE_PATH) + sizeof(BLOCKMAP_PATH)];
-
-	strcpy(texMeshPath, RESOURCE_BASE_PATH); strcat(texMeshPath, TEXTURE_BLOCK_PATH);
-	strcpy(blockmapPath, RESOURCE_BASE_PATH); strcat(blockmapPath, BLOCKMAP_PATH);
-
+#define texMeshPath RESOURCE_BASE_PATH TEXTURE_BLOCK_PATH
+#define blockmapPath RESOURCE_BASE_PATH BLOCKMAP_PATH
 	fprintf(stderr, "Loading blockmeshes from directory %s\n", texMeshPath);
 	fprintf(stderr, "Loading blockmap from file %s\n", blockmapPath);
 
@@ -333,7 +327,6 @@ void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant) {
 	 * boundingboxes */
 
 	char boundingboxpath[RSM_MAX_PATH_NAME_LENGTH];
-
 	pathcat(boundingboxpath, 4, RESOURCE_BASE_PATH, TEXTURE_BLOCK_PATH, boxname, BOUNDINGBOX_EXTENSION);
 
 	char *boundingbox;

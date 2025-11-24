@@ -11,7 +11,6 @@ int RSM_RIGHTCLICK;
 int RSM_MIDDLECLICK;
 
 float mouseX, mouseY;
-int RSM_DEFER_SET_STATE_COMMAND = 0;
 
 void processChar(GLFWwindow *window, unsigned int codepoint) {
 	/* Handle char inputs for command mode */
