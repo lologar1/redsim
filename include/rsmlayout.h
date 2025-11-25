@@ -7,7 +7,7 @@
 
 #define DEFAULT_SCREEN_WIDTH 1920
 #define DEFAULT_SCREEN_HEIGHT 1080
-#define WINDOW_NAME "Redsim V0.7"
+#define WINDOW_NAME "Redsim V0.8"
 
 extern float RSM_FLY_X_ACCELERATION;
 extern float RSM_FLY_Y_ACCELERATION;
