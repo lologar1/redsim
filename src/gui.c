@@ -462,7 +462,7 @@ void renderInventory(void) {
 			RSM_INVENTORY_ICON_SIZE_PIXELS, RSM_INVENTORY_ICON_SIZE_PIXELS);
 }
 
-void buildInventory(void) { /* TODO fix broken on screen resize */
+void buildInventory(void) {
 	/* Initialize inventory mesh, which is made up of RSM_INVENTORY_SLOTS_HORIZONTAL by
 	 * RSM_INVENTORY_SLOTS_VERTICAL slots, centered on the screen, with clickable icons
 	 * on top which act as subfolders on top (starting at the leftmost horizontal slot) */

@@ -47,7 +47,7 @@ void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 	if (gamestate == COMMAND && action != GLFW_RELEASE) {
 		switch (key) {
 			case GLFW_KEY_BACKSPACE: cmd_parseChar('\b'); updateGUI(); break;
-			case GLFW_KEY_ENTER: cmd_parseChar('\n'); updateGUI(); break;
+			case GLFW_KEY_ENTER: cmd_parseChar('\n'); gamestate = NORMAL; updateGUI(); break;
 			case GLFW_KEY_TAB: cmd_parseChar('\t'); updateGUI(); break;
 		}
 

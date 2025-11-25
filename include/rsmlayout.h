@@ -106,7 +106,7 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RESOURCE_BASE_PATH "textures/"
 #define TEXTURE_BLOCK_PATH "blocks/"
 #define TEXTURE_GUI_PATH "gui/"
-#define FONT_PATH "minecraft.ttf"
+#define FONT_PATH "arial.ttf"
 #define BLOCKMAP_PATH "blockmap.txt"
 #define GUIMAP_PATH "guimap.txt"
 #define MESH_EXTENSION ".mesh"
