@@ -66,8 +66,6 @@ void client_init(void) {
 	/* TODO: Retrieve data from disk
 	 * And remesh all chunks */
 
-	fprintf(stderr, "Initialization success!\n");
-
 	/* TESTBED */
 	Blockdata b0 = {
 		.id = 1,

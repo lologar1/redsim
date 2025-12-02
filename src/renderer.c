@@ -1,7 +1,8 @@
 #include "renderer.h"
 
-#define ACCUM_CLEAR (float [4]) {0.0f, 0.0f, 0.0f, 0.0f}
-#define REVEAL_CLEAR (float [4]) {1.0f, 1.0f, 1.0f, 1.0f}
+#define COLOR_CLEAR (float [4]) {0.098f, 0.098f, 0.098f, 1.0f}
+#define ZERO_CLEAR (float [4]) {0.0f, 0.0f, 0.0f, 0.0f}
+#define ONE_CLEAR (float [4]) {1.0f, 1.0f, 1.0f, 1.0f}
 
 float compositionQuad[] = {
 	/* Position		TexPos */
@@ -149,16 +150,24 @@ void renderer_render(GLFWwindow *window) {
 		glm_perspective(glm_rad(RSM_FOV), (float) screenWidth / (float) screenHeight,
 				RENDER_DISTANCE_NEAR, (float) RENDER_DISTANCE * CHUNKSIZE, perspective);
 
+		/* Things we must keep track of during rendering (OpenGL state stuff)
+		 * glDepthMask and glDepthTest
+		 * glCullFace
+		 * glBlend */
+
 		/* Rendering */
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+		glDepthMask(GL_TRUE); glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
+		glDisable(GL_BLEND);
+
+		glClearBufferfv(GL_COLOR, 0, COLOR_CLEAR);
+		glClearBufferfv(GL_COLOR, 1, ZERO_CLEAR);
+		glClearBufferfv(GL_COLOR, 2, ONE_CLEAR);
+		glClearBufferfv(GL_DEPTH, 0, ONE_CLEAR);
 
 		/* Opaque rendering */
-		glEnable(GL_DEPTH_TEST);
-		glDepthMask(GL_TRUE);
-		glClearColor(0.098f, 0.098f, 0.098f, 1.0f); /* This is my terminal background color */
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDisable(GL_BLEND);
 		glUseProgram(opaqueShader);
 		glUniformMatrix4fv(opaqueViewLocation, 1, GL_FALSE, (float *) view);
 		glUniformMatrix4fv(opaqueProjLocation, 1, GL_FALSE, (float *) perspective);
@@ -168,15 +177,14 @@ void renderer_render(GLFWwindow *window) {
 		}
 
 		/* Wireframe (highlighting) rendering */
-		glDisable(GL_CULL_FACE);
 		glBindVertexArray(wiremesh[0]);
 		glDrawElements(GL_LINES, wiremesh[1], GL_UNSIGNED_INT, 0);
 
 		/* Transparent rendering */
-		glDepthMask(GL_FALSE); /* Don't affect depth buffer */
-		glClearBufferfv(GL_COLOR, 1, ACCUM_CLEAR);
-		glClearBufferfv(GL_COLOR, 2, REVEAL_CLEAR); /* Set reveal buffer to 1 */
+		glDepthMask(GL_FALSE); glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
 		glEnable(GL_BLEND);
+
 		glUseProgram(transShader);
 		glUniformMatrix4fv(transViewLocation, 1, GL_FALSE, (float *) view);
 		glUniformMatrix4fv(transProjLocation, 1, GL_FALSE, (float *) perspective);
@@ -186,24 +194,26 @@ void renderer_render(GLFWwindow *window) {
 		}
 
 		/* GUI rendering */
-		glDisable(GL_CULL_FACE);
 		glBindFramebuffer(GL_FRAMEBUFFER, GUIFBO);
-		glDisable(GL_DEPTH_TEST); /* Already ordered for transparency */
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glDepthMask(GL_FALSE); glDisable(GL_DEPTH_TEST);
+		glDisable(GL_CULL_FACE);
 		glEnable(GL_BLEND);
-		glUseProgram(guiShader);
 
+		glClearBufferfv(GL_COLOR, 0, ZERO_CLEAR);
+		glClearBufferfv(GL_DEPTH, 0, ONE_CLEAR);
+
+		glUseProgram(guiShader);
 		for (i = MAX_GUI_PRIORITY - 1; i >= 0; i--) {
 			glBindVertexArray(guiVAO[i]);
-			if (nGUIIndices[i])
-				glDrawElements(GL_TRIANGLES, nGUIIndices[i], GL_UNSIGNED_INT, 0);
+			if (nGUIIndices[i]) glDrawElements(GL_TRIANGLES, nGUIIndices[i], GL_UNSIGNED_INT, 0);
 		}
 
 		/* Composition */
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST); /* Don't clear as screen is overwritten and no depth test */
+		glDepthMask(GL_FALSE); glDisable(GL_DEPTH_TEST);
+		glDisable(GL_CULL_FACE);
 		glDisable(GL_BLEND);
+		/* Do not clear as entire screen is overwritten with composed image */
 		glUseProgram(compositionShader);
 		glBindVertexArray(compositionVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6); /* Draw final quad */
@@ -223,14 +233,14 @@ void renderer_initBuffers(void) {
 	/* Opaque color buffer */
 	glGenTextures(1, &opaqueColorTex);
 	glBindTexture(GL_TEXTURE_2D, opaqueColorTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	/* Accumulator buffer (nearest for interpolation) */
     glGenTextures(1, &accTex);
 	glBindTexture(GL_TEXTURE_2D, accTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -254,7 +264,7 @@ void renderer_initBuffers(void) {
 	/* GUI color buffer */
 	glGenTextures(1, &guiColorTex);
 	glBindTexture(GL_TEXTURE_2D, guiColorTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

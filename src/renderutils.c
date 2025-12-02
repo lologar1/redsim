@@ -13,10 +13,8 @@ size_t ov_bufsiz, tv_bufsiz, oi_bufsiz, ti_bufsiz; /* Remeshing buffer sizes */
 GLuint createShader(GLenum shaderType, char *shaderSource) {
 	/* Creates a shader from source shaderSource of type shaderType and compiles
 	 * it, logging errors to stderr and returning the shader ID */
-
 	int success;
-	char infoLog[RSM_MAX_SHADER_INFOLOG_LENGTH];
-	char *src;
+	char infoLog[RSM_MAX_SHADER_INFOLOG_LENGTH], *src;
 	GLuint shaderID;
 
 	shaderID = glCreateShader(shaderType); /* Create gl shader of proper type */
@@ -39,7 +37,6 @@ GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	/* Creates and links a shader program using a vertex and a fragment shader,
 	 * logging errors to stderr and returning the program object ID. The shader
 	 * objects are then deleted as they are no longer needed ! */
-
 	int success;
 	char infoLog[RSM_MAX_SHADER_INFOLOG_LENGTH];
 	GLuint programID;

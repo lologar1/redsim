@@ -44,6 +44,7 @@ int main() {
 	client_init();
 	renderer_initShaders();
 	renderer_initBuffers();
+	fprintf(stderr, "Renderer initialization success!\n");
 
 	renderer_render(window);
 

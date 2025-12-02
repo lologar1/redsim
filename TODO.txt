@@ -1,0 +1,7 @@
+GUI rework (cleaner implementation) (0.8)
+(DO NOT SKIP) Documentation update !
+Commands
+Save to disk
+Textures and 3D models (+ special placements for some) (0.9)
+eval (compiling to graph)
+polishing up (1.0)
