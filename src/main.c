@@ -4,7 +4,7 @@
 #include "client.h"
 #include "rsmlayout.h"
 
-int main() {
+int32_t main() {
 	/* Make OpenGL context */
 	glfwInit();
 

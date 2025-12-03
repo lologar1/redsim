@@ -1,18 +1,18 @@
 #include "userio.h"
 
-int RSM_FORWARD;
-int RSM_BACKWARD;
-int RSM_RIGHT;
-int RSM_LEFT;
-int RSM_DOWN;
-int RSM_UP;
-int RSM_LEFTCLICK;
-int RSM_RIGHTCLICK;
-int RSM_MIDDLECLICK;
+int32_t RSM_FORWARD;
+int32_t RSM_BACKWARD;
+int32_t RSM_RIGHT;
+int32_t RSM_LEFT;
+int32_t RSM_DOWN;
+int32_t RSM_UP;
+int32_t RSM_LEFTCLICK;
+int32_t RSM_RIGHTCLICK;
+int32_t RSM_MIDDLECLICK;
 
 double mouseX, mouseY;
 
-void processChar(GLFWwindow *window, unsigned int codepoint) {
+void io_processChar(GLFWwindow *window, uint32_t codepoint) {
 	/* Handle char inputs for command mode */
 	char c = (char) codepoint;
 
@@ -21,16 +21,16 @@ void processChar(GLFWwindow *window, unsigned int codepoint) {
 		if (c == RSM_KEY_COMMAND && gamestate == NORMAL) {
 			gamestate = COMMAND;
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-			updateGUI();
+			gui_updateGUI();
 		}
 		return;
 	}
 
 	cmd_parseChar(c); /* Invalid characters rejected */
-	updateGUI();
+	gui_updateGUI();
 }
 
-void processKey(GLFWwindow *window, int key, int scancode, int action, int mods) {
+void io_processKey(GLFWwindow *window, int32_t key, int32_t scancode, int32_t action, int32_t mods) {
 	/* Set appropriate user input variables for keypresses */
 
 	(void) scancode;
@@ -40,15 +40,15 @@ void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 	if (action == GLFW_PRESS && key == RSM_KEY_MENU) {
 		if (gamestate == NORMAL) gamestate = MENU;
 		else gamestate = NORMAL;
-		updateGUI();
+		gui_updateGUI();
 	}
 
 	/* Non-characters that affect the command prompt */
 	if (gamestate == COMMAND && action != GLFW_RELEASE) {
 		switch (key) {
-			case GLFW_KEY_BACKSPACE: cmd_parseChar('\b'); updateGUI(); break;
-			case GLFW_KEY_ENTER: cmd_parseChar('\n'); gamestate = NORMAL; updateGUI(); break;
-			case GLFW_KEY_TAB: cmd_parseChar('\t'); updateGUI(); break;
+			case GLFW_KEY_BACKSPACE: cmd_parseChar('\b'); gui_updateGUI(); break;
+			case GLFW_KEY_ENTER: cmd_parseChar('\n'); gamestate = NORMAL; gui_updateGUI(); break;
+			case GLFW_KEY_TAB: cmd_parseChar('\t'); gui_updateGUI(); break;
 		}
 
 		goto ctrl; /* All further keypresses handled by char callback */
@@ -71,24 +71,24 @@ void processKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 	switch (key) {
 		case RSM_KEY_INVENTORY:
 			if (gamestate == NORMAL) gamestate = INVENTORY;
-			updateGUI();
+			gui_updateGUI();
 			break;
 		case RSM_KEY_COMMAND:
 			/* If the key is also a character, then the switch logic is in the char callback! */
 			// if (gamestate == NORMAL) gamestate = COMMAND;
 			break;
-		case RSM_KEY_HOTSLOT0: hotslotIndex = 0; updateGUI(); break;
-		case RSM_KEY_HOTSLOT1: hotslotIndex = 1; updateGUI(); break;
-		case RSM_KEY_HOTSLOT2: hotslotIndex = 2; updateGUI(); break;
-		case RSM_KEY_HOTSLOT3: hotslotIndex = 3; updateGUI(); break;
-		case RSM_KEY_HOTSLOT4: hotslotIndex = 4; updateGUI(); break;
-		case RSM_KEY_HOTSLOT5: hotslotIndex = 5; updateGUI(); break;
-		case RSM_KEY_HOTSLOT6: hotslotIndex = 6; updateGUI(); break;
-		case RSM_KEY_HOTSLOT7: hotslotIndex = 7; updateGUI(); break;
-		case RSM_KEY_HOTSLOT8: hotslotIndex = 8; updateGUI(); break;
-		case RSM_KEY_HOTSLOT9: hotslotIndex = 9; updateGUI(); break;
-		case RSM_KEY_HOTBAR_INCREMENT: hotbarIndex = (hotbarIndex + 1) % RSM_HOTBAR_COUNT; updateGUI(); break;
-		case RSM_KEY_HOTBAR_DECREMENT: hotbarIndex = (hotbarIndex - 1) % RSM_HOTBAR_COUNT; updateGUI(); break;
+		case RSM_KEY_HOTSLOT0: hotslotIndex = 0; gui_updateGUI(); break;
+		case RSM_KEY_HOTSLOT1: hotslotIndex = 1; gui_updateGUI(); break;
+		case RSM_KEY_HOTSLOT2: hotslotIndex = 2; gui_updateGUI(); break;
+		case RSM_KEY_HOTSLOT3: hotslotIndex = 3; gui_updateGUI(); break;
+		case RSM_KEY_HOTSLOT4: hotslotIndex = 4; gui_updateGUI(); break;
+		case RSM_KEY_HOTSLOT5: hotslotIndex = 5; gui_updateGUI(); break;
+		case RSM_KEY_HOTSLOT6: hotslotIndex = 6; gui_updateGUI(); break;
+		case RSM_KEY_HOTSLOT7: hotslotIndex = 7; gui_updateGUI(); break;
+		case RSM_KEY_HOTSLOT8: hotslotIndex = 8; gui_updateGUI(); break;
+		case RSM_KEY_HOTSLOT9: hotslotIndex = 9; gui_updateGUI(); break;
+		case RSM_KEY_HOTBAR_INCREMENT: hotbarIndex = (hotbarIndex+1) % RSM_HOTBAR_COUNT; gui_updateGUI(); break;
+		case RSM_KEY_HOTBAR_DECREMENT: hotbarIndex = (hotbarIndex-1) % RSM_HOTBAR_COUNT; gui_updateGUI(); break;
 	}
 
 ctrl:
@@ -100,7 +100,7 @@ ctrl:
 				memset(cmdbuffer, 0, sizeof(cmdbuffer));
 				cmdchar = cmdbuffer;
 			} else memset(cmdlog, 0, sizeof(cmdlog));
-			updateGUI();
+			gui_updateGUI();
 			break;
 		case RSM_KEY_CTRL_EXIT:
 			glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -116,7 +116,7 @@ skip:
 	mouseY = screenHeight - mouseY; /* Y axis swap */
 }
 
-void processMouseMovement(GLFWwindow *window, double xpos, double ypos) {
+void io_processMouseMovement(GLFWwindow *window, double xpos, double ypos) {
 	/* Handle mouse movements and adjust pitch/yaw accordingly */
 
 	(void) window;
@@ -142,7 +142,7 @@ void processMouseMovement(GLFWwindow *window, double xpos, double ypos) {
 	if (pitch < -89.0f) pitch = -89.0f;
 }
 
-void processMouseInput(GLFWwindow *window, int button, int action, int mods) {
+void io_processMouseInput(GLFWwindow *window, int32_t button, int32_t action, int32_t mods) {
 	/* Handle mouse clicks */
 
 	(void) window;
@@ -171,15 +171,15 @@ void processMouseInput(GLFWwindow *window, int button, int action, int mods) {
 			if (mouseY < INV_SLOTS_Y || mouseY > INV_ICONS_Y + RSM_INVENTORY_ICON_SIZE_PIXELS) return;
 
 			if (mouseY >= INV_ICONS_Y) { /* Change submenu */
-				inventoryIndex = (unsigned int) (mouseX - INV_BASE_X) / RSM_INVENTORY_ICON_SIZE_PIXELS;
+				submenuIndex = (unsigned int) (mouseX - INV_BASE_X) / RSM_INVENTORY_ICON_SIZE_PIXELS;
 			} else { /* Change hotbar configuration */
-				uid = submenus[inventoryIndex]
+				uid = submenus[submenuIndex]
 					[(unsigned int) ((mouseX - INV_BASE_X) / RSM_INVENTORY_SLOT_SIZE_PIXELS)]
 					[(unsigned int) ((mouseY - INV_SLOTS_Y) / RSM_INVENTORY_SLOT_SIZE_PIXELS)];
 				hotbar[hotbarIndex][hotslotIndex][0] = GETID(uid);
 				hotbar[hotbarIndex][hotslotIndex][1] = GETVARIANT(uid);
 			}
-			updateGUI();
+			gui_updateGUI();
 			break;
 
 		case MENU: /*TODO*/
@@ -190,12 +190,12 @@ void processMouseInput(GLFWwindow *window, int button, int action, int mods) {
 	}
 }
 
-void processMouseScroll(GLFWwindow *window, double xoffset, double yoffset) {
+void io_processMouseScroll(GLFWwindow *window, double xoffset, double yoffset) {
 	/* Handle mouse scroll */
 
 	(void) window;
 	(void) xoffset;
 
 	hotslotIndex = (hotslotIndex + (yoffset < 0 ? 1 : -1) + RSM_HOTBAR_SLOTS) % RSM_HOTBAR_SLOTS;
-	updateGUI();
+	gui_updateGUI();
 }

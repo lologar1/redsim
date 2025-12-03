@@ -1,14 +1,12 @@
 #include "redsim.h"
 
-usf_hashmap *datamap;
-
 Gamestate gamestate = NORMAL;
+GLuint wiremesh[2];
+vec3 *playerBBOffsets;
+uint32_t nPlayerBBOffsets;
+
 Blockdata *lookingAt, *lookingAdjacent;
 uint64_t lookingChunkIndex, lookingAdjChunkIndex;
-GLuint wiremesh[2];
-
-vec3 *playerBBOffsets;
-unsigned int nPlayerBBOffsets;
 
 void rsm_move(vec3 position) {
 	/* Change player position each frame according to movement) */
@@ -49,7 +47,7 @@ void rsm_move(vec3 position) {
 	float boundingbox[6];
 	vec3 blockposition, *offset, newPosition, playerCornerNew, playerCornerOld, boxcenter;
 	mat4 rotation;
-	int axis;
+	int32_t axis;
 
 	/* Old player position bounding box base */
 	glm_vec3_add(PLAYER_BOUNDINGBOX_RELATIVE_CORNER, position, playerCornerOld);
@@ -67,7 +65,7 @@ void rsm_move(vec3 position) {
 			 * To retrieve it, first get the chunk (and check if it exists) then the offset inside that */
 			glm_vec3_add(playerCornerNew, *offset, blockposition);
 
-			blockdata = coordsToBlock(blockposition, NULL);
+			blockdata = cu_coordsToBlock(blockposition, NULL);
 			if (!(blockdata->metadata & RSM_BIT_COLLISION)) continue; /* Block has no collision */
 
 			/* Get bounding box data and check it against player bounding box */
@@ -85,7 +83,7 @@ void rsm_move(vec3 position) {
 				glm_vec3_add(boundingbox, boundingbox+3, boundingbox+3);
 
 				glm_vec3_adds(boundingbox, 0.5f, boxcenter);
-				rotationMatrix(rotation, blockdata->rotation, boxcenter);
+				cu_rotationMatrix(rotation, blockdata->rotation, boxcenter);
 				glm_mat4_mulv3(rotation, boundingbox, 1.0f, boundingbox);
 				glm_mat4_mulv3(rotation, boundingbox+3, 1.0f, boundingbox+3);
 
@@ -94,11 +92,11 @@ void rsm_move(vec3 position) {
 			}
 
 			/* Landing position is not inside a block; no collision occurs */
-			if (!AABBIntersect(boundingbox, boundingbox+3, playerCornerNew, PLAYER_BOUNDINGBOX_DIMENSIONS))
+			if (!cu_AABBIntersect(boundingbox, boundingbox+3, playerCornerNew, PLAYER_BOUNDINGBOX_DIMENSIONS))
 				continue;
 
 			/* Find axis which did not match before movement (axis to cancel movement on) */
-			if (AABBIntersect(boundingbox, boundingbox+3, playerCornerOld, PLAYER_BOUNDINGBOX_DIMENSIONS))
+			if (cu_AABBIntersect(boundingbox, boundingbox+3, playerCornerOld, PLAYER_BOUNDINGBOX_DIMENSIONS))
 				continue; /* Player is moving inside block; do not block movement */
 
 			if (boundingbox[axis] + boundingbox[axis+3] < playerCornerOld[axis]) {
@@ -121,34 +119,7 @@ void rsm_move(vec3 position) {
 	glm_vec3_add(position, movement, position); /* This affects player position */
 }
 
-int AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2) {
-	/* Returns whether or not two 3D boxes intersect on all 3 axes */
-
-	/* First normalize dimensions and corner */
-#define NORMALIZEDIM(dim, corner, i) if (dim[i] < 0.0f) { dim[i] = fabsf(dim[i]); corner[i] -= dim[i]; }
-	NORMALIZEDIM(dim1, corner1, 0); NORMALIZEDIM(dim1, corner1, 1); NORMALIZEDIM(dim1, corner1, 2);
-	NORMALIZEDIM(dim2, corner2, 0); NORMALIZEDIM(dim2, corner2, 1); NORMALIZEDIM(dim2, corner2, 2);
-
-#define AXISCOMPARE(i) \
-	if ((corner1[i]) + (dim1[i]) < (corner2[i]) || (corner1[i]) > (corner2[i]) + (dim2[i])) return 0;
-	AXISCOMPARE(0); AXISCOMPARE(1); AXISCOMPARE(2);
-
-	return 1;
-}
-
-int64_t chunkOffsetConvertFloat(float absoluteComponent) {
-	/* Converts a float absoluteComponent to its chunk offset equivalent */
-	return (int64_t) floorf(absoluteComponent / CHUNKSIZE);
-}
-
-uint64_t blockOffsetConvertFloat(float absoluteComponent) {
-	/* Converts a float absoluteComponent to its block offset (within a chunk) equivalent */
-	return absoluteComponent < 0 ?
-		CHUNKSIZE - 1 - ((uint64_t) -floorf(absoluteComponent) - 1) % CHUNKSIZE :
-		(uint64_t) absoluteComponent % CHUNKSIZE;
-}
-
-void initWiremesh(void) {
+void rsm_initWiremesh(void) {
 	GLuint wiremeshVBO, wiremeshEBO;
 
 	glGenVertexArrays(1, wiremesh); /* VAO at index 0 */
@@ -202,9 +173,9 @@ void rsm_updateWiremesh(void) {
 #define TMAX(i) tDelta[i] * ((step[i] > 0 ? (gridpos[i] + 1) - pos[i] : pos[i] - gridpos[i]))
 	vec3 tMax = { TMAX(0), TMAX(1), TMAX(2) };
 
-	int axis;
+	int32_t axis;
 	do {
-		lookingAt = coordsToBlock(gridpos, &lookingChunkIndex);
+		lookingAt = cu_coordsToBlock(gridpos, &lookingChunkIndex);
 
 		if (lookingAt->id) goto brk; /* Block exists and isn't air */
 
@@ -220,7 +191,7 @@ void rsm_updateWiremesh(void) {
 		tMax[axis] += tDelta[axis];
 	} while (glm_vec3_min(tMax) < 1.0f);
 	/* Once more to catch final step */
-	lookingAt = coordsToBlock(gridpos, &lookingChunkIndex);
+	lookingAt = cu_coordsToBlock(gridpos, &lookingChunkIndex);
 brk:
 
 	/* Normals set to point upwards as to not be illegal (still processed by opaque fragment shader) */
@@ -248,7 +219,7 @@ brk:
 		gridpos[0], gridpos[1] + 1.0f, gridpos[2] + 1.0f, 0.0f, 1.0f, 0.0f, 0.75f, 0.0f,
 	};
 
-	unsigned int indices[3 * 8 * 2] = {
+	uint32_t indices[3 * 8 * 2] = {
 		0, 1, 1, 2, 2, 3, 3, 0, /* Bottom square */
 		4, 5, 5, 6, 6, 7, 7, 4, /* Top square */
 		0, 4, 1, 5, 2, 6, 3, 7, /* Side squares */
@@ -267,7 +238,7 @@ brk:
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_DYNAMIC_DRAW);
 	glBindVertexArray(0);
 
-	wiremesh[1] = sizeof(indices)/sizeof(unsigned int);
+	wiremesh[1] = sizeof(indices)/sizeof(uint32_t);
 }
 
 void rsm_interact(void) {
@@ -278,7 +249,7 @@ void rsm_interact(void) {
 	if (RSM_LEFTCLICK) {
 		RSM_LEFTCLICK = 0; /* Consume */
 		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
-		async_remeshChunk(lookingChunkIndex);
+		cu_asyncRemeshChunk(lookingChunkIndex);
 		return;
 	}
 
@@ -308,14 +279,14 @@ void rsm_interact(void) {
 			else lookingAdjacent->rotation = SOUTH;
 		} else lookingAdjacent->rotation = NONE;
 
-		async_remeshChunk(lookingAdjChunkIndex);
-		async_remeshChunk(lookingChunkIndex);
+		cu_asyncRemeshChunk(lookingAdjChunkIndex);
+		cu_asyncRemeshChunk(lookingChunkIndex);
 	}
 
 	if (RSM_MIDDLECLICK && lookingAt->id) { /* Pipette tool; don't consume as it only modifies a hotbar slot */
 		hotbar[hotbarIndex][hotslotIndex][0] = lookingAt->id;
 		hotbar[hotbarIndex][hotslotIndex][1] = lookingAt->variant;
-		updateGUI();
+		gui_updateGUI();
 	}
 }
 
@@ -364,19 +335,19 @@ void rsm_checkMeshes(void) {
 			mesh[0] = opaqueVAO; mesh[1] = transVAO;
 			usf_inthmput(meshmap, chunkindex, USFDATAP(mesh)); /* Set mesh */
 
-			updateMeshlist(); /* Include just created mesh in view */
+			cu_updateMeshlist(); /* Include just created mesh in view */
 		}
 
 		glBindVertexArray(mesh[0]); /* Opaque */
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO); /* Query VBO */
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, rawmesh->nOV*sizeof(float), rawmesh->opaqueVertexBuffer, GL_DYNAMIC_DRAW);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, rawmesh->nOI * sizeof(unsigned int), rawmesh->opaqueIndexBuffer, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, rawmesh->nOI * sizeof(uint32_t), rawmesh->opaqueIndexBuffer, GL_DYNAMIC_DRAW);
 		glBindVertexArray(mesh[1]); /* Trans */
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, rawmesh->nTV * sizeof(float), rawmesh->transVertexBuffer, GL_DYNAMIC_DRAW);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, rawmesh->nTI * sizeof(unsigned int), rawmesh->transIndexBuffer, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, rawmesh->nTI * sizeof(uint32_t), rawmesh->transIndexBuffer, GL_DYNAMIC_DRAW);
 		glBindVertexArray(0); /* Unbind */
 
 		/* Set mesh element counts */

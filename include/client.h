@@ -10,6 +10,7 @@
 #include "redsim.h"
 #include "userio.h"
 #include "renderutils.h"
+#include "guiutils.h"
 #include "gui.h"
 #include "usfhashmap.h"
 #include "usfqueue.h"
@@ -18,10 +19,10 @@
 extern float pitch, yaw;
 extern vec3 orientation, position;
 
-extern usf_hashmap *chunkmap, *meshmap;
+extern usf_hashmap *chunkmap, *meshmap, *datamap, *namemap;
 
 extern GLuint **meshes;
-extern int nmesh;
+extern int32_t nmesh;
 
 extern pthread_mutex_t meshlock;
 extern usf_queue *meshqueue;

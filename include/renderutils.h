@@ -18,12 +18,10 @@ extern size_t ov_bufsiz, tv_bufsiz, oi_bufsiz, ti_bufsiz;
 
 typedef float Vertex[8];
 
-GLuint createShader(GLenum shaderType, char *shaderSource);
-GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader);
-void atlasAppend(char *meshname, int texSizeX, int texSizeY, unsigned char **atlasptr, GLsizei *atlassize);
-void parseBlockdata(void); /* Create texture atlas, blockmeshes and bounding boxes */
-void loadVertexData(Vertex vertex, char *vector);
-void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant);
-void deallocateVAO(GLuint VAO); /* Frees a VAO and its associated VBO and EBO */
+GLuint ru_createShader(GLenum shaderType, char *shaderSource);
+GLuint ru_createShaderProgram(GLuint vertexShader, GLuint fragmentShader);
+void ru_atlasAppend(char *meshname, int32_t texSizeX, int32_t texSizeY, unsigned char **atlasptr, GLsizei *atlassize);
+void ru_parseBlockdata(void); /* Create texture atlas, blockmeshes and bounding boxes */
+void ru_deallocateVAO(GLuint VAO); /* Frees a VAO and its associated VBO and EBO */
 
 #endif

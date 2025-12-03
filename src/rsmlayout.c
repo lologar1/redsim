@@ -13,7 +13,7 @@ float RSM_MOUSE_SENSITIVITY = 0.1f;
 
 float RSM_REACH = 3.2f;
 float RSM_FOV = 120.0f;
-unsigned int RENDER_DISTANCE = 8;
+uint32_t RENDER_DISTANCE = 8;
 float RENDER_DISTANCE_NEAR = 0.05f;
 
 float RSM_DEFAULT_GUI_SCALING_FACTOR = 1.0f;

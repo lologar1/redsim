@@ -4,6 +4,8 @@
 #define ZERO_CLEAR (float [4]) {0.0f, 0.0f, 0.0f, 0.0f}
 #define ONE_CLEAR (float [4]) {1.0f, 1.0f, 1.0f, 1.0f}
 
+void framebuffer_size_callback(GLFWwindow *window, int32_t width, int32_t height);
+
 float compositionQuad[] = {
 	/* Position		TexPos */
 	-1.0f,  1.0f,	0.0f, 1.0f,
@@ -14,7 +16,7 @@ float compositionQuad[] = {
 	1.0f,  1.0f,	1.0f, 1.0f
 };
 
-unsigned int screenWidth = 1080, screenHeight = 1920;
+uint32_t screenWidth = 1080, screenHeight = 1920;
 
 /* Shader programs */
 GLuint vertexShader, opaqueFragmentShader, transFragmentShader, compositionVertexShader,
@@ -27,18 +29,18 @@ GLuint opaqueColorTex, accTex, revealTex, depthTex, guiColorTex, guiDepthTex;
 
 void renderer_initShaders(void) {
 	/* Compile shaders from GLSL programs and link them */
-	vertexShader = createShader(GL_VERTEX_SHADER, "shaders/vertexshader.glsl");
-	opaqueFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/opaquefragmentshader.glsl");
-	transFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/transfragmentshader.glsl");
-	compositionVertexShader = createShader(GL_VERTEX_SHADER, "shaders/compositionvertexshader.glsl");
-	compositionFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/compositionfragmentshader.glsl");
-	guiVertexShader = createShader(GL_VERTEX_SHADER, "shaders/guivertexshader.glsl");
-	guiFragmentShader = createShader(GL_FRAGMENT_SHADER, "shaders/guifragmentshader.glsl");
+	vertexShader = ru_createShader(GL_VERTEX_SHADER, "shaders/vertexshader.glsl");
+	opaqueFragmentShader = ru_createShader(GL_FRAGMENT_SHADER, "shaders/opaquefragmentshader.glsl");
+	transFragmentShader = ru_createShader(GL_FRAGMENT_SHADER, "shaders/transfragmentshader.glsl");
+	compositionVertexShader = ru_createShader(GL_VERTEX_SHADER, "shaders/compositionvertexshader.glsl");
+	compositionFragmentShader = ru_createShader(GL_FRAGMENT_SHADER, "shaders/compositionfragmentshader.glsl");
+	guiVertexShader = ru_createShader(GL_VERTEX_SHADER, "shaders/guivertexshader.glsl");
+	guiFragmentShader = ru_createShader(GL_FRAGMENT_SHADER, "shaders/guifragmentshader.glsl");
 
-	opaqueShader = createShaderProgram(vertexShader, opaqueFragmentShader);
-	transShader = createShaderProgram(vertexShader, transFragmentShader);
-	compositionShader = createShaderProgram(compositionVertexShader, compositionFragmentShader);
-	guiShader = createShaderProgram(guiVertexShader, guiFragmentShader);
+	opaqueShader = ru_createShaderProgram(vertexShader, opaqueFragmentShader);
+	transShader = ru_createShaderProgram(vertexShader, transFragmentShader);
+	compositionShader = ru_createShaderProgram(compositionVertexShader, compositionFragmentShader);
+	guiShader = ru_createShaderProgram(guiVertexShader, guiFragmentShader);
 }
 
 void renderer_render(GLFWwindow *window) {
@@ -46,11 +48,11 @@ void renderer_render(GLFWwindow *window) {
 
 	/* Set callback functions */
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetCursorPosCallback(window, processMouseMovement);
-	glfwSetKeyCallback(window, processKey);
-	glfwSetCharCallback(window, processChar);
-	glfwSetMouseButtonCallback(window, processMouseInput);
-	glfwSetScrollCallback(window, processMouseScroll);
+	glfwSetCursorPosCallback(window, io_processMouseMovement);
+	glfwSetKeyCallback(window, io_processKey);
+	glfwSetCharCallback(window, io_processChar);
+	glfwSetMouseButtonCallback(window, io_processMouseInput);
+	glfwSetScrollCallback(window, io_processMouseScroll);
 
 	/* To render composition quad at the end of rendering */
 	GLuint compositionVAO, compositionVBO;
@@ -96,7 +98,7 @@ void renderer_render(GLFWwindow *window) {
 
 	/* Rendering variables */
 	float time, lastTime = 0.0f;
-	int i;
+	int32_t i;
 
 	mat4 view, perspective; /* In World Space, the camera is at (0, 0, 0) */
 	vec3 cameraPos = {0.0f, 0.0f, 0.0f};
@@ -118,9 +120,9 @@ void renderer_render(GLFWwindow *window) {
 			exit(RSM_EXIT_GLERROR);
 		}
 
-		if (gui_scheduledUpdate) { /* Redraw requested by updateGUI */
-			renderGUI();
-			gui_scheduledUpdate = 0;
+		if (GUI_SCHEDULEDUPDATE) { /* Redraw requested by updateGUI */
+			gui_renderGUI();
+			GUI_SCHEDULEDUPDATE = 0;
 		}
 
 		/* Framerate cap */
@@ -341,7 +343,7 @@ void renderer_freeBuffers() {
 	glDeleteFramebuffers(1, &GUIFBO);
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow *window, int32_t width, int32_t height) {
 	/* Resize viewport when this function (window resize) is called.
 	 * This function is called when the window is first displayed too. */
 
@@ -352,6 +354,5 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 
 	renderer_freeBuffers();
 	renderer_initBuffers();
-	buildInventory(); /* Regenerate menus at proper scale */
-	updateGUI(); /* Re-render with new size */
+	gui_updateGUI(); /* Re-render with new size */
 }

@@ -5,15 +5,17 @@
 float (**boundingboxes)[6];
 GLuint textureAtlas;
 uint64_t **spriteids; /* Note that getting a sprite from an item which doesn't have one will yield the first. */
-
 uint64_t MAX_BLOCK_ID, *MAX_BLOCK_VARIANT;
 size_t ov_bufsiz, tv_bufsiz, oi_bufsiz, ti_bufsiz; /* Remeshing buffer sizes */
 
+void loadVertexData(Vertex vertex, char *vector);
+void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant);
+
 /* Shader stuff */
-GLuint createShader(GLenum shaderType, char *shaderSource) {
+GLuint ru_createShader(GLenum shaderType, char *shaderSource) {
 	/* Creates a shader from source shaderSource of type shaderType and compiles
 	 * it, logging errors to stderr and returning the shader ID */
-	int success;
+	int32_t success;
 	char infoLog[RSM_MAX_SHADER_INFOLOG_LENGTH], *src;
 	GLuint shaderID;
 
@@ -33,11 +35,11 @@ GLuint createShader(GLenum shaderType, char *shaderSource) {
 	return shaderID;
 }
 
-GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
+GLuint ru_createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	/* Creates and links a shader program using a vertex and a fragment shader,
 	 * logging errors to stderr and returning the program object ID. The shader
 	 * objects are then deleted as they are no longer needed ! */
-	int success;
+	int32_t success;
 	char infoLog[RSM_MAX_SHADER_INFOLOG_LENGTH];
 	GLuint programID;
 
@@ -58,12 +60,12 @@ GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	return programID;
 }
 
-void atlasAppend(char *meshname, int texSizeX, int texSizeY, unsigned char **atlasptr, GLsizei *atlassize) {
+void ru_atlasAppend(char *meshname, int32_t texSizeX, int32_t texSizeY, unsigned char **atlasptr, GLsizei *atlassize) {
 	/* Creates a texture atlas (in the texAtlasData temporary buffer)
 	 * and dynamically adjust both the buffer and atlas dimension variables. */
 	stbi_set_flip_vertically_on_load(1); /* Right images so Y=0 is on bottom */
 
-	int width, height, ncolorchannels;
+	int32_t width, height, ncolorchannels;
 	unsigned char *imagedata;
 
 	imagedata = stbi_load(meshname, &width, &height, &ncolorchannels, 4);
@@ -90,7 +92,7 @@ void atlasAppend(char *meshname, int texSizeX, int texSizeY, unsigned char **atl
 	stbi_image_free(imagedata);
 }
 
-void parseBlockdata(void) {
+void ru_parseBlockdata(void) {
 	/* Create a texture atlas (and set it to textureAtlas, which is used by the renderer) which
 	 * corresponds neatly with adjusted coordinates of meshes, which should then be set as templates
 	 * in blockmeshes (indirection is id, then variant, which gives a pointer to the template itself).
@@ -196,7 +198,7 @@ void parseBlockdata(void) {
 
 			/* Append texture for this mesh to the atlas */
 			pathcat(meshtexturepath, 3, texMeshPath, variant, TEXTURE_EXTENSION);
-			atlasAppend(meshtexturepath, RSM_BLOCK_TEXTURE_SIZE_PIXELS,
+			ru_atlasAppend(meshtexturepath, RSM_BLOCK_TEXTURE_SIZE_PIXELS,
 					RSM_BLOCK_TEXTURE_SIZE_PIXELS * ntextiles, &texAtlasData, &texAtlasSize);
 
 			/* Now build the template using raw mesh data from the text file */
@@ -311,6 +313,18 @@ void parseBlockdata(void) {
 	usf_freetxt(blockmap, MAX_BLOCK_ID);
 }
 
+void ru_deallocateVAO(GLuint VAO) {
+	/* Frees the memory (VBO and EBO) associated with a VAO */
+	GLint VBO, EBO;
+	GLuint VBOid, EBOid; /* For some reason getting buffers from VAO returns signed ids */
+
+	glBindVertexArray(VAO);
+	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO); VBOid = (GLuint) VBO;
+	glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &EBO); EBOid = (GLuint) EBO;
+	glDeleteVertexArrays(1, &VAO); glDeleteBuffers(1, &VBOid); glDeleteBuffers(1, &EBOid);
+	glBindVertexArray(0);
+}
+
 void loadVertexData(Vertex vertex, char *vector) {
 	/* Parse textual vector data into numerical vertex data (first char is skipped by caller) */
 
@@ -342,16 +356,4 @@ void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant) {
 	}
 
 	free(boundingbox); /* Cleanup disk file */
-}
-
-void deallocateVAO(GLuint VAO) {
-	/* Frees the memory (VBO and EBO) associated with a VAO */
-	GLint VBO, EBO;
-	GLuint VBOid, EBOid; /* For some reason getting buffers from VAO returns signed ids */
-
-	glBindVertexArray(VAO);
-	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO); VBOid = (GLuint) VBO;
-	glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &EBO); EBOid = (GLuint) EBO;
-	glDeleteVertexArrays(1, &VAO); glDeleteBuffers(1, &VBOid); glDeleteBuffers(1, &EBOid);
-	glBindVertexArray(0);
 }

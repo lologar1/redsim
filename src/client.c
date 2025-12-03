@@ -8,9 +8,11 @@ vec3 position;
 
 usf_hashmap *chunkmap; /* Maps XYZ (21 bits) to corresponding chunk pointer */
 usf_hashmap *meshmap; /* Maps XYZ (21 bits) to corresponding chunk mesh (array of 4), automatically maintained */
+usf_hashmap *datamap; /* Maps UID to default metadata values */
+usf_hashmap *namemap; /* Maps name (string) to its corresponding UID */
 
 GLuint **meshes; /* Stores current meshmap pointers for rendering */
-int nmesh; /* How many meshes to render */
+int32_t nmesh; /* How many meshes to render */
 
 pthread_mutex_t meshlock;
 usf_queue *meshqueue;
@@ -28,14 +30,14 @@ void client_init(void) {
 
 	/* Get block, mesh and bounding box data from disk */
 	namemap = usf_newhm(); /* Init namemap before populating it */
-	parseBlockdata();
+	ru_parseBlockdata();
 
 	/* Allocate buffers for GUI and load its assets from disk */
-	parseGUIdata();
-	initGUI();
+	gu_parseGUIdata();
+	gu_initGUI();
 
 	/* Allocate buffers for wiremesh */
-	initWiremesh();
+	rsm_initWiremesh();
 
 	/* Allocate stuff for asynchronous remeshing */
 	pthread_mutex_init(&meshlock, NULL); /* TODO: learn what the attributes here do */
@@ -182,21 +184,21 @@ void client_init(void) {
 	usf_inthmput(chunkmap, TOCHUNKINDEX(4L, 1L, 1L), USFDATAP(p3));
 	usf_inthmput(chunkmap, TOCHUNKINDEX(5L, 1L, 1L), USFDATAP(p4));
 
-	async_remeshChunk(0);
-	async_remeshChunk(TOCHUNKINDEX(-1, -1, -1));
-	async_remeshChunk(TOCHUNKINDEX(0, 0, 1));
+	cu_asyncRemeshChunk(0);
+	cu_asyncRemeshChunk(TOCHUNKINDEX(-1, -1, -1));
+	cu_asyncRemeshChunk(TOCHUNKINDEX(0, 0, 1));
 
-	async_remeshChunk(TOCHUNKINDEX(1, 1, 1));
-	async_remeshChunk(TOCHUNKINDEX(2, 1, 1));
-	async_remeshChunk(TOCHUNKINDEX(3, 1, 1));
-	async_remeshChunk(TOCHUNKINDEX(4, 1, 1));
-	async_remeshChunk(TOCHUNKINDEX(5, 1, 1));
+	cu_asyncRemeshChunk(TOCHUNKINDEX(1, 1, 1));
+	cu_asyncRemeshChunk(TOCHUNKINDEX(2, 1, 1));
+	cu_asyncRemeshChunk(TOCHUNKINDEX(3, 1, 1));
+	cu_asyncRemeshChunk(TOCHUNKINDEX(4, 1, 1));
+	cu_asyncRemeshChunk(TOCHUNKINDEX(5, 1, 1));
 	printf("Test scene loaded\n");
 
 	/* END TESTBED */
 
-	generateMeshlist(); /* Subsequently called only on render distance change */
-	updateGUI(); /* Subsequently called only on GUI modification (from user input) */
+	cu_generateMeshlist(); /* Subsequently called only on render distance change */
+	gui_updateGUI(); /* Subsequently called only on GUI modification (from user input) */
 }
 
 /* View stuff */
@@ -205,23 +207,23 @@ void client_frameEvent(GLFWwindow *window) {
 	(void) window;
 
 	/* Meshlist maintenance */
-	static unsigned int lastRenderDistance = 0;
+	static uint32_t lastRenderDistance = 0;
 	if (lastRenderDistance != RENDER_DISTANCE) {
 		/* Whenever user changes render distance or world is first
 		 * loaded, regenerate whole meshlist */
-		generateMeshlist();
+		cu_generateMeshlist();
 		lastRenderDistance = RENDER_DISTANCE;
 	}
 
 	/* Keep last position since chunk border crossing ; update meshlist on border crossing */
 	static vec3 lastPosition = {0.0f, 0.0f, 0.0f};
-	if ((int) floor(lastPosition[0] / CHUNKSIZE) != (int) floor(position[0] / CHUNKSIZE)
-			|| (int) floor(lastPosition[1] / CHUNKSIZE) != (int) floor(position[1] / CHUNKSIZE)
-			|| (int) floor(lastPosition[2] / CHUNKSIZE) != (int) floor(position[2] / CHUNKSIZE)) {
+	if ((int32_t) floor(lastPosition[0] / CHUNKSIZE) != (int32_t) floor(position[0] / CHUNKSIZE)
+			|| (int32_t) floor(lastPosition[1] / CHUNKSIZE) != (int32_t) floor(position[1] / CHUNKSIZE)
+			|| (int32_t) floor(lastPosition[2] / CHUNKSIZE) != (int32_t) floor(position[2] / CHUNKSIZE)) {
 		/* If position changed by at least a chunk, add new meshes and
 		 * remove old ones */
 
-		updateMeshlist();
+		cu_updateMeshlist();
 		glm_vec3_copy(position, lastPosition);
 	}
 
@@ -244,8 +246,9 @@ void client_getPosition(vec3 pos) {
 	glm_vec3_copy(position, pos);
 }
 
-extern GLuint opaqueShader, transShader, compositionShader, guiShader, FBO, GUIFBO,
-	   opaqueColorTex, accTex, revealTex, depthTex, guiColorTex, guiDepthTex; /* For destruction */
+/* Access renderer stuff for destruction */
+extern GLuint opaqueShader, transShader, compositionShader, guiShader, FBO, GUIFBO;
+extern GLuint opaqueColorTex, accTex, revealTex, depthTex, guiColorTex, guiDepthTex;
 void client_terminate(void) {
 	/* Free RSM resources before program exit */
 	uint64_t i, j;
@@ -256,16 +259,16 @@ void client_terminate(void) {
 	for (i = 0; i < meshmap->capacity; i++) {
 		if ((entry = meshmap->array[i]) == NULL || entry == (usf_data *) meshmap) continue;
 		mesh = (GLuint *) entry[1].p;
-		deallocateVAO(mesh[0]);
-		deallocateVAO(mesh[1]);
+		ru_deallocateVAO(mesh[0]);
+		ru_deallocateVAO(mesh[1]);
 	}
 
 	glDeleteTextures(1, &textureAtlas);
 	glDeleteTextures(1, &guiAtlas);
 
-	deallocateVAO(wiremesh[0]);
+	ru_deallocateVAO(wiremesh[0]);
 
-	for (i = 0; i < MAX_GUI_PRIORITY; i++) deallocateVAO(guiVAO[i]);
+	for (i = 0; i < MAX_GUI_PRIORITY; i++) ru_deallocateVAO(guiVAO[i]);
 
 	glDeleteProgram(opaqueShader);
 	glDeleteProgram(transShader);

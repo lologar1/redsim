@@ -7,24 +7,24 @@
 #include "renderer.h"
 #include "command.h"
 
-extern int RSM_FORWARD;
-extern int RSM_BACKWARD;
-extern int RSM_RIGHT;
-extern int RSM_LEFT;
-extern int RSM_DOWN;
-extern int RSM_UP;
-extern int RSM_LEFTCLICK;
-extern int RSM_RIGHTCLICK;
-extern int RSM_MIDDLECLICK;
+extern int32_t RSM_FORWARD;
+extern int32_t RSM_BACKWARD;
+extern int32_t RSM_RIGHT;
+extern int32_t RSM_LEFT;
+extern int32_t RSM_DOWN;
+extern int32_t RSM_UP;
+extern int32_t RSM_LEFTCLICK;
+extern int32_t RSM_RIGHTCLICK;
+extern int32_t RSM_MIDDLECLICK;
 extern double mouseX, mouseY;
 
 /* For mouse movements, lives in client */
 extern float pitch, yaw;
 
-void processChar(GLFWwindow *window, unsigned int codepoint);
-void processKey(GLFWwindow *window, int key, int scancode, int action, int mods);
-void processMouseMovement(GLFWwindow *window, double xpos, double ypos);
-void processMouseInput(GLFWwindow *window, int button, int action, int mods);
-void processMouseScroll(GLFWwindow *window, double xoffset, double yoffset);
+void io_processChar(GLFWwindow *window, uint32_t codepoint);
+void io_processKey(GLFWwindow *window, int32_t key, int32_t scancode, int32_t action, int32_t mods);
+void io_processMouseMovement(GLFWwindow *window, double xpos, double ypos);
+void io_processMouseInput(GLFWwindow *window, int32_t button, int32_t action, int32_t mods);
+void io_processMouseScroll(GLFWwindow *window, double xoffset, double yoffset);
 
 #endif

@@ -16,11 +16,20 @@
 #define MESHCENTER ((vec3) {0.5f, 0.5f, 0.5f})
 
 #define CHUNKCOORDMASK (0x1FFFFF)
-#define TOCHUNKINDEX(x, y, z) ((uint64_t) ((x) & CHUNKCOORDMASK) << 42 | (uint64_t) ((y) & CHUNKCOORDMASK) << 21 | (uint64_t) ((z) & CHUNKCOORDMASK))
+#define TOCHUNKINDEX(x, y, z) ((uint64_t) ((x) & CHUNKCOORDMASK) << 42 \
+		| (uint64_t) ((y) & CHUNKCOORDMASK) << 21 \
+		| (uint64_t) ((z) & CHUNKCOORDMASK))
+
 #define COORDSTOCHUNKINDEX(v) \
-	TOCHUNKINDEX(chunkOffsetConvertFloat(v[0]), chunkOffsetConvertFloat(v[1]), chunkOffsetConvertFloat(v[2]))
+	TOCHUNKINDEX(cu_chunkOffsetConvertFloat(v[0]), \
+			cu_chunkOffsetConvertFloat(v[1]), \
+			cu_chunkOffsetConvertFloat(v[2]))
+
 #define COORDSTOBLOCKDATA(v, chunk) \
-	 (&(*chunk)[blockOffsetConvertFloat(v[0])][blockOffsetConvertFloat(v[1])][blockOffsetConvertFloat(v[2])])
+	 (&(*chunk)[cu_blockOffsetConvertFloat(v[0])] \
+	  [cu_blockOffsetConvertFloat(v[1])] \
+	  [cu_blockOffsetConvertFloat(v[2])])
+
 #define SIGNED21CAST64(n) ((n) | (n & (1 << 20) ? (uint64_t) ~CHUNKCOORDMASK : 0))
 
 typedef enum {
@@ -37,17 +46,17 @@ typedef enum {
 typedef struct {
 	float *opaqueVertices; /* Recalculated for rotation */
 	float *transVertices;
-	unsigned int *opaqueIndices; /* Never change */
-	unsigned int *transIndices;
+	uint32_t *opaqueIndices; /* Never change */
+	uint32_t *transIndices;
 	/* For count : nmembers is as follows : opaque vertices, trans vertices, opaque indices, trans indices */
-	unsigned int count[4]; /* Never change */
+	uint32_t count[4]; /* Never change */
 } Blockmesh;
 
 typedef struct {
-    unsigned int id : 13;       /* Block type e.g. WIRE */
-    unsigned int variant : 8;   /* Block variant e.g. CONCRETE_GREEN */
+    uint32_t id : 13;       /* Block type e.g. WIRE */
+    uint32_t variant : 8;   /* Block variant e.g. CONCRETE_GREEN */
     Rotation rotation : 3;      /* Block rotation */
-    unsigned int metadata : 32; /* Metadata field for general purpose per-block storage */
+    uint32_t metadata : 32; /* Metadata field for general purpose per-block storage */
 } Blockdata;
 
 typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];
@@ -55,21 +64,23 @@ typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];
 typedef struct Rawmesh { /* Raw data remeshed asynchronously, passed to main thread to dump in GL buffers */
 	uint64_t chunkindex;
 	float *opaqueVertexBuffer, *transVertexBuffer;
-	unsigned int *opaqueIndexBuffer, *transIndexBuffer;
-	unsigned int nOV, nTV, nOI, nTI;
+	uint32_t *opaqueIndexBuffer, *transIndexBuffer;
+	uint32_t nOV, nTV, nOI, nTI;
 } Rawmesh;
 
 extern Blockmesh **blockmeshes;
 
-void *pushRawmesh(void *chunkindexptr);
-void async_remeshChunk(uint64_t chunkindex);
-void updateMeshlist(void);
-void generateMeshlist(void);
-void getBlockmesh(Blockmesh *blockmesh, unsigned int id, unsigned int variant, Rotation rotation, int64_t x, int64_t y, int64_t z);
-void translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation);
-void rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter);
-Blockdata *coordsToBlock(vec3 coords, uint64_t *chunkindex);
+void cu_asyncRemeshChunk(uint64_t chunkindex);
+void cu_updateMeshlist(void);
+void cu_generateMeshlist(void);
+void cu_translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation);
+void cu_rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter);
+Blockdata *cu_coordsToBlock(vec3 coords, uint64_t *chunkindex);
+int64_t cu_chunkOffsetConvertFloat(float absoluteComponent);
+uint64_t cu_blockOffsetConvertFloat(float absoluteComponent);
+int32_t cu_AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2);
 
-void pathcat(char *destination, int n, ...);
+/*TODO*/
+void pathcat(char *destination, int32_t n, ...);
 
 #endif
