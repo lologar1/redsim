@@ -25,12 +25,12 @@ void rsm_move(vec3 position) {
 	vec3 movement;
 
 	/* Now update speed for next frame */
-	if (RSM_RIGHT) speed[0] += RSM_FLY_X_ACCELERATION * deltaTime;
-	if (RSM_LEFT) speed[0] -= RSM_FLY_X_ACCELERATION * deltaTime;
-	if (RSM_UP) speed[1] += RSM_FLY_Y_ACCELERATION * deltaTime;
-	if (RSM_DOWN) speed[1] -= RSM_FLY_Y_ACCELERATION * deltaTime;
-	if (RSM_BACKWARD) speed[2] += RSM_FLY_Z_ACCELERATION * deltaTime;
-	if (RSM_FORWARD) speed[2] -= RSM_FLY_Z_ACCELERATION * deltaTime;
+	if (RSM_RIGHT) speed[0] += (RSM_FLY_ACCELERATION + RSM_FLY_X_ACCELERATION) * deltaTime;
+	if (RSM_LEFT) speed[0] -= (RSM_FLY_ACCELERATION + RSM_FLY_X_ACCELERATION) * deltaTime;
+	if (RSM_UP) speed[1] += (RSM_FLY_ACCELERATION + RSM_FLY_Y_ACCELERATION) * deltaTime;
+	if (RSM_DOWN) speed[1] -= (RSM_FLY_ACCELERATION + RSM_FLY_Y_ACCELERATION) * deltaTime;
+	if (RSM_BACKWARD) speed[2] += (RSM_FLY_ACCELERATION + RSM_FLY_Z_ACCELERATION) * deltaTime;
+	if (RSM_FORWARD) speed[2] -= (RSM_FLY_ACCELERATION + RSM_FLY_Z_ACCELERATION) * deltaTime;
 
 	/* Cap speed */
 	if (glm_vec3_norm(speed) > RSM_FLY_SPEED_CAP) glm_vec3_scale_as(speed, RSM_FLY_SPEED_CAP, speed);

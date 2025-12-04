@@ -150,7 +150,7 @@ void renderer_render(GLFWwindow *window) {
 
 		/* Perspective projection matrix */
 		glm_perspective(glm_rad(RSM_FOV), (float) screenWidth / (float) screenHeight,
-				RENDER_DISTANCE_NEAR, (float) RENDER_DISTANCE * CHUNKSIZE, perspective);
+				RSM_NEARPLANE, RSM_RENDER_DISTANCE * CHUNKSIZE, perspective);
 
 		/* Things we must keep track of during rendering (OpenGL state stuff)
 		 * glDepthMask and glDepthTest

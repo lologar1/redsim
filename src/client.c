@@ -36,6 +36,9 @@ void client_init(void) {
 	gu_parseGUIdata();
 	gu_initGUI();
 
+	/* Init command processor */
+	cmd_init();
+
 	/* Allocate buffers for wiremesh */
 	rsm_initWiremesh();
 
@@ -207,12 +210,12 @@ void client_frameEvent(GLFWwindow *window) {
 	(void) window;
 
 	/* Meshlist maintenance */
-	static uint32_t lastRenderDistance = 0;
-	if (lastRenderDistance != RENDER_DISTANCE) {
+	static float lastRenderDistance = 0.0f;
+	if (lastRenderDistance != RSM_RENDER_DISTANCE) {
 		/* Whenever user changes render distance or world is first
 		 * loaded, regenerate whole meshlist */
 		cu_generateMeshlist();
-		lastRenderDistance = RENDER_DISTANCE;
+		lastRenderDistance = RSM_RENDER_DISTANCE;
 	}
 
 	/* Keep last position since chunk border crossing ; update meshlist on border crossing */
@@ -305,6 +308,9 @@ void client_terminate(void) {
 	usf_freehmptr(meshmap);
 	usf_freehm(datamap);
 	usf_freestrhm(namemap);
+	usf_freestrhm(cmdmap); /* Don't dealloc func pointers */
+	usf_freestrhm(varmap); /* Idem rsmlayout pointers */
+	usf_freestrhm(aliasmap); /* Idem string literals */
 
 	usf_freequeueptr(meshqueue);
 	pthread_mutex_destroy(&meshlock);

@@ -38,12 +38,12 @@ void cu_updateMeshlist(void) {
 	meshlist = meshes;
 	nmesh = 0;
 
-    for (a = 0; a < RENDER_DISTANCE * 2 + 1; a++) {
-        x = ((int32_t) position[0] / CHUNKSIZE + a - RENDER_DISTANCE);
-        for (b = 0; b < RENDER_DISTANCE * 2 + 1; b++) {
-            y = ((int32_t) position[1] / CHUNKSIZE + b - RENDER_DISTANCE);
-            for (c = 0; c < RENDER_DISTANCE * 2 + 1; c++) {
-                z = ((int32_t) position[2] / CHUNKSIZE + c - RENDER_DISTANCE);
+    for (a = 0; a < RSM_LOADING_DISTANCE * 2 + 1; a++) {
+        x = ((int32_t) position[0] / CHUNKSIZE + a - RSM_LOADING_DISTANCE);
+        for (b = 0; b < RSM_LOADING_DISTANCE * 2 + 1; b++) {
+            y = ((int32_t) position[1] / CHUNKSIZE + b - RSM_LOADING_DISTANCE);
+            for (c = 0; c < RSM_LOADING_DISTANCE * 2 + 1; c++) {
+                z = ((int32_t) position[2] / CHUNKSIZE + c - RSM_LOADING_DISTANCE);
 
 				/* Set mesh for this chunk */
 				meshindex = TOCHUNKINDEX(x, y, z);
@@ -70,7 +70,7 @@ void cu_generateMeshlist(void) {
 	/* Cleanup old meshlist ; on startup it is null but free(NULL) is safe */
     free(meshes); /* OK since all mesh chunks are stored in meshmap */
 
-	chunkvolume = pow(RENDER_DISTANCE * 2 + 1, 3);
+	chunkvolume = pow(RSM_LOADING_DISTANCE * 2 + 1, 3);
     meshes = malloc(chunkvolume * sizeof(GLuint *)); /* Store meshes for all chunks */
 
 	cu_updateMeshlist();

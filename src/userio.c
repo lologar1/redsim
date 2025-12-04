@@ -98,7 +98,7 @@ ctrl:
 		case RSM_KEY_CTRL_CLEARLOG:
 			if (gamestate == COMMAND) {
 				memset(cmdbuffer, 0, sizeof(cmdbuffer));
-				cmdchar = cmdbuffer;
+				cmdptr = cmdbuffer;
 			} else memset(cmdlog, 0, sizeof(cmdlog));
 			gui_updateGUI();
 			break;
