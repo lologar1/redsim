@@ -10,6 +10,7 @@ usf_hashmap *aliasmap;
 
 void command_help(uint32_t args, char *argv[]);
 void command_config(uint32_t args, char *argv[]);
+void command_lookat(uint32_t args, char *argv[]);
 void command_set(uint32_t args, char *argv[]);
 void command_setraw(uint32_t args, char *argv[]);
 void command_teleport(uint32_t args, char *argv[]);
@@ -19,6 +20,7 @@ void cmd_init(void) {
 #define ALIAS(CMDNAME, CMDPTR) usf_strhmput(cmdmap, CMDNAME, USFDATAP(CMDPTR))
 	cmdmap = usf_newhm();
 	ALIAS("config", command_config);
+	ALIAS("lookat", command_lookat);
 	ALIAS("help", command_help);
 	ALIAS("set", command_set);
 	ALIAS("setraw", command_setraw);
@@ -51,6 +53,7 @@ void cmd_init(void) {
 	ALIAS("help", "help");
 	ALIAS("config", "config");
 	ALIAS("conf", "config");
+	ALIAS("lookat", "lookat");
 	ALIAS("set", "set");
 	ALIAS("setraw", "setraw");
 	ALIAS("teleport", "teleport")
@@ -209,9 +212,10 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("===== RSM HELP =====\n");
 		cmd_logf("help: Display this menu. Provide argument for more information.\n");
 		cmd_logf("config: Change runtime variables.\n");
+		cmd_logf("lookat: Set pitch and yaw in degrees.\n");
 		cmd_logf("set: Set current selection to block (default state).\n");
 		cmd_logf("setraw: Set current selection to exact blockdata (64 bits).\n");
-		cmd_logf("teleport: Sets current position in the world.\n");
+		cmd_logf("teleport: Sets current absolute position in the world.\n");
 		return;
 	}
 
@@ -234,6 +238,9 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("Syntax: (config, conf) [variable] [(float) value]\n");
 		cmd_logf("Set RSM runtime variables. It is possible to omit the command\n");
 		cmd_logf("using (%s[variable [(float) value]) to implicitly call config.\n", RSM_COMMAND_PREFIX);
+	} else if (unaliasedptr == command_lookat) {
+		cmd_logf("Syntax: lookat [pitch] [yaw]\n");
+		cmd_logf("Set pitch and yaw in degrees.\n");
 	} else if (unaliasedptr == command_set) {
 		cmd_logf("Syntax: set [blockname]\n");
 		cmd_logf("Set selection to default blockdata matching blockname.\n");
@@ -299,6 +306,17 @@ void command_config(uint32_t args, char *argv[]) {
 	*rsmvar = value;
 
 	cmd_logf("Set %s to %f.\n", varname, value);
+}
+
+void command_lookat(uint32_t args, char *argv[]) {
+	/* Sets pitch and yaw in degrees */
+	if (args < 3) {
+		cmd_logf("Syntax: %slookat [pitch] [yaw]\n", RSM_COMMAND_PREFIX);
+		return;
+	}
+
+	pitch = strtof(argv[1], NULL);
+	yaw = strtof(argv[2], NULL);
 }
 
 void command_set(uint32_t args, char *argv[]) {

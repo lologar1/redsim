@@ -168,22 +168,22 @@ void rsm_updateWiremesh(void) {
 	vec3 step = { STEP(0), STEP(1), STEP(2) };
 
 	/* tDelta is the step size (in tspace) per unit moved in realspace */
-#define TDELTA(i) direction[i] == 0 ? INFINITY : fabsf(1.0f / direction[i])
+#define TDELTA(i) direction[i] == 0 ? 0.0f : fabsf(1.0f / direction[i]) /* 0.0f converted to max tMax below */
 	vec3 tDelta = { TDELTA(0), TDELTA(1), TDELTA(2) };
 
 	/* tMax is the current progress (from 0.0f to 1.0f) until we reach looking in tspace */
-#define TMAX(i) tDelta[i] * ((step[i] > 0 ? (gridpos[i] + 1) - pos[i] : pos[i] - gridpos[i]))
+#define TMAX(i) tDelta[i] ? (tDelta[i] * ((step[i] > 0 ? (gridpos[i]+1) - pos[i] : pos[i] - gridpos[i]))) : 1.0f
 	vec3 tMax = { TMAX(0), TMAX(1), TMAX(2) };
 
 	int32_t axis;
-	do { /* TODO: prevent overflow when chunk index is too big (TP oob) */
+	do {
 		lookingAt = cu_coordsToBlock(gridpos, &lookingChunkIndex);
 
 		if (lookingAt->id) goto brk; /* Block exists and isn't air */
 
 		/* Determine which axis is crossed next, update t */
-		if (tMax[0] < tMax[1]) axis = (tMax[0] < tMax[2]) ? 0 : 2;
-		else axis = (tMax[1] < tMax[2]) ? 1 : 2;
+		axis = tMax[0] < tMax[1] ? 0 : 1;
+		axis = tMax[axis] < tMax[2] ? axis : 2;
 
 		/* Update face position with the one we just entered */
 		lookingAdjChunkIndex = lookingChunkIndex;
@@ -191,6 +191,7 @@ void rsm_updateWiremesh(void) {
 
 		gridpos[axis] += step[axis];
 		tMax[axis] += tDelta[axis];
+		if (glm_vec3_isnan(tMax)) exit(1);
 	} while (glm_vec3_min(tMax) < 1.0f);
 	/* Once more to catch final step */
 	lookingAt = cu_coordsToBlock(gridpos, &lookingChunkIndex);
