@@ -86,17 +86,15 @@ void rsm_move(vec3 position) {
 
 				/* Find new dimensions and renormalize */
 				glm_vec3_sub(boundingbox+3, boundingbox, boundingbox+3);
-				if (boundingbox[3] < 0.0f) boundingbox[0] -= (boundingbox[3] = -boundingbox[3]);
-				if (boundingbox[4] < 0.0f) boundingbox[1] -= (boundingbox[4] = -boundingbox[4]);
-				if (boundingbox[5] < 0.0f) boundingbox[2] -= (boundingbox[5] = -boundingbox[5]);
 			}
 
 			/* To prevent phasing through a float imprecision-induced offset boundingbox poking in an
 			 * adjacent block, downsize it by an adjusted offset first */
 			glm_vec3_adds(boundingbox, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox);
-			glm_vec3_subs(boundingbox+3, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox+3);
+			glm_vec3_subs(boundingbox+3, BLOCK_BOUNDINGBOX_ADJUST_OFFSET * 2, boundingbox+3);
 
-			/* Landing position is not inside a block; no collision occurs */
+			/* Landing position is not inside a block; no collision occurs.
+			 * AABBIntersect also normalizes BBs. */
 			if (!cu_AABBIntersect(boundingbox, boundingbox+3, relativePCNew, PLAYER_BOUNDINGBOX_DIMENSIONS))
 				continue;
 
