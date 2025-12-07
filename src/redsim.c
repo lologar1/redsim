@@ -45,7 +45,8 @@ void rsm_move(vec3 position) {
 	/* Collision handling */
 	Blockdata *blockdata;
 	float boundingbox[6];
-	vec3 blockposition, *offset, newPosition, playerCornerNew, playerCornerOld, boxcenter;
+	vec3 blockposition, *offset, newPosition, boxcenter;
+	vec3 playerCornerNew, playerCornerOld, relativePCNew, relativePCOld;
 	mat4 rotation;
 	int32_t axis;
 
@@ -64,19 +65,15 @@ void rsm_move(vec3 position) {
 			/* Blockposition now contains the absolute world position of the block in question.
 			 * To retrieve it, first get the chunk (and check if it exists) then the offset inside that */
 			glm_vec3_add(playerCornerNew, *offset, blockposition);
+			glm_vec3_floor(blockposition, blockposition);
 
 			blockdata = cu_coordsToBlock(blockposition, NULL);
 			if (!(blockdata->metadata & RSM_BIT_COLLISION)) continue; /* Block has no collision */
 
-			/* Get bounding box data and check it against player bounding box */
+			/* Get bounding box data and adjust player position for precise float computations */
 			memcpy(boundingbox, boundingboxes[blockdata->id][blockdata->variant], sizeof(float [6]));
-			glm_vec3_floor(blockposition, blockposition);
-			glm_vec3_add(boundingbox, blockposition, boundingbox);
-
-			/* To prevent phasing through a float imprecision-induced offset boundingbox poking in an
-			 * adjacent block, downsize it by an adjusted offset first */
-			glm_vec3_adds(boundingbox, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox);
-			glm_vec3_subs(boundingbox+3, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox+3);
+			glm_vec3_sub(playerCornerNew, blockposition, relativePCNew);
+			glm_vec3_sub(playerCornerOld, blockposition, relativePCOld);
 
 			if (blockdata->rotation > NORTH) { /* NONE is 0, and both NORTH and NONE do not modify base model */
 				/* Find diametrically opposite corner */
@@ -87,27 +84,34 @@ void rsm_move(vec3 position) {
 				glm_mat4_mulv3(rotation, boundingbox, 1.0f, boundingbox);
 				glm_mat4_mulv3(rotation, boundingbox+3, 1.0f, boundingbox+3);
 
-				/* Find new dimensions */
+				/* Find new dimensions and renormalize */
 				glm_vec3_sub(boundingbox+3, boundingbox, boundingbox+3);
+				if (boundingbox[3] < 0.0f) boundingbox[0] -= (boundingbox[3] = -boundingbox[3]);
+				if (boundingbox[4] < 0.0f) boundingbox[1] -= (boundingbox[4] = -boundingbox[4]);
+				if (boundingbox[5] < 0.0f) boundingbox[2] -= (boundingbox[5] = -boundingbox[5]);
 			}
+
+			/* To prevent phasing through a float imprecision-induced offset boundingbox poking in an
+			 * adjacent block, downsize it by an adjusted offset first */
+			glm_vec3_adds(boundingbox, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox);
+			glm_vec3_subs(boundingbox+3, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox+3);
 
 			/* Landing position is not inside a block; no collision occurs */
-			if (!cu_AABBIntersect(boundingbox, boundingbox+3, playerCornerNew, PLAYER_BOUNDINGBOX_DIMENSIONS))
+			if (!cu_AABBIntersect(boundingbox, boundingbox+3, relativePCNew, PLAYER_BOUNDINGBOX_DIMENSIONS))
 				continue;
 
-			/* Find axis which did not match before movement (axis to cancel movement on) */
-			if (cu_AABBIntersect(boundingbox, boundingbox+3, playerCornerOld, PLAYER_BOUNDINGBOX_DIMENSIONS))
+			if (cu_AABBIntersect(boundingbox, boundingbox+3, relativePCOld, PLAYER_BOUNDINGBOX_DIMENSIONS))
 				continue; /* Player is moving inside block; do not block movement */
 
-			if (boundingbox[axis] + boundingbox[axis+3] < playerCornerOld[axis]) {
+#define SAFEDISTANCE (nextafterf(fabsf(position[axis]), INFINITY) - fabsf(position[axis])) /* Smallest delta */
+			if (boundingbox[axis] + boundingbox[axis+3] < relativePCOld[axis])
 				/* Player is "above" */
-				movement[axis] = -(playerCornerOld[axis] - (boundingbox[axis] + boundingbox[axis+3]))
-					+ BLOCK_BOUNDINGBOX_SAFE_DISTANCE;
-			} else {
-				/* Player is "under */
-				movement[axis] = boundingbox[axis] - (playerCornerOld[axis] +
-					PLAYER_BOUNDINGBOX_DIMENSIONS[axis]) - BLOCK_BOUNDINGBOX_SAFE_DISTANCE;
-			}
+				movement[axis] = -(relativePCOld[axis] - (boundingbox[axis]+boundingbox[axis+3]))
+					+ fmaxf(SAFEDISTANCE, 0.000001f); /* Close to 0, SAFEDISTANCE < calculation */
+			else /* Player is "under */
+				movement[axis] = boundingbox[axis] - (relativePCOld[axis] +
+					PLAYER_BOUNDINGBOX_DIMENSIONS[axis]) - fmaxf(SAFEDISTANCE, 0.000001f);
+#undef SAFEDISTANCE
 
 			/* Match speed to orientation, kill component and replace it */
 			glm_vec3_rotate(speed, -glm_rad(yaw), UPVECTOR);
@@ -174,7 +178,7 @@ void rsm_updateWiremesh(void) {
 	vec3 tMax = { TMAX(0), TMAX(1), TMAX(2) };
 
 	int32_t axis;
-	do {
+	do { /* TODO: prevent overflow when chunk index is too big (TP oob) */
 		lookingAt = cu_coordsToBlock(gridpos, &lookingChunkIndex);
 
 		if (lookingAt->id) goto brk; /* Block exists and isn't air */

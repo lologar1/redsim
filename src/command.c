@@ -12,6 +12,7 @@ void command_help(uint32_t args, char *argv[]);
 void command_config(uint32_t args, char *argv[]);
 void command_set(uint32_t args, char *argv[]);
 void command_setraw(uint32_t args, char *argv[]);
+void command_teleport(uint32_t args, char *argv[]);
 
 void cmd_init(void) {
 	/* Initialize cmdmap and varmap for use in cmd execution */
@@ -21,6 +22,7 @@ void cmd_init(void) {
 	ALIAS("help", command_help);
 	ALIAS("set", command_set);
 	ALIAS("setraw", command_setraw);
+	ALIAS("teleport", command_teleport);
 #undef ALIAS
 
 #define ALIAS(VARNAME, VAR) usf_strhmput(varmap, VARNAME, USFDATAP(&VAR))
@@ -51,6 +53,8 @@ void cmd_init(void) {
 	ALIAS("conf", "config");
 	ALIAS("set", "set");
 	ALIAS("setraw", "setraw");
+	ALIAS("teleport", "teleport")
+	ALIAS("tp", "teleport");
 
 	/* Variables */
 	ALIAS("RSM_FLY_ACCELERATION", "RSM_FLY_ACCELERATION");
@@ -207,14 +211,19 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("config: Change runtime variables.\n");
 		cmd_logf("set: Set current selection to block (default state).\n");
 		cmd_logf("setraw: Set current selection to exact blockdata (64 bits).\n");
+		cmd_logf("teleport: Sets current position in the world.\n");
 		return;
 	}
 
 	/* Find pointer to command or variable and display help */
 	char *unaliasedname;
-	void *unaliasedptr;
-	unaliasedname = usf_strhmget(aliasmap, argv[1]).p;
-	if (!(unaliasedptr = usf_strhmget(cmdmap, unaliasedname).p))
+	if ((unaliasedname = usf_strhmget(aliasmap, argv[1]).p) == NULL) {
+		cmd_logf("No help entry for %s.\n", argv[1]);
+		return;
+	}
+
+	void *unaliasedptr; /* If it is in the alias registry, it must exist */
+	if ((unaliasedptr = usf_strhmget(cmdmap, unaliasedname).p) == NULL)
 		unaliasedptr = usf_strhmget(varmap, unaliasedname).p;
 
 	/* Commands */
@@ -231,6 +240,9 @@ void command_help(uint32_t args, char *argv[]) {
 	} else if (unaliasedptr == command_setraw) {
 		cmd_logf("Syntax: setraw [blockdata]\n");
 		cmd_logf("Set selection to literal blockdata (64 bits) from decimal value.\n");
+	} else if (unaliasedptr == command_teleport) {
+		cmd_logf("Syntax: teleport [x] [y] [z]\n");
+		cmd_logf("Teleports to the specified absolute coordinates.\n");
 	}
 	/* Variables */
 	else if (unaliasedptr == &RSM_FLY_ACCELERATION) {
@@ -265,7 +277,7 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("Command prompt y offset in pixels.\n");
 	} else if (unaliasedptr == &RSM_COMMAND_TEXT_SIZE) {
 		cmd_logf("Command prompt text scaling factor.\n");
-	} else cmd_logf("No help entry for %s.\n", argv[1]);
+	}
 }
 
 void command_config(uint32_t args, char *argv[]) {
@@ -295,4 +307,16 @@ void command_set(uint32_t args, char *argv[]) {
 
 void command_setraw(uint32_t args, char *argv[]) {
 
+}
+
+void command_teleport(uint32_t args, char *argv[]) {
+	/* Teleports to position */
+	if (args < 4) {
+		cmd_logf("Syntax: %steleport [x] [y] [z]\n", RSM_COMMAND_PREFIX);
+		return;
+	}
+
+	position[0] = strtof(argv[1], NULL);
+	position[1] = strtof(argv[2], NULL);
+	position[2] = strtof(argv[3], NULL);
 }

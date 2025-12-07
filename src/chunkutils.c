@@ -31,19 +31,18 @@ void cu_updateMeshlist(void) {
      * and remove out of render distance ones */
 
 	GLuint **meshlist, *mesh;
-	uint32_t a, b, c;
 	uint64_t meshindex;
-	int64_t x, y, z;
+	int64_t a, b, c, x, y, z;
 
 	meshlist = meshes;
 	nmesh = 0;
 
     for (a = 0; a < RSM_LOADING_DISTANCE * 2 + 1; a++) {
-        x = ((int32_t) position[0] / CHUNKSIZE + a - RSM_LOADING_DISTANCE);
+        x = (int64_t) (position[0] / CHUNKSIZE + a - RSM_LOADING_DISTANCE);
         for (b = 0; b < RSM_LOADING_DISTANCE * 2 + 1; b++) {
-            y = ((int32_t) position[1] / CHUNKSIZE + b - RSM_LOADING_DISTANCE);
+			y = (int64_t) (position[1] / CHUNKSIZE + b - RSM_LOADING_DISTANCE);
             for (c = 0; c < RSM_LOADING_DISTANCE * 2 + 1; c++) {
-                z = ((int32_t) position[2] / CHUNKSIZE + c - RSM_LOADING_DISTANCE);
+				z = (int64_t) (position[2] / CHUNKSIZE + c - RSM_LOADING_DISTANCE);
 
 				/* Set mesh for this chunk */
 				meshindex = TOCHUNKINDEX(x, y, z);

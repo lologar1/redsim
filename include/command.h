@@ -8,6 +8,7 @@
 #include <usfhashmap.h>
 #include "rsmlayout.h"
 #include "usfstring.h"
+#include "client.h"
 
 extern char cmdbuffer[RSM_MAX_COMMAND_LENGTH];
 extern char cmdlog[RSM_MAX_COMMAND_LOG_LINES][RSM_MAX_COMMAND_LENGTH];
