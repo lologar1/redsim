@@ -1,0 +1,7 @@
+{
+    "parent": "block/fence/fence_post_ns",
+    "textures": {
+        "post": "block/cherry_post",
+        "slats": "block/cherry_slats"
+    }
+}

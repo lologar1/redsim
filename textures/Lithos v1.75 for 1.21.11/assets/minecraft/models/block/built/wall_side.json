@@ -1,0 +1,32 @@
+{
+    "__comment": "Created in part with opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+        "particle": "#wall"
+    },
+    "elements": [
+        {
+            "from": [5,0,0],
+            "to": [11,14,8],
+            "faces": {
+                "up": {
+                    "texture": "#wall"
+                },
+                "down": {
+                    "texture": "#wall",
+                    "cullface": "down"
+                },
+                "west": {
+                    "texture": "#wall"
+                },
+                "east": {
+                    "texture": "#wall"
+                },
+                "north": {
+                    "texture": "#wall",
+                    "cullface": "north"
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/column_side_z",
+    "textures": {
+        "end": "block/bone_block_top",
+        "side_a": "block/bone_block_side",
+        "side_b": "block/bone_block_side2"
+        }
+}

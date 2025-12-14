@@ -1,0 +1,9 @@
+{
+    "parent": "block/dotsaglow_cube_rotate_2_sides",
+    "textures": {
+        "top": "block/nether_wart_block",
+        "bottom": "block/nether_wart_block",
+        "side_a": "block/nether_wart_block2",
+        "side_b": "block/nether_wart_block3"
+    }
+}

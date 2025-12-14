@@ -1,0 +1,9 @@
+{
+    "variants": {
+        "": [ 
+            { "model": "block/stone/polished_granite_1" },
+            { "model": "block/stone/polished_granite_2" },
+            { "model": "block/stone/polished_granite_3" }
+        ]
+    }
+}

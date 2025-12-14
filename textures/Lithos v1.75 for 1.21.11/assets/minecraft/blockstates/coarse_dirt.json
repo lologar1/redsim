@@ -1,0 +1,9 @@
+{
+    "variants": {
+        "": [ 
+            { "model": "block/soil/coarse_dirt_1" },
+            { "model": "block/soil/coarse_dirt_2" },
+            { "model": "block/soil/coarse_dirt_3" }
+        ]
+    }
+}

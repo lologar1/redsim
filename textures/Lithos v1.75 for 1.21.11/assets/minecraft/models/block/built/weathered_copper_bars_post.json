@@ -1,0 +1,43 @@
+{
+    "__comment": "Created in part with opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+    	"particle": "block/weathered_copper_bars_v",
+        "bars_v": "block/weathered_copper_bars_v",
+        "bars_h": "block/weathered_copper_bars_h"
+    },
+    "elements": [
+        {
+            "from": [7.25,0,7.25],
+            "to": [8.75,16,8.75],
+            "faces": {
+                "up": {
+                    "uv": [12,0,13.5,1.5],
+                    "texture": "#bars_v",
+                    "cullface": "up"
+                },
+                "down": {
+                    "uv": [13.5,0,15,1.5],
+                    "texture": "#bars_v",
+                    "cullface": "down"
+                },
+                "west": {
+                    "uv": [1.5,0,3,16],
+                    "texture": "#bars_v"
+                },
+                "east": {
+                    "uv": [4.5,0,6,16],
+                    "texture": "#bars_v"
+                },
+                "north": {
+                    "uv": [0,0,1.5,16],
+                    "texture": "#bars_v"
+                },
+                "south": {
+                    "uv": [4.5,0,3,16],
+                    "texture": "#bars_v"
+                }
+            }
+        }
+    ]
+}

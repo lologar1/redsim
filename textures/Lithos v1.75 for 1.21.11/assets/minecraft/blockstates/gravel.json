@@ -1,0 +1,9 @@
+{
+    "variants": {
+       "": [ 
+            { "model": "block/soil/gravel_1" },
+            { "model": "block/soil/gravel_2" },
+            { "model": "block/soil/gravel_3" }
+        ]
+    }
+}

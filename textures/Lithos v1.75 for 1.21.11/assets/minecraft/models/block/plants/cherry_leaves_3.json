@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/aglow_tinted_cube_bottom_top_a_b",
+  "textures": {
+    "top": "minecraft:block/cherry_leaves_top3",
+    "bottom": "minecraft:block/cherry_leaves_top",
+    "side_a": "minecraft:block/cherry_leaves3",
+    "side_b": "minecraft:block/cherry_leaves"
+  }
+}

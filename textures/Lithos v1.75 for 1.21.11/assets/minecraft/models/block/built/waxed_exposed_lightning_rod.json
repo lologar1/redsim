@@ -1,0 +1,6 @@
+{
+	"parent": "block/built/lightning_rod_base",
+	"textures": {
+		"all": "minecraft:block/waxed_exposed_lightning_rod"
+  }
+}

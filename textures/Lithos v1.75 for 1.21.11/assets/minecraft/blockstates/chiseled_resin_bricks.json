@@ -1,0 +1,8 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/misc/chiseled_resin_1" },
+            { "model": "block/misc/chiseled_resin_2" }
+        ]
+    }
+}

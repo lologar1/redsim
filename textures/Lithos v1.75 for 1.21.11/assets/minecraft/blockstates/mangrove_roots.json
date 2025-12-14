@@ -1,0 +1,20 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/wood/mangrove_roots_1" },
+            { "model": "block/wood/mangrove_roots_1", "y": 90 },
+            { "model": "block/wood/mangrove_roots_1", "y": 180 },
+            { "model": "block/wood/mangrove_roots_1", "y": 270 },
+            
+            { "model": "block/wood/mangrove_roots_2" },
+            { "model": "block/wood/mangrove_roots_2", "y": 90 },
+            { "model": "block/wood/mangrove_roots_2", "y": 180 },
+            { "model": "block/wood/mangrove_roots_2", "y": 270 },
+            
+            { "model": "block/wood/mangrove_roots_3" },
+            { "model": "block/wood/mangrove_roots_3", "y": 90 },
+            { "model": "block/wood/mangrove_roots_3", "y": 180 },
+            { "model": "block/wood/mangrove_roots_3", "y": 270 }
+        ]
+    }
+}

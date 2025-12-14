@@ -1,0 +1,6 @@
+{
+    "parent": "block/flower_pot/potted_tulip_master",
+    "textures": {
+        "flower": "block/plants/red_tulip"
+    }
+}

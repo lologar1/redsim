@@ -1,0 +1,9 @@
+{
+    "parent": "block/redstone/arrowed_block_horizontal",
+    "textures": {
+        "top": "block/dispenser_arrow_up",
+        "face": "block/dispenser_front",
+        "side": "block/dispenser_arrow_side",
+        "back": "block/blast_furnace_side"
+    }
+}

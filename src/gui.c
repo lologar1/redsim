@@ -151,7 +151,7 @@ void renderInventory(void) {
 	gu_meshSet(pInventorySlot, invv, sizeof(invv)/sizeof(float), invi, sizeof(invi)/sizeof(uint32_t));
 }
 
-void renderCommand(void) { /* TODO : better legibility */
+void renderCommand(void) {
 	/* Draw command logs and command buffer if gamestate is COMMAND */
 
 	/* 5 floats per vertex * 4 vertices per char, times log lines plus buffer. 6 indices/char for i */
@@ -163,7 +163,6 @@ void renderCommand(void) { /* TODO : better legibility */
 
 	/* Hijacking the pItemIcons1 layer (mesh), as it is never used (all sprites go in pItemIcons0) */
 	uint32_t nlog, nchars;
-
 	char *s;
 	for (vptr = v, iptr = i, ioffset = nlog = 0; nlog < RSM_MAX_COMMAND_LOG_LINES; nlog++) {
 		s = cmdlog[((uint64_t) (logptr - cmdlog) + nlog) % RSM_MAX_COMMAND_LOG_LINES];

@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/cube_random3",
+    "textures": {
+        "top-bottom": "block/honeycomb_block_top",
+        "side_a": "block/honeycomb_block_side2",
+        "side_b": "block/honeycomb_block_side3"
+    }
+}

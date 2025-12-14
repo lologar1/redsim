@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/plants/cross_double",
+  "textures": {
+    "A": "minecraft:block/cave_vines_plant3",
+    "B": "minecraft:block/cave_vines_plant"
+  }
+}

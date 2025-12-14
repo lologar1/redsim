@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+        		{ "model": "block/flower_pot/bamboo"  },
+        		{ "model": "block/flower_pot/bamboo", "y": 90  },
+        		{ "model": "block/flower_pot/bamboo", "y": 180 },
+        		{ "model": "block/flower_pot/bamboo", "y": 270 }
+        		]
+    }
+}

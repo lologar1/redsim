@@ -1,0 +1,9 @@
+{
+    "parent": "block/dotsaglow_cube_bottom_top_a_b",
+    "textures": {
+        "bottom": "block/chiseled_nether_bricks_top",
+        "top": "block/chiseled_nether_bricks_top",
+        "side_a": "block/chiseled_nether_bricks2",
+        "side_b": "block/chiseled_nether_bricks"
+    }
+}

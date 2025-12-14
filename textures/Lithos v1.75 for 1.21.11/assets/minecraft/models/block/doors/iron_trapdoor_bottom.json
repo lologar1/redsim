@@ -1,0 +1,11 @@
+{
+	"credit": "Made by Nekzuris",
+	"parent": "block/doors/template_trapdoor_display",
+	"parent": "block/doors/oak_trapdoor_bottom",
+	"ambientocclusion": false,
+	"textures": {
+		"edge": "block/iron_trapdoor_edge",
+		"texture": "block/iron_trapdoor",
+		"particle": "block/iron_trapdoor"
+	}
+}

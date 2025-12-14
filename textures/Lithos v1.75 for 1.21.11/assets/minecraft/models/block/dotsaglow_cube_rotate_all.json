@@ -1,0 +1,12 @@
+{
+    "parent": "block/dotsaglow_cube_rotate_sides_master",
+    "textures": {
+        "particle": "#all",
+        "down": "#all",
+        "up": "#all",
+        "north": "#all",
+        "south": "#all",
+        "west": "#all",
+        "east": "#all"
+    }
+}

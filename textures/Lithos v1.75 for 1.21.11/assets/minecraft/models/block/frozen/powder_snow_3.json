@@ -1,0 +1,7 @@
+{
+    "parent": "block/dotsaglow_cube_end_side",
+    "textures": {
+    	"end": "block/powder_snow_top3",
+        "side": "block/powder_snow3"
+    }
+}

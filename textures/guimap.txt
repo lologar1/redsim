@@ -1,5 +1,6 @@
 itemicons0
 itemicons1
+itemicons2
 solid_icon
 trans_icon
 component_icon

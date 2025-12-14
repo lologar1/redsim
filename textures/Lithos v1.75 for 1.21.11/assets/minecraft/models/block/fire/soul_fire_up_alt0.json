@@ -1,0 +1,7 @@
+{
+    "parent": "block/fire/template_fire_up_alt",
+    "textures": {
+        "particle": "block/soul_fire_2",
+        "fire": "block/soul_fire_2"
+    }
+}

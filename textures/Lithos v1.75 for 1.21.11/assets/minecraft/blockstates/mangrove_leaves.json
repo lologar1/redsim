@@ -1,0 +1,15 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/plants/mangrove_leaves_1" },
+            { "model": "block/plants/mangrove_leaves_1", "y": 90 },
+            { "model": "block/plants/mangrove_leaves_1", "y": 180 },
+            { "model": "block/plants/mangrove_leaves_1", "y": 270 },
+            
+            { "model": "block/plants/mangrove_leaves_2" },
+            { "model": "block/plants/mangrove_leaves_2", "y": 90 },
+            { "model": "block/plants/mangrove_leaves_2", "y": 180 },
+            { "model": "block/plants/mangrove_leaves_2", "y": 270 }
+        ]
+    }
+}

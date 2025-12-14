@@ -1,0 +1,10 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/dotsaglow_cube_rotate_2_sides",
+    "textures": {
+        "top": "block/crimson_stem_top",
+        "bottom": "block/crimson_stem_top2",
+        "side_a": "block/crimson_stem",
+        "side_b": "block/crimson_stem2"
+    }
+}

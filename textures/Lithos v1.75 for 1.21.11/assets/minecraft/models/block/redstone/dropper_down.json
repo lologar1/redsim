@@ -1,0 +1,8 @@
+{
+    "parent": "block/redstone/arrowed_block_down",
+    "textures": {
+        "face": "block/dropper_front_vertical",
+        "side": "block/dropper_arrow_down",
+        "back": "block/furnace_top"
+    }
+}

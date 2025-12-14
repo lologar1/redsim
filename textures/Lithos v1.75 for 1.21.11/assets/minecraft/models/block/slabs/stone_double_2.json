@@ -1,0 +1,9 @@
+{
+    "parent": "block/dotsaglow_cube_bottom_top_a_b",
+    "textures": {
+        "bottom": "block/stone_double",
+        "top":    "block/stone_double",
+        "side_a": "block/stone_double2",
+        "side_b": "block/stone_double3"
+    }
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/plants/template_azalea",
+  "textures": {
+    "top": "minecraft:block/azalea_top2",
+    "side_a": "minecraft:block/azalea_side2",
+    "side_b": "minecraft:block/azalea_side"
+  }
+}

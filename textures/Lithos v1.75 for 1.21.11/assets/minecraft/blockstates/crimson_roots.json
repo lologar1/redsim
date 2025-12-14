@@ -1,0 +1,11 @@
+
+{
+    "variants": {
+        "": [
+            { "model": "block/nether/crimson_roots" },
+            { "model": "block/nether/crimson_roots", "y": 90 },
+            { "model": "block/nether/crimson_roots", "y": 180 },
+            { "model": "block/nether/crimson_roots", "y": 270 }
+        ]
+    }
+}

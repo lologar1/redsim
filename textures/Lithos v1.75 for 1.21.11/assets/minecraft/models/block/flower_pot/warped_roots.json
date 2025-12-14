@@ -1,0 +1,7 @@
+{
+    "parent": "block/flower_pot/flower_pot_doublecross",
+    "textures": {
+        "A": "block/plants/warped_roots_pot",
+        "B": "block/plants/warped_roots_pot2"
+    }
+}

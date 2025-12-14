@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_upper",
+    "textures": {
+        "bottom": "block/polished_blackstone_top2",
+        "top":    "block/polished_blackstone_top3",
+        "side_a": "block/polished_blackstone_double3",
+        "side_b": "block/polished_blackstone_double2"
+    }
+}

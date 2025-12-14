@@ -1,0 +1,18 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/plants/brown_mushroom_1" },
+            { "model": "block/plants/brown_mushroom_1", "y": 90 },
+            { "model": "block/plants/brown_mushroom_1", "y": 180 },
+            { "model": "block/plants/brown_mushroom_1", "y": 270 },
+            { "model": "block/plants/brown_mushroom_2" },
+            { "model": "block/plants/brown_mushroom_2", "y": 90 },
+            { "model": "block/plants/brown_mushroom_2", "y": 180 },
+            { "model": "block/plants/brown_mushroom_2", "y": 270 },
+            { "model": "block/plants/brown_mushroom_3" },
+            { "model": "block/plants/brown_mushroom_3", "y": 90 },
+            { "model": "block/plants/brown_mushroom_3", "y": 180 },
+            { "model": "block/plants/brown_mushroom_3", "y": 270 }
+        ]
+    }
+}

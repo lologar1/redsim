@@ -1,0 +1,65 @@
+{
+    "__comment": "Created in part with opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+        "particle": "#crop"
+    },
+    "elements": [
+        {
+            "from": [4,-1,-1],
+            "to": [4,15,15],
+            "faces": {
+                "west": {
+                    "uv": [16,0,0,16],
+                    "texture": "#crop"
+                },
+                "east": {
+                    "uv": [16,0,0,16],
+                    "texture": "#crop"
+                }
+            }
+        },
+        {
+            "from": [11,-2,0],
+            "to": [11,14,16],
+            "faces": {
+                "west": {
+                    "uv": [0.0,0.0,16.0,16.0],
+                    "texture": "#crop"
+                },
+                "east": {
+                    "uv": [0.0,0.0,16.0,16.0],
+                    "texture": "#crop"
+                }
+            }
+        },
+        {
+            "from": [1,-2,4],
+            "to": [17,14,4],
+            "faces": {
+                "north": {
+                    "uv": [16.0,0.0,0.0,16.0],
+                    "texture": "#crop"
+                },
+                "south": {
+                    "uv": [16.0,0.0,0.0,16.0],
+                    "texture": "#crop"
+                }
+            }
+        },
+        {
+            "from": [0,-1,13],
+            "to": [16,15,13],
+            "faces": {
+                "north": {
+                    "uv": [0.0,0.0,16.0,16.0],
+                    "texture": "#crop"
+                },
+                "south": {
+                    "uv": [0.0,0.0,16.0,16.0],
+                    "texture": "#crop"
+                }
+            }
+        }
+    ]
+}

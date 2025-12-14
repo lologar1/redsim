@@ -1,0 +1,9 @@
+{
+    "parent": "block/dotsaglow_cube_rotate_2_sides",
+    "textures": {
+        "top": "block/nether_quartz_ore_top",
+        "bottom": "block/nether_quartz_ore_bottom",
+        "side_a": "block/nether_quartz_ore",
+        "side_b": "block/nether_quartz_ore"
+    }
+}

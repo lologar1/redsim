@@ -1,0 +1,21 @@
+{
+    "variants": {
+        "type=bottom": [ 
+            { "model": "block/slabs/weathered_cut_copper_bottom_1" },
+            { "model": "block/slabs/weathered_cut_copper_bottom_2" },
+            { "model": "block/slabs/weathered_cut_copper_bottom_3" }
+        ],
+        
+        "type=top":  [
+            { "model": "block/slabs/weathered_cut_copper_top_1" },
+            { "model": "block/slabs/weathered_cut_copper_top_2" },
+            { "model": "block/slabs/weathered_cut_copper_top_3" }
+        ],
+        
+        "type=double": [ 
+            { "model": "block/slabs/weathered_cut_copper_double_1" },
+            { "model": "block/slabs/weathered_cut_copper_double_2" },
+            { "model": "block/slabs/weathered_cut_copper_double_3" }
+        ]
+    }
+}

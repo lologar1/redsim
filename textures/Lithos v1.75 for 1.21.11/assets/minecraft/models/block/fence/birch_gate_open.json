@@ -1,0 +1,7 @@
+{
+    "parent": "block/fence/gate_open",
+    "textures": {
+        "post": "block/birch_post",
+        "gate": "block/birch_gate"
+    }
+}

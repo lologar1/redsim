@@ -1,0 +1,131 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "block/block",
+	"textures": {
+		"particle": "block/bookshelf",
+		"books1": "block/bookshelf",
+		"books2": "block/bookshelf2",
+		"books3": "block/bookshelf3",
+		"books4": "block/bookshelf4",
+		"wood": "block/oak_planks",
+		"shelf-edge": "block/bookshelf3d",
+		"shelf-edge-up": "block/bookshelf3d2",
+		"shelf-edge-down": "block/bookshelf3d3"
+	},
+	"elements": [
+		{
+			"from": [0, 15.5, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 0.5], "texture": "#books1", "cullface": "north"},
+				"east": {"uv": [0, 0, 16, 0.5], "texture": "#books1", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 0.5], "texture": "#books1", "cullface": "south"},
+				"west": {"uv": [0, 0, 16, 0.5], "texture": "#books1", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#wood", "cullface": "up"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#shelf-edge-down"}
+			}
+		},
+		{
+			"from": [0, 0, 0],
+			"to": [16, 0.5, 16],
+			"faces": {
+				"north": {"uv": [0, 15.5, 16, 16], "texture": "#books1", "cullface": "north"},
+				"east": {"uv": [0, 15.5, 16, 16], "texture": "#books1", "cullface": "east"},
+				"south": {"uv": [0, 15.5, 16, 16], "texture": "#books1", "cullface": "south"},
+				"west": {"uv": [0, 15.5, 16, 16], "texture": "#books1", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#shelf-edge-up"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#wood", "cullface": "down"}
+			}
+		},
+		{
+			"from": [1, 0.5, 1],
+			"to": [15, 15.5, 15],
+			"faces": {
+				"north": {"uv": [1, 0.5, 15, 15.5], "texture": "#books3", "cullface": "north"},
+				"east": {"uv": [1, 0.5, 15, 15.5], "texture": "#books2", "cullface": "east"},
+				"south": {"uv": [1, 0.5, 15, 15.5], "texture": "#books1", "cullface": "south"},
+				"west": {"uv": [1, 0.5, 15, 15.5], "texture": "#books4", "cullface": "west"}
+			}
+		},
+		{
+			"from": [0, 0.5, 0],
+			"to": [1, 15.5, 1],
+			"faces": {
+				"north": {"uv": [15, 0.5, 16, 15.5], "texture": "#books3", "cullface": "north"},
+				"east": {"uv": [1, 0.5, 2, 15.5], "texture": "#shelf-edge", "cullface": "north"},
+				"south": {"uv": [0, 0.5, 1, 15.5], "texture": "#shelf-edge", "cullface": "west"},
+				"west": {"uv": [0, 0.5, 1, 15.5], "texture": "#books4", "cullface": "west"}
+			}
+		},
+		{
+			"from": [15, 0.5, 15],
+			"to": [16, 15.5, 16],
+			"faces": {
+				"north": {"uv": [0, 0.5, 1, 15.5], "texture": "#shelf-edge", "cullface": "east"},
+				"east": {"uv": [0, 0.5, 1, 15.5], "texture": "#books2", "cullface": "east"},
+				"south": {"uv": [15, 0.5, 16, 15.5], "texture": "#books1", "cullface": "south"},
+				"west": {"uv": [1, 0.5, 2, 15.5], "texture": "#shelf-edge", "cullface": "south"}
+			}
+		},
+		{
+			"from": [0, 0.5, 15],
+			"to": [1, 15.5, 16],
+			"faces": {
+				"north": {"uv": [1, 0.5, 2, 15.5], "texture": "#shelf-edge", "cullface": "west"},
+				"east": {"uv": [0, 0.5, 1, 15.5], "texture": "#shelf-edge", "cullface": "south"},
+				"south": {"uv": [0, 0.5, 1, 15.5], "texture": "#books1", "cullface": "south"},
+				"west": {"uv": [15, 0.5, 16, 15.5], "texture": "#books4", "cullface": "west"}
+			}
+		},
+		{
+			"from": [15, 0.5, 0],
+			"to": [16, 15.5, 1],
+			"faces": {
+				"north": {"uv": [0, 0.5, 1, 15.5], "texture": "#books3", "cullface": "north"},
+				"east": {"uv": [15, 0.5, 16, 15.5], "texture": "#books2", "cullface": "east"},
+				"south": {"uv": [1, 0.5, 2, 15.5], "texture": "#shelf-edge", "cullface": "east"},
+				"west": {"uv": [0, 0.5, 1, 15.5], "texture": "#shelf-edge", "cullface": "north"}
+			}
+		},
+		{
+			"name": "Mid Shelf N",
+			"from": [1, 7.5, 0],
+			"to": [15, 8.5, 1],
+			"faces": {
+				"north": {"uv": [1, 7.5, 15, 8.5], "texture": "#books3", "cullface": "north"},
+				"up": {"uv": [1, 0, 15, 1], "texture": "#shelf-edge-up", "cullface": "north"},
+				"down": {"uv": [1, 1, 15, 0], "texture": "#shelf-edge-down", "cullface": "north"}
+			}
+		},
+		{
+			"name": "Mid Shelf S",
+			"from": [1, 7.5, 15],
+			"to": [15, 8.5, 16],
+			"faces": {
+				"south": {"uv": [1, 7.5, 15, 8.5], "texture": "#books1", "cullface": "south"},
+				"up": {"uv": [1, 15, 15, 16], "texture": "#shelf-edge-up", "cullface": "south"},
+				"down": {"uv": [1, 16, 15, 15], "texture": "#shelf-edge-down", "cullface": "south"}
+			}
+		},
+		{
+			"name": "Mid Shelf E",
+			"from": [15, 7.5, 1],
+			"to": [16, 8.5, 15],
+			"faces": {
+				"east": {"uv": [1, 7.5, 15, 8.5], "texture": "#books2", "cullface": "east"},
+				"up": {"uv": [0, 1, 1, 15], "texture": "#shelf-edge-up", "cullface": "east"},
+				"down": {"uv": [1, 1, 0, 15], "texture": "#shelf-edge-down", "cullface": "east"}
+			}
+		},
+		{
+			"name": "Mid Shelf W",
+			"from": [0, 7.5, 1],
+			"to": [1, 8.5, 15],
+			"faces": {
+				"west": {"uv": [1, 7.5, 15, 8.5], "texture": "#books1", "cullface": "west"},
+				"up": {"uv": [15, 1, 16, 15], "texture": "#shelf-edge-up", "cullface": "west"},
+				"down": {"uv": [16, 1, 15, 15], "texture": "#shelf-edge-down", "cullface": "west"}
+			}
+		}
+	]
+}

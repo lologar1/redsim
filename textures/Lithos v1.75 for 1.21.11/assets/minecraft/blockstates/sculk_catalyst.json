@@ -1,0 +1,17 @@
+{
+    "variants": {
+    	"bloom=false": [
+            { "model": "minecraft:block/sculk_catalyst" },
+            { "model": "minecraft:block/sculk_catalyst", "y": 90 },
+            { "model": "minecraft:block/sculk_catalyst", "y": 180 },
+            { "model": "minecraft:block/sculk_catalyst", "y": 270 }
+        ],
+        
+    	"bloom=true": [ 
+            { "model": "minecraft:block/sculk_catalyst_bloom" },
+            { "model": "minecraft:block/sculk_catalyst_bloom", "y": 90 },
+            { "model": "minecraft:block/sculk_catalyst_bloom", "y": 180 },
+            { "model": "minecraft:block/sculk_catalyst_bloom", "y": 270 }
+        ]
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_half",
+    "textures": {
+        "bottom": "block/waxed_cut_copper",
+        "top":    "block/waxed_cut_copper",
+        "side_a": "block/waxed_cut_copper",
+        "side_b": "block/waxed_cut_copper"
+    }
+}

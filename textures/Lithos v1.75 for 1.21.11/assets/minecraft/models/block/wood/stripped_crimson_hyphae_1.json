@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/column_top",
+    "textures": {
+        "end": "block/stripped_crimson_stem3",
+        "side_a": "block/stripped_crimson_stem",
+        "side_b": "block/stripped_crimson_stem2"
+    }
+}

@@ -1,0 +1,7 @@
+{
+    "parent": "block/plants/cross_double_big_bottom",
+    "textures": {
+        "A": "block/plants/sunflower_bottom_1",
+        "B": "block/plants/sunflower_bottom_2"
+    }
+}

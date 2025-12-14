@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/cube_random3",
+    "textures": {
+        "top-bottom": "block/andesite3",
+        "side_a": "block/andesite",
+        "side_b": "block/andesite2"
+    }
+}

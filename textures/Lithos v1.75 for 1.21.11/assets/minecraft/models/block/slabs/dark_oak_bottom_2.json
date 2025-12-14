@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_half",
+    "textures": {
+        "bottom": "block/dark_oak_planks2",
+        "top":    "block/dark_oak_planks3",
+        "side_a": "block/dark_oak_planks2",
+        "side_b": "block/dark_oak_planks3"
+    }
+}

@@ -1,0 +1,6 @@
+{
+    "parent": "block/plants/lily_pad_master",
+    "textures": {
+        "A": "block/lily_pad3"
+    }
+}

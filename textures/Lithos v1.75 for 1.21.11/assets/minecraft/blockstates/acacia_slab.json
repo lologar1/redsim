@@ -1,0 +1,21 @@
+{
+    "variants": {
+        "type=bottom": [ 
+            { "model": "block/slabs/acacia_bottom_1" },
+            { "model": "block/slabs/acacia_bottom_2" },
+            { "model": "block/slabs/acacia_bottom_3" }
+        ],
+        
+        "type=top":  [
+            { "model": "block/slabs/acacia_top_1" },
+            { "model": "block/slabs/acacia_top_2" },
+            { "model": "block/slabs/acacia_top_3" }
+        ],
+        
+        "type=double": [ 
+            { "model": "block/slabs/acacia_double_1" },
+            { "model": "block/slabs/acacia_double_2" },
+            { "model": "block/slabs/acacia_double_3" }
+        ]
+    }
+}

@@ -1,0 +1,6 @@
+{
+	"parent": "block/plants/crimson_fungus_2_master",
+    "textures": {
+        "texture": "block/plants/crimson_fungus3d"
+    }
+}

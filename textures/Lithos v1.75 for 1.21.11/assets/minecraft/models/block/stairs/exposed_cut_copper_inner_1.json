@@ -1,0 +1,9 @@
+{
+    "parent": "block/stairs/master_inner",
+    "textures": {
+        "bottom": "block/exposed_cut_copper_top",
+        "top": "block/exposed_cut_copper_top",
+        "side_a": "block/exposed_cut_copper2",
+        "side_b": "block/exposed_cut_copper3"
+    }
+}

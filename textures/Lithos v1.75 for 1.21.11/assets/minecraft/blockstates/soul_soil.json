@@ -1,0 +1,50 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/nether/soul_soil_1" },
+            { "model": "block/nether/soul_soil_1", "y": 90 },
+            { "model": "block/nether/soul_soil_1", "y": 180 },
+            { "model": "block/nether/soul_soil_1", "y": 270 },
+            
+            { "model": "block/nether/soul_soil_2" },
+            { "model": "block/nether/soul_soil_2", "y": 90 },
+            { "model": "block/nether/soul_soil_2", "y": 180 },
+            { "model": "block/nether/soul_soil_2", "y": 270 },
+            
+            { "model": "block/nether/soul_soil_3" },
+            { "model": "block/nether/soul_soil_3", "y": 90 },
+            { "model": "block/nether/soul_soil_3", "y": 180 },
+            { "model": "block/nether/soul_soil_3", "y": 270 },
+            
+            { "model": "block/nether/soul_soil_4" },
+            { "model": "block/nether/soul_soil_4", "y": 90 },
+            { "model": "block/nether/soul_soil_4", "y": 180 },
+            { "model": "block/nether/soul_soil_4", "y": 270 },
+            
+            { "model": "block/nether/soul_soil_5" },
+            { "model": "block/nether/soul_soil_5", "y": 90 },
+            { "model": "block/nether/soul_soil_5", "y": 180 },
+            { "model": "block/nether/soul_soil_5", "y": 270 },
+            
+            { "model": "block/nether/soul_soil_6" },
+            { "model": "block/nether/soul_soil_6", "y": 90 },
+            { "model": "block/nether/soul_soil_6", "y": 180 },
+            { "model": "block/nether/soul_soil_6", "y": 270 },
+            
+            { "model": "block/nether/soul_soil_7" },
+            { "model": "block/nether/soul_soil_7", "y": 90 },
+            { "model": "block/nether/soul_soil_7", "y": 180 },
+            { "model": "block/nether/soul_soil_7", "y": 270 },
+            
+            { "model": "block/nether/soul_soil_8" },
+            { "model": "block/nether/soul_soil_8", "y": 90 },
+            { "model": "block/nether/soul_soil_8", "y": 180 },
+            { "model": "block/nether/soul_soil_8", "y": 270 },
+            
+            { "model": "block/nether/soul_soil_9" },
+            { "model": "block/nether/soul_soil_9", "y": 90 },
+            { "model": "block/nether/soul_soil_9", "y": 180 },
+            { "model": "block/nether/soul_soil_9", "y": 270 }
+        ]
+    }
+}

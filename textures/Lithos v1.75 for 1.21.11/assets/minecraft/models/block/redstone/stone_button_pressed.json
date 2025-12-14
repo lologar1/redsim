@@ -1,0 +1,6 @@
+{
+    "parent": "block/redstone/button_pressed",
+    "textures": {
+        "texture": "block/stone_button"
+    }
+}

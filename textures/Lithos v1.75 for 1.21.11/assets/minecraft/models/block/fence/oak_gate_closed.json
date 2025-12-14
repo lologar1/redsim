@@ -1,0 +1,7 @@
+{
+    "parent": "block/fence/gate_closed",
+    "textures": {
+        "post": "block/oak_post",
+        "gate": "block/oak_gate"
+    }
+}

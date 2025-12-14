@@ -1,0 +1,14 @@
+{
+    "variants": {
+        "": [
+        				{ "model": "block/flower_pot/dead_bush_1" },
+        				{ "model": "block/flower_pot/dead_bush_2" },
+        				{ "model": "block/flower_pot/dead_bush_3" },
+        				{ "model": "block/flower_pot/dead_bush_4" },
+        				{ "model": "block/flower_pot/dead_bush_1", "y": 90 },
+        				{ "model": "block/flower_pot/dead_bush_2", "y": 90 },
+        				{ "model": "block/flower_pot/dead_bush_3", "y": 90 },
+        				{ "model": "block/flower_pot/dead_bush_4", "y": 90 }
+        			]
+    }
+}

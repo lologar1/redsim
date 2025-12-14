@@ -1,0 +1,9 @@
+{
+    "parent": "block/plants/fourcross",
+    "textures": {
+        "A": "block/3d/blank",
+        "B": "block/3d/horn_coral_3",
+        "C": "block/3d/horn_coral_2",
+        "D": "block/3d/horn_coral_1"
+    }
+}

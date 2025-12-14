@@ -1,0 +1,6 @@
+{
+    "parent": "block/plants/cross",
+    "textures": {
+        "cross": "block/azure_bluet"
+    }
+}

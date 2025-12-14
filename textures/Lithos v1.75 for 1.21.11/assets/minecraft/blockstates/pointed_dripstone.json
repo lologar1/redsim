@@ -1,0 +1,173 @@
+{
+  "variants": {
+    "thickness=base,vertical_direction=down": [
+        { "model": "block/stone/pointed_dripstone_down_base_1" },
+        { "model": "block/stone/pointed_dripstone_down_base_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_base_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_base_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_base_2" },
+        { "model": "block/stone/pointed_dripstone_down_base_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_base_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_base_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_base_3" },
+        { "model": "block/stone/pointed_dripstone_down_base_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_base_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_base_3", "y": 270 }
+    ],
+    
+    "thickness=base,vertical_direction=up": [
+        { "model": "block/stone/pointed_dripstone_up_base_1" },
+        { "model": "block/stone/pointed_dripstone_up_base_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_base_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_base_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_base_2" },
+        { "model": "block/stone/pointed_dripstone_up_base_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_base_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_base_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_base_3" },
+        { "model": "block/stone/pointed_dripstone_up_base_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_base_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_base_3", "y": 270 }
+    ],
+    
+    "thickness=frustum,vertical_direction=down": [
+        { "model": "block/stone/pointed_dripstone_down_frustum_1" },
+        { "model": "block/stone/pointed_dripstone_down_frustum_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_frustum_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_frustum_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_frustum_2" },
+        { "model": "block/stone/pointed_dripstone_down_frustum_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_frustum_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_frustum_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_frustum_3" },
+        { "model": "block/stone/pointed_dripstone_down_frustum_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_frustum_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_frustum_3", "y": 270 }
+    ],
+    
+    "thickness=frustum,vertical_direction=up": [
+        { "model": "block/stone/pointed_dripstone_up_frustum_1" },
+        { "model": "block/stone/pointed_dripstone_up_frustum_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_frustum_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_frustum_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_frustum_2" },
+        { "model": "block/stone/pointed_dripstone_up_frustum_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_frustum_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_frustum_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_frustum_3" },
+        { "model": "block/stone/pointed_dripstone_up_frustum_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_frustum_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_frustum_3", "y": 270 }
+    ],
+    
+    "thickness=middle,vertical_direction=down": [
+        { "model": "block/stone/pointed_dripstone_down_middle_1" },
+        { "model": "block/stone/pointed_dripstone_down_middle_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_middle_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_middle_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_middle_2" },
+        { "model": "block/stone/pointed_dripstone_down_middle_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_middle_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_middle_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_middle_3" },
+        { "model": "block/stone/pointed_dripstone_down_middle_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_middle_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_middle_3", "y": 270 }
+    ],
+    
+    "thickness=middle,vertical_direction=up": [
+        { "model": "block/stone/pointed_dripstone_up_middle_1" },
+        { "model": "block/stone/pointed_dripstone_up_middle_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_middle_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_middle_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_middle_2" },
+        { "model": "block/stone/pointed_dripstone_up_middle_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_middle_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_middle_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_middle_3" },
+        { "model": "block/stone/pointed_dripstone_up_middle_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_middle_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_middle_3", "y": 270 }
+    ],
+    
+    "thickness=tip,vertical_direction=down": [
+        { "model": "block/stone/pointed_dripstone_down_tip_1" },
+        { "model": "block/stone/pointed_dripstone_down_tip_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_tip_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_tip_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_tip_2" },
+        { "model": "block/stone/pointed_dripstone_down_tip_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_tip_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_tip_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_tip_3" },
+        { "model": "block/stone/pointed_dripstone_down_tip_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_tip_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_tip_3", "y": 270 }
+    ],
+    
+    "thickness=tip,vertical_direction=up": [
+        { "model": "block/stone/pointed_dripstone_up_tip_1" },
+        { "model": "block/stone/pointed_dripstone_up_tip_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_tip_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_tip_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_tip_2" },
+        { "model": "block/stone/pointed_dripstone_up_tip_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_tip_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_tip_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_tip_3" },
+        { "model": "block/stone/pointed_dripstone_up_tip_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_tip_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_tip_3", "y": 270 }
+    ],
+    
+    "thickness=tip_merge,vertical_direction=down": [
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_1" },
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_2" },
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_3" },
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_down_tip_merge_3", "y": 270 }
+    ],
+    
+    "thickness=tip_merge,vertical_direction=up": [
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_1" },
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_1", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_1", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_1", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_2" },
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_2", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_2", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_2", "y": 270 },
+            
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_3" },
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_3", "y": 90 },
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_3", "y": 180 },
+        { "model": "block/stone/pointed_dripstone_up_tip_merge_3", "y": 270 }
+        ]
+    }
+  }

@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/column_side_z",
+    "textures": {
+        "end": "block/cherry_log_top",
+        "side_a": "block/cherry_log2",
+        "side_b": "block/cherry_log3"
+        }
+}

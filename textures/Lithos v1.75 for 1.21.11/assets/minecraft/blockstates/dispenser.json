@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "facing=down":  { "model": "block/redstone/dispenser_down" },
+        "facing=up":    { "model": "block/redstone/dispenser_up" },
+        "facing=north": { "model": "block/redstone/dispenser" },
+        "facing=south": { "model": "block/redstone/dispenser", "y": 180 },
+        "facing=west":  { "model": "block/redstone/dispenser", "y": 270 },
+        "facing=east":  { "model": "block/redstone/dispenser", "y": 90 }
+    }
+}

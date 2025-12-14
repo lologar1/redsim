@@ -1,0 +1,21 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/frozen/powder_snow_1" },
+            { "model": "block/frozen/powder_snow_2" },
+            { "model": "block/frozen/powder_snow_3" },            
+            
+            { "model": "block/frozen/powder_snow_1", "y": 90 },
+            { "model": "block/frozen/powder_snow_2", "y": 90 },
+            { "model": "block/frozen/powder_snow_3", "y": 90 },            
+            
+            { "model": "block/frozen/powder_snow_1", "y": 180 },
+            { "model": "block/frozen/powder_snow_2", "y": 180 },
+            { "model": "block/frozen/powder_snow_3", "y": 180 },            
+            
+            { "model": "block/frozen/powder_snow_1", "y": 270 },
+            { "model": "block/frozen/powder_snow_2", "y": 270 },
+            { "model": "block/frozen/powder_snow_3", "y": 270 }
+        ]
+    }
+}

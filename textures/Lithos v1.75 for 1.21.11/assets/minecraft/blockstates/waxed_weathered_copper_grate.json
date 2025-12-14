@@ -1,0 +1,8 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/misc/weathered_copper_grate_1" },
+            { "model": "block/misc/weathered_copper_grate_2" }
+        ]
+    }
+}

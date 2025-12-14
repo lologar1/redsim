@@ -1,0 +1,72 @@
+{
+    "ambientocclusion": false,
+    "textures": {
+        "particle": "#A"
+    },
+    "elements": [
+        {
+            "from": [0,0,8],
+            "to": [16,16,8],
+			"rotation": { "origin": [ 8, 8, 8 ], "axis": "y", "angle": -22.5, "rescale": false },
+			"shade": false,
+            "faces": {
+                "north": {
+                    "uv": [0,0,16,16],
+                    "texture": "#A", "tintindex": 0
+                },
+                "south": {
+                    "uv": [16,0,0,16],
+                    "texture": "#A", "tintindex": 0
+                }
+            }
+        },
+        {
+            "from": [0,0,8],
+            "to": [16,16,8],
+			"rotation": { "origin": [ 8, 8, 8 ], "axis": "y", "angle": 22.5, "rescale": false },
+			"shade": false,
+            "faces": {
+                "north": {
+                    "uv": [16,0,0,16],
+                    "texture": "#B", "tintindex": 0
+                },
+                "south": {
+                    "uv": [0,0,16,16],
+                    "texture": "#B", "tintindex": 0
+                }
+            }
+        },
+        {
+            "from": [8,0,0],
+            "to": [8,16,16],
+			"rotation": { "origin": [ 8, 8, 8 ], "axis": "y", "angle": -22.5, "rescale": false },
+			"shade": false,
+            "faces": {
+                "west": {
+                    "uv": [0,0,16,16],
+                    "texture": "#C", "tintindex": 0
+                },
+                "east": {
+                    "uv": [16,0,0,16],
+                    "texture": "#C", "tintindex": 0
+                }
+            }
+        },
+        {
+            "from": [8,0,0],
+            "to": [8,16,16],
+			"rotation": { "origin": [ 8, 8, 8 ], "axis": "y", "angle": 22.5, "rescale": false },
+			"shade": false,
+            "faces": {
+                "west": {
+                    "uv": [16,0,0,16],
+                    "texture": "#D", "tintindex": 0
+                },
+                "east": {
+                    "uv": [0,0,16,16],
+                    "texture": "#D", "tintindex": 0
+                }
+            }
+        }
+    ]
+}

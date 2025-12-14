@@ -1,0 +1,54 @@
+{
+    "__comment": "Created in part with opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+        "particle": "block/cocoa_stage1",
+        "cocoa": "block/cocoa_stage1"
+    },
+    "elements": [
+        {
+            "from": [5,5,9],
+            "to": [11,12,15],
+            "faces": {
+                "up": {
+                    "uv": [0,0,6,6],
+                    "texture": "#cocoa"
+                },
+                "down": {
+                    "uv": [0,0,6,6],
+                    "texture": "#cocoa"
+                },
+                "west": {
+                	"uv": [9,4,15,11],
+                    "texture": "#cocoa"
+                },
+                "east": {
+                	"uv": [9,4,15,11],
+                    "texture": "#cocoa"
+                },
+                "north": {
+                    "uv": [9,4,15,11],
+                    "texture": "#cocoa"
+                },
+                "south": {
+                    "uv": [9,4,15,11],
+                    "texture": "#cocoa"
+                }
+            }
+        },
+        {
+            "from": [8,12,11],
+            "to": [8,16.5,16],
+            "faces": {
+                "west": {
+                    "uv": [0,11.5,5,16],
+                    "texture": "#cocoa"
+                },
+                "east": {
+                    "uv": [5,11.5,0,16],
+                    "texture": "#cocoa"
+                }
+            }
+        }
+    ]
+}

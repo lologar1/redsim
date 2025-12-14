@@ -1,0 +1,9 @@
+{
+    "variants": {
+        "": [ 
+            { "model": "block/wood/dark_oak_bark_1" },
+            { "model": "block/wood/dark_oak_bark_2" },
+            { "model": "block/wood/dark_oak_bark_3" }
+        ]
+    }
+}

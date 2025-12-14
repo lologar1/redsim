@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/flower_pot/flowering_azalea_bush_1" },
+            { "model": "block/flower_pot/flowering_azalea_bush_1", "y": 90 },
+            { "model": "block/flower_pot/flowering_azalea_bush_1", "y": 180 },
+            { "model": "block/flower_pot/flowering_azalea_bush_1", "y": 270 }
+        ]
+    }
+}

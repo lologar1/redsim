@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/nether/warped_roots" },
+            { "model": "block/nether/warped_roots", "y": 90 },
+            { "model": "block/nether/warped_roots", "y": 180 },
+            { "model": "block/nether/warped_roots", "y": 270 }
+        ]
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/plants/irregular_square_master",
+    "textures": {
+        "A": "block/seagrass",
+        "B": "block/seagrass2",
+        "C": "block/seagrass",
+        "D": "block/seagrass3"
+    }
+}

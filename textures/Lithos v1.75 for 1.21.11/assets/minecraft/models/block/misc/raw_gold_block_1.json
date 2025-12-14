@@ -1,0 +1,10 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/dotsaglow_cube_rotate_2_sides",
+    "textures": {
+        "top": "block/raw_gold_block",
+        "bottom": "block/raw_gold_block",
+        "side_a": "block/raw_gold_block",
+        "side_b": "block/raw_gold_block2"
+    }
+}

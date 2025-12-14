@@ -1,0 +1,8 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/plants/cross_double_big",
+    "textures": {
+        "A": "block/plants/grass_4",
+        "B": "block/plants/grass_1"  
+    }
+}

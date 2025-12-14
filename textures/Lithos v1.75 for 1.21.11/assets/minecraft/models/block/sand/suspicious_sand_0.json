@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/dotsaglow_cube_rotate_all",
+  "textures": {
+    "all": "minecraft:block/suspicious_sand_0"
+  }
+}

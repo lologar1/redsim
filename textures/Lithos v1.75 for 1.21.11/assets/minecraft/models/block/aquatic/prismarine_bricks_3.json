@@ -1,0 +1,10 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/dotsaglow_cube_bottom_top_a_b",
+    "textures": {
+        "bottom": "block/prismarine_bricks_bottom3",
+        "top": "block/prismarine_bricks_top3",
+        "side_a": "block/prismarine_bricks",
+        "side_b": "block/prismarine_bricks2"
+    }
+}

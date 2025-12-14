@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/column_side_z",
+    "textures": {
+        "end": "block/stripped_warped_stem_top",
+        "side_a": "block/stripped_warped_stem2",
+        "side_b": "block/stripped_warped_stem3"
+        }
+}

@@ -1,0 +1,6 @@
+{
+	"parent": "block/plants/warped_fungus_2_master",
+    "textures": {
+        "texture": "block/plants/warped_fungus3d"
+    }
+}

@@ -1,0 +1,113 @@
+{
+	"multipart": [
+		{
+			"when": {
+				"up": "true"
+			},
+			"apply": [
+				{	"model": "minecraft:block/plants/glow_lichen_u_1", "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_2", "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_3", "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_u_1", "y": 90, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_2", "y": 90, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_3", "y": 90, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_u_1", "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_2", "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_3", "y": 180, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_u_1", "y": 270, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_2", "y": 270, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_3", "y": 270, "uvlock": false	}
+			]
+		},
+		{
+			"when": {
+				"west": "true"
+			},
+			"apply": [
+				{	"model": "minecraft:block/plants/glow_lichen_e_1", "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_2", "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_3", "y": 180, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_e_1", "x": 90, "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_2", "x": 90, "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_3", "x": 90, "y": 180, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_e_1", "x": 180, "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_2", "x": 180, "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_3", "x": 180, "y": 180, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_e_1", "x": 270, "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_2", "x": 270, "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_3", "x": 270, "y": 180, "uvlock": false	}
+			]
+		},
+		{
+			"when": {
+				"down": "true"
+			},
+			"apply": [
+				{	"model": "minecraft:block/plants/glow_lichen_u_1", "x": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_2", "x": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_3", "x": 180, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_u_1", "x": 180, "y": 90, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_2", "x": 180, "y": 90, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_3", "x": 180, "y": 90, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_u_1", "x": 180, "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_2", "x": 180, "y": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_3", "x": 180, "y": 180, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_u_1", "x": 180, "y": 270, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_2", "x": 180, "y": 270, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_u_3", "x": 180, "y": 270, "uvlock": false	}
+			]
+		},
+		{
+			"when": {
+				"east": "true"
+			},
+			"apply": [
+				{	"model": "minecraft:block/plants/glow_lichen_e_1", "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_2", "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_3", "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_e_1", "x": 90, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_2", "x": 90, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_3", "x": 90, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_e_1", "x": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_2", "x": 180, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_3", "x": 180, "uvlock": false	},
+				
+				{	"model": "minecraft:block/plants/glow_lichen_e_1", "x": 270, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_2", "x": 270, "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_e_3", "x": 270, "uvlock": false	}
+			]
+		},
+		{
+			"when": {
+				"south": "true"
+			},
+
+			"apply": [
+				{	"model": "minecraft:block/plants/glow_lichen_n_1", "y": 180, "uvlock": true	},
+				{	"model": "minecraft:block/plants/glow_lichen_n_2", "y": 180, "uvlock": true	},
+				{	"model": "minecraft:block/plants/glow_lichen_n_3", "y": 180, "uvlock": true	}
+			]
+		},
+		{
+			"when": {
+				"north": "true"
+			},
+			"apply": [
+				{	"model": "minecraft:block/plants/glow_lichen_n_1", "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_n_2", "uvlock": false	},
+				{	"model": "minecraft:block/plants/glow_lichen_n_3", "uvlock": false	}
+			]
+		}
+	]
+}

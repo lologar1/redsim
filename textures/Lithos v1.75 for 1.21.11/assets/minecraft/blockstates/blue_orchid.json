@@ -1,0 +1,35 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/plants/orchid_1" },
+            { "model": "block/plants/orchid_1", "y": 90 },
+            { "model": "block/plants/orchid_1", "y": 180 },
+            { "model": "block/plants/orchid_1", "y": 270 },
+            
+            { "model": "block/plants/orchid_2" },
+            { "model": "block/plants/orchid_2", "y": 90 },
+            { "model": "block/plants/orchid_2", "y": 180 },
+            { "model": "block/plants/orchid_2", "y": 270 },
+            
+            { "model": "block/plants/orchid_3" },
+            { "model": "block/plants/orchid_3", "y": 90 },
+            { "model": "block/plants/orchid_3", "y": 180 },
+            { "model": "block/plants/orchid_3", "y": 270 },
+            
+            { "model": "block/plants/orchid_4" },
+            { "model": "block/plants/orchid_4", "y": 90 },
+            { "model": "block/plants/orchid_4", "y": 180 },
+            { "model": "block/plants/orchid_4", "y": 270 },
+            
+            { "model": "block/plants/orchid_5" },
+            { "model": "block/plants/orchid_5", "y": 90 },
+            { "model": "block/plants/orchid_5", "y": 180 },
+            { "model": "block/plants/orchid_5", "y": 270 },
+            
+            { "model": "block/plants/orchid_6" },
+            { "model": "block/plants/orchid_6", "y": 90 },
+            { "model": "block/plants/orchid_6", "y": 180 },
+            { "model": "block/plants/orchid_6", "y": 270 }
+        ]
+    }
+}

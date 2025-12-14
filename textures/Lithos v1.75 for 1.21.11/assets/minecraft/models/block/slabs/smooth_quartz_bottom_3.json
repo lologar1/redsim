@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_half",
+    "textures": {
+        "bottom": "block/smooth_quartz3",
+        "top":    "block/smooth_quartz",
+        "side_a": "block/smooth_quartz3",
+        "side_b": "block/smooth_quartz"
+    }
+}

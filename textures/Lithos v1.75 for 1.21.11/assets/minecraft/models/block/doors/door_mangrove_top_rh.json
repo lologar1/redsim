@@ -1,0 +1,23 @@
+{
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"textures": {
+		"edge": "block/mangrove_door_edge",
+		"particle": "block/mangrove_door_upper",
+		"back": "block/mangrove_door_upper",
+		"front": "block/mangrove_door_upper_rh"
+	},
+	"elements": [
+		{
+			"from": [0, 0, 0],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [4.5, 0, 7.5, 16], "texture": "#edge", "cullface": "north"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#back"},
+				"south": {"uv": [13, 0, 16, 16], "texture": "#edge", "cullface": "south"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#front", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 3], "rotation": 90, "texture": "#edge", "cullface": "up"}
+			}
+		}
+	]
+}

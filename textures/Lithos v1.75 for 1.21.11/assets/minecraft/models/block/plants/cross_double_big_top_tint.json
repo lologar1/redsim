@@ -1,0 +1,39 @@
+{
+    "__comment": "Created in part with opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+        "particle": "#A"
+    },
+    "elements": [
+        {
+            "from": [-8,-16,8],
+            "to": [24,16,8],
+			"shade": false,
+            "faces": {
+                "north": {
+                    "uv": [16,0,0,16],
+                    "texture": "#A", "tintindex": 0
+                },
+                "south": {
+                    "uv": [0,0,16,16],
+                    "texture": "#A", "tintindex": 0
+                }
+            }
+        },
+        {
+            "from": [8,-16,-8],
+            "to": [8,16,24],
+			"shade": false,
+            "faces": {
+                "west": {
+                    "uv": [16,0,0,16],
+                    "texture": "#B", "tintindex": 0
+                },
+                "east": {
+                    "uv": [0,0,16,16],
+                    "texture": "#B", "tintindex": 0
+                }
+            }
+        }
+    ]
+}

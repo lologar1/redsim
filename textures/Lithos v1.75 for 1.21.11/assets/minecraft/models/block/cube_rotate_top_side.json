@@ -1,0 +1,12 @@
+{
+    "parent": "block/cube_rotate_all",
+    "textures": {
+        "particle": "#side_a",
+        "down": "#top",
+        "up": "#top",
+        "north": "#side_a",
+        "south": "#side_a",
+        "west": "#side_b",
+        "east": "#side_b"
+    }
+}

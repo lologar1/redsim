@@ -1,0 +1,10 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/dotsaglow_cube_rotate_2_sides",
+    "textures": {
+        "top": "block/pale_moss_block",
+        "bottom": "block/pale_moss_block",
+        "side_a": "block/pale_moss_block",
+        "side_b": "block/pale_moss_block2"
+    }
+}

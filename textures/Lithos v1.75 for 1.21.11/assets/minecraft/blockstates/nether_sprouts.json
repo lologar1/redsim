@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/plants/nether_sprouts" },
+            { "model": "block/plants/nether_sprouts", "y": 90 },
+            { "model": "block/plants/nether_sprouts", "y": 180 },
+            { "model": "block/plants/nether_sprouts", "y": 270 }
+        ]
+    }
+}

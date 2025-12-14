@@ -1,0 +1,9 @@
+{
+    "parent": "block/stairs/master",
+    "textures": {
+        "bottom": "block/deepslate_tiles2",
+        "top": "block/deepslate_tiles2",
+        "side_a": "block/deepslate_tiles3",
+        "side_b": "block/deepslate_tiles"
+    }
+}

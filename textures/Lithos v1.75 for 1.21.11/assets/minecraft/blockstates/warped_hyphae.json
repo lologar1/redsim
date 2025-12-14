@@ -1,0 +1,22 @@
+{
+    "variants": {
+        "axis=x":  [
+        	{ "model": "block/wood/warped_hyphae_1", "x": 90, "y": 90      },
+        	{ "model": "block/wood/warped_hyphae_2", "x": 90, "y": 90      }
+        	],
+        "axis=y":   [
+			{ "model": "block/wood/warped_hyphae_1" },
+            { "model": "block/wood/warped_hyphae_1", "y": 90 },
+            { "model": "block/wood/warped_hyphae_1", "y": 180 },
+            { "model": "block/wood/warped_hyphae_1", "y": 270 },
+            { "model": "block/wood/warped_hyphae_2" },
+            { "model": "block/wood/warped_hyphae_2", "y": 90 },
+            { "model": "block/wood/warped_hyphae_2", "y": 180 },
+            { "model": "block/wood/warped_hyphae_2", "y": 270 }
+        	],
+        "axis=z":   [
+        	{ "model": "block/wood/warped_hyphae_1", "x": 90    },
+        	{ "model": "block/wood/warped_hyphae_2", "x": 90    }
+        	]
+    }
+}

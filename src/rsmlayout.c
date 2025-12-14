@@ -23,3 +23,5 @@ float RSM_DEFAULT_GUI_SCALING_FACTOR = 1.0f;
 float RSM_COMMAND_POS_X_PIXELS = 16.0f;
 float RSM_COMMAND_POS_Y_PIXELS = 16.0f;
 float RSM_COMMAND_TEXT_SIZE = 0.75f;
+
+char *savefile = "world";

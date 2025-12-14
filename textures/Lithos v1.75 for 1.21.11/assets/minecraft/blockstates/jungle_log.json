@@ -1,0 +1,16 @@
+{
+    "variants": {
+        "axis=y":  [
+        	{ "model": "block/wood/jungle_log_1"      },
+        	{ "model": "block/wood/jungle_log_2"      }
+        	],
+        "axis=z":   [
+        	{ "model": "block/wood/jungle_log_side_z1"       },
+        	{ "model": "block/wood/jungle_log_side_z2"       }
+        	],
+        "axis=x":   [
+        	{ "model": "block/wood/jungle_log_side_x1"     },
+        	{ "model": "block/wood/jungle_log_side_x2"    }
+        	]
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "variants": {
+        "type=bottom": [ 
+            { "model": "block/slabs/granite_bottom_1" },
+            { "model": "block/slabs/granite_bottom_2" },
+            { "model": "block/slabs/granite_bottom_3" }
+        ],
+        
+        "type=top":  [
+            { "model": "block/slabs/granite_top_1" },
+            { "model": "block/slabs/granite_top_2" },
+            { "model": "block/slabs/granite_top_3" }
+        ],
+        
+        "type=double": [ 
+            { "model": "block/slabs/granite_double_1" },
+            { "model": "block/slabs/granite_double_2" },
+            { "model": "block/slabs/granite_double_3" }
+        ]
+    }
+}

@@ -1,0 +1,158 @@
+{
+    "__comment": "Created in part with opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+        "cactus_a": "block/cactus_side3",
+        "flowerpot": "block/plants/pot",
+        "cactus_top": "block/cactus_top",
+        "spines": "block/plants/cactus_pot_spines",
+        "particle": "block/flower_pot",
+        "cactus_b": "block/cactus_side"
+    },
+    "elements": [
+        {
+            "name": "Pot",
+            "from": [5,0,5],
+            "to": [11,6,11],
+            "faces": {
+                "up": {
+                    "uv": [10,0,16,6],
+                    "texture": "#flowerpot"
+                },
+                "down": {
+                    "uv": [0,0,6,6],
+                    "texture": "#flowerpot",
+                    "cullface": "down"
+                },
+                "west": {
+                    "uv": [10,10,16,16],
+                    "texture": "#flowerpot"
+                },
+                "east": {
+                    "uv": [0,10,6,16],
+                    "texture": "#flowerpot"
+                },
+                "north": {
+                    "uv": [0,10,6,16],
+                    "texture": "#flowerpot"
+                },
+                "south": {
+                    "uv": [0,10,6,16],
+                    "texture": "#flowerpot"
+                }
+            }
+        },
+        {
+            "from": [6,0.5,6],
+            "to": [10,14.5,10],
+            "faces": {
+                "up": {
+                    "uv": [3.5,8.5,7.5,12.5],
+                    "texture": "#cactus_top"
+                },
+                "west": {
+                    "uv": [8.0,0.0,12.0,16.0],
+                    "texture": "#cactus_a"
+                },
+                "east": {
+                    "uv": [3.5,0.0,7.5,16.0],
+                    "texture": "#cactus_a"
+                },
+                "north": {
+                    "uv": [3.5,0.0,7.5,16.0],
+                    "texture": "#cactus_b"
+                },
+                "south": {
+                    "uv": [8.0,0.0,12.0,16.0],
+                    "texture": "#cactus_b"
+                }
+            }
+        },
+        {
+            "from": [8,4.5,5.5],
+            "to": [8,15.5,10.5],
+            "faces": {
+                "west": {
+                    "uv": [0.5,5,5.5,16],
+                    "texture": "#spines"
+                },
+                "east": {
+                    "uv": [5.5,5,0.5,16],
+                    "texture": "#spines"
+                }
+            }
+        },
+        {
+            "from": [5.5,4.5,8],
+            "to": [10.5,15.5,8],
+            "faces": {
+                "north": {
+                    "uv": [10.5,5,15.5,16],
+                    "texture": "#spines"
+                },
+                "south": {
+                    "uv": [15.5,5,10.5,16],
+                    "texture": "#spines"
+                }
+            }
+        },
+        {
+            "from": [5.5,9,5.5],
+            "to": [10.5,14,10.5],
+            "faces": {
+                "up": {
+                    "uv": [7.5,8.0,12.5,13.0],
+                    "texture": "#cactus_top"
+                },
+                "down": {
+                    "uv": [7.5,3.5,12.5,8.5],
+                    "texture": "#cactus_top"
+                },
+                "west": {
+                    "uv": [3.0,7.0,8.0,13.0],
+                    "texture": "#cactus_b"
+                },
+                "east": {
+                    "uv": [3.0,9.5,8.0,15.5],
+                    "texture": "#cactus_b"
+                },
+                "north": {
+                    "uv": [7.5,0.0,12.5,6.0],
+                    "texture": "#cactus_a"
+                },
+                "south": {
+                    "uv": [7.5,9.0,12.5,15.0],
+                    "texture": "#cactus_a"
+                }
+            }
+        },
+        {
+            "from": [4.5,9,8],
+            "to": [11.5,14,8],
+            "faces": {
+                "north": {
+                    "uv": [4.5,0,11.5,5],
+                    "texture": "#spines"
+                },
+                "south": {
+                    "uv": [11.5,0,4.5,5],
+                    "texture": "#spines"
+                }
+            }
+        },
+        {
+            "from": [8,9,4.5],
+            "to": [8,14,11.5],
+            "faces": {
+                "west": {
+                    "uv": [11.5,5,4.5,0],
+                    "texture": "#spines"
+                },
+                "east": {
+                    "uv": [4.5,5,11.5,0],
+                    "texture": "#spines"
+                }
+            }
+        }
+    ]
+}

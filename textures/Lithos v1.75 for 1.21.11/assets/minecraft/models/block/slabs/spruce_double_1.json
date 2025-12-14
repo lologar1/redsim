@@ -1,0 +1,9 @@
+{
+    "parent": "block/dotsaglow_cube_bottom_top_a_b",
+    "textures": {
+        "bottom": "block/spruce_planks",
+        "top":    "block/spruce_planks",
+        "side_a": "block/spruce_planks_double",
+        "side_b": "block/spruce_planks_double"
+    }
+}

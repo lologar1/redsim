@@ -1,0 +1,62 @@
+{
+    "__comment": "Created in part with opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+        "particle": "#texture"
+    },
+    
+    "elements": [
+        {
+            "from": [4,5,2],
+            "to": [10,7,8],
+            "faces": {
+                "up": {
+                    "uv": [8.5,1,14.5,7],
+                    "texture": "#texture"
+                },
+                "down": {
+                    "uv": [1,1,7,7],
+                    "texture": "#texture"
+                },
+                "west": {
+                    "uv": [8.5,12,14.5,14.5],
+                    "texture": "#texture"
+                },
+                "east": {
+                    "uv": [8.5,12,14.5,14.5],
+                    "texture": "#texture"
+                },
+                "north": {
+                    "uv": [8.5,8.5,14.5,11],
+                    "texture": "#texture"
+                },
+                "south": {
+                    "uv": [8.5,8.5,14.5,11],
+                    "texture": "#texture"
+                }
+            }
+        },
+        {
+            "from": [6,0,4],
+            "to": [8,5,6],
+            "faces": {
+                "west": {
+                    "uv": [2,11.5,4,16],
+                    "texture": "#texture"
+                },
+                "east": {
+                    "uv": [2,7.5,4,12],
+                    "texture": "#texture"
+                },
+                "north": {
+                    "uv": [4,7.5,6,12],
+                    "texture": "#texture"
+                },
+                "south": {
+                    "uv": [4,11.5,6,16],
+                    "texture": "#texture"
+                }
+            }
+        }
+    ]
+}

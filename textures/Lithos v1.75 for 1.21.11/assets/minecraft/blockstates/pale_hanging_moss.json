@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "tip=false": [
+      { "model": "minecraft:block/plants/pale_hanging_moss_1" },
+      { "model": "minecraft:block/plants/pale_hanging_moss_2" }
+  ], 
+    "tip=true":[ 
+      {   "model": "minecraft:block/plants/pale_hanging_moss_tip_1" },
+      { "model": "minecraft:block/plants/pale_hanging_moss_tip_2" }
+  ]
+  }
+}

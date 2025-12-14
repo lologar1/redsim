@@ -1,0 +1,204 @@
+{
+    "variants": {
+        "facing=east,half=bottom,shape=straight":  [
+        	{ "model": "block/stairs/smooth_quartz_1" },
+        	{ "model": "block/stairs/smooth_quartz_2" },
+        	{ "model": "block/stairs/smooth_quartz_3" }
+        	],
+        "facing=west,half=bottom,shape=straight":  [
+        	{ "model": "block/stairs/smooth_quartz_1", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_2", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_3", "y": 180, "uvlock": true }
+        	],
+        "facing=south,half=bottom,shape=straight": [
+        	{ "model": "block/stairs/smooth_quartz_1", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_2", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_3", "y": 90, "uvlock": true }
+        	],
+        "facing=north,half=bottom,shape=straight": [
+        	{ "model": "block/stairs/smooth_quartz_1", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_2", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_3", "y": 270, "uvlock": true }
+        	],
+        "facing=east,half=bottom,shape=outer_right":  [
+        	{ "model": "block/stairs/smooth_quartz_outer_1" },
+        	{ "model": "block/stairs/smooth_quartz_outer_2" },
+        	{ "model": "block/stairs/smooth_quartz_outer_3" }
+        	],
+        "facing=west,half=bottom,shape=outer_right":  [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "y": 180, "uvlock": true }
+        	],
+        "facing=south,half=bottom,shape=outer_right": [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "y": 90, "uvlock": true }
+        	],
+        "facing=north,half=bottom,shape=outer_right": [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "y": 270, "uvlock": true }
+        	],
+        "facing=east,half=bottom,shape=outer_left":  [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "y": 270, "uvlock": true }
+        	],
+        "facing=west,half=bottom,shape=outer_left":  [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "y": 90, "uvlock": true }
+        	],
+        "facing=south,half=bottom,shape=outer_left": [
+        	{ "model": "block/stairs/smooth_quartz_outer_1" },
+        	{ "model": "block/stairs/smooth_quartz_outer_2" },
+        	{ "model": "block/stairs/smooth_quartz_outer_3" }
+        	],
+        "facing=north,half=bottom,shape=outer_left": [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "y": 180, "uvlock": true }
+        	],
+        "facing=east,half=bottom,shape=inner_right":  [
+        	{ "model": "block/stairs/smooth_quartz_inner_1" },
+        	{ "model": "block/stairs/smooth_quartz_inner_2" },
+        	{ "model": "block/stairs/smooth_quartz_inner_3" }
+        	],
+        "facing=west,half=bottom,shape=inner_right":  [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "y": 180, "uvlock": true }
+        	],
+        "facing=south,half=bottom,shape=inner_right": [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "y": 90, "uvlock": true }
+        	],
+        "facing=north,half=bottom,shape=inner_right": [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "y": 270, "uvlock": true }
+        	],
+        "facing=east,half=bottom,shape=inner_left":  [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "y": 270, "uvlock": true }
+        	],
+        "facing=west,half=bottom,shape=inner_left":  [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "y": 90, "uvlock": true }
+        	],
+        "facing=south,half=bottom,shape=inner_left": [
+        	{ "model": "block/stairs/smooth_quartz_inner_1" },
+        	{ "model": "block/stairs/smooth_quartz_inner_2" },
+        	{ "model": "block/stairs/smooth_quartz_inner_3" }
+        	],
+        "facing=north,half=bottom,shape=inner_left": [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "y": 180, "uvlock": true }
+        	],
+        "facing=east,half=top,shape=straight":  [
+        	{ "model": "block/stairs/smooth_quartz_1", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_2", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_3", "x": 180, "uvlock": true }
+        	],
+        "facing=west,half=top,shape=straight":  [
+        	{ "model": "block/stairs/smooth_quartz_1", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_2", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_3", "x": 180, "y": 180, "uvlock": true }
+        	],
+        "facing=south,half=top,shape=straight": [
+        	{ "model": "block/stairs/smooth_quartz_1", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_2", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_3", "x": 180, "y": 90, "uvlock": true }
+        	],
+        "facing=north,half=top,shape=straight": [	
+        	{ "model": "block/stairs/smooth_quartz_1", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_2", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_3", "x": 180, "y": 270, "uvlock": true }
+        	],
+        "facing=east,half=top,shape=outer_right":  [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "x": 180, "y": 90, "uvlock": true }
+        	],
+        "facing=west,half=top,shape=outer_right":  [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "x": 180, "y": 270, "uvlock": true }
+        	],
+        "facing=south,half=top,shape=outer_right": [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "x": 180, "y": 180, "uvlock": true }
+        	],
+        "facing=north,half=top,shape=outer_right": [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "x": 180, "uvlock": true }
+        	],
+        "facing=east,half=top,shape=outer_left":  [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "x": 180, "uvlock": true }
+        	],
+        "facing=west,half=top,shape=outer_left":  [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "x": 180, "y": 180, "uvlock": true }
+        	],
+        "facing=south,half=top,shape=outer_left": [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "x": 180, "y": 90, "uvlock": true }
+        	],
+        "facing=north,half=top,shape=outer_left": [
+        	{ "model": "block/stairs/smooth_quartz_outer_1", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_2", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_outer_3", "x": 180, "y": 270, "uvlock": true }
+        	],
+        "facing=east,half=top,shape=inner_right":  [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "x": 180, "y": 90, "uvlock": true }
+        	],
+        "facing=west,half=top,shape=inner_right":  [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "x": 180, "y": 270, "uvlock": true }
+        	],
+        "facing=south,half=top,shape=inner_right": [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "x": 180, "y": 180, "uvlock": true }
+        	],
+        "facing=north,half=top,shape=inner_right": [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "x": 180, "uvlock": true }
+        	],
+        "facing=east,half=top,shape=inner_left":  [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "x": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "x": 180, "uvlock": true }
+        	],
+        "facing=west,half=top,shape=inner_left":  [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "x": 180, "y": 180, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "x": 180, "y": 180, "uvlock": true }
+        	],
+        "facing=south,half=top,shape=inner_left": [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "x": 180, "y": 90, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "x": 180, "y": 90, "uvlock": true }
+        	],
+        "facing=north,half=top,shape=inner_left": [
+        	{ "model": "block/stairs/smooth_quartz_inner_1", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_2", "x": 180, "y": 270, "uvlock": true },
+        	{ "model": "block/stairs/smooth_quartz_inner_3", "x": 180, "y": 270, "uvlock": true }
+        	]
+    }
+}

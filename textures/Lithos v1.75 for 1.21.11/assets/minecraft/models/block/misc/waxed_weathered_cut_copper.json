@@ -1,0 +1,10 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/dotsaglow_cube_bottom_top_a_b",
+    "textures": {
+        "top": "block/waxed_weathered_cut_copper",
+        "bottom": "block/waxed_weathered_cut_copper",
+        "side_a": "block/waxed_weathered_cut_copper",
+        "side_b": "block/waxed_weathered_cut_copper"
+    }
+}

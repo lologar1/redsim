@@ -1,0 +1,5 @@
+{
+    "parent": "item/handheld",
+    "textures": {"layer0": "item/golden_shovel_2"}
+
+}

@@ -1,0 +1,23 @@
+{
+	"credit": "Made with Blockbench",
+	"ambientocclusion": false,
+	"textures": {
+		"particle": "block/warped_door_lower",
+		"back": "block/warped_door_lower",
+		"front": "block/warped_door_lower_rh",
+		"edge": "block/warped_door_edge"
+	},
+	"elements": [
+		{
+			"from": [0, 0, 0],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 3, 16], "texture": "#edge", "cullface": "north"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#back"},
+				"south": {"uv": [13, 0, 16, 16], "texture": "#edge", "cullface": "south"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#front", "cullface": "west"},
+				"down": {"uv": [0, 13, 16, 16], "rotation": 90, "texture": "#edge", "cullface": "down"}
+			}
+		}
+	]
+}

@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_half",
+    "textures": {
+        "bottom": "block/prismarine_bricks_bottom2",
+        "top": "block/prismarine_bricks_bottom3",
+        "side_a": "block/prismarine_bricks_double2",
+        "side_b": "block/prismarine_bricks_double3"
+    }
+}

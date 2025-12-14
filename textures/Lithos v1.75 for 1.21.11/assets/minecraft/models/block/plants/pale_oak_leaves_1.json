@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/aglow_tinted_cube_bottom_top_a_b",
+  "textures": {
+    "top": "minecraft:block/pale_oak_leaves_top",
+    "bottom": "minecraft:block/pale_oak_leaves_top2",
+    "side_a": "minecraft:block/pale_oak_leaves",
+    "side_b": "minecraft:block/pale_oak_leaves2"
+  }
+}

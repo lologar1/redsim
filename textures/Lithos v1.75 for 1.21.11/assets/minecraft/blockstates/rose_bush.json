@@ -1,0 +1,37 @@
+{
+    "variants": {
+        "half=lower": [
+            { "model": "block/plants/rose_bush_bottom_1" },
+            { "model": "block/plants/rose_bush_bottom_1", "y": 90 },
+            { "model": "block/plants/rose_bush_bottom_1", "y": 180 },
+            { "model": "block/plants/rose_bush_bottom_1", "y": 270 },
+            
+            { "model": "block/plants/rose_bush_bottom_2" },
+            { "model": "block/plants/rose_bush_bottom_2", "y": 90 },
+            { "model": "block/plants/rose_bush_bottom_2", "y": 180 },
+            { "model": "block/plants/rose_bush_bottom_2", "y": 270 },
+            
+            { "model": "block/plants/rose_bush_bottom_3" },
+            { "model": "block/plants/rose_bush_bottom_3", "y": 90 },
+            { "model": "block/plants/rose_bush_bottom_3", "y": 180 },
+            { "model": "block/plants/rose_bush_bottom_3", "y": 270 }
+        ],
+        
+        "half=upper":    [
+            { "model": "block/plants/rose_bush_top_1" },
+            { "model": "block/plants/rose_bush_top_1", "y": 90 },
+            { "model": "block/plants/rose_bush_top_1", "y": 180 },
+            { "model": "block/plants/rose_bush_top_1", "y": 270 },
+            
+            { "model": "block/plants/rose_bush_top_2" },
+            { "model": "block/plants/rose_bush_top_2", "y": 90 },
+            { "model": "block/plants/rose_bush_top_2", "y": 180 },
+            { "model": "block/plants/rose_bush_top_2", "y": 270 },
+            
+            { "model": "block/plants/rose_bush_top_3" },
+            { "model": "block/plants/rose_bush_top_3", "y": 90 },
+            { "model": "block/plants/rose_bush_top_3", "y": 180 },
+            { "model": "block/plants/rose_bush_top_3", "y": 270 }
+        ]
+    }
+}

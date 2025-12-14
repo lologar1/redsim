@@ -235,9 +235,8 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("Syntax: help ?[command | variable]\n");
 		cmd_logf("Displays the general help menu, or help on the argument.\n");
 	} else if (unaliasedptr == command_config) {
-		cmd_logf("Syntax: (config, conf) [variable] [(float) value]\n");
-		cmd_logf("Set RSM runtime variables. It is possible to omit the command\n");
-		cmd_logf("using (%s[variable [(float) value]) to implicitly call config.\n", RSM_COMMAND_PREFIX);
+		cmd_logf("Syntax: (config, conf) [variable] [value]\n");
+		cmd_logf("Set RSM runtime variables. Refer to documentation for a list.\n");
 	} else if (unaliasedptr == command_lookat) {
 		cmd_logf("Syntax: lookat [pitch] [yaw]\n");
 		cmd_logf("Set pitch and yaw in degrees.\n");
@@ -246,7 +245,7 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("Set selection to default blockdata matching blockname.\n");
 	} else if (unaliasedptr == command_setraw) {
 		cmd_logf("Syntax: setraw [blockdata]\n");
-		cmd_logf("Set selection to literal blockdata (64 bits) from decimal value.\n");
+		cmd_logf("Set selection to blockdata (64 bits) from decimal value.\n");
 	} else if (unaliasedptr == command_teleport) {
 		cmd_logf("Syntax: teleport [x] [y] [z]\n");
 		cmd_logf("Teleports to the specified absolute coordinates.\n");

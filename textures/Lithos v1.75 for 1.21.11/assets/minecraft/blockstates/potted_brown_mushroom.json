@@ -1,0 +1,12 @@
+{
+    "variants": {
+        "": [
+        				{ "model": "block/flower_pot/brown_mushroom_1" },
+        				{ "model": "block/flower_pot/brown_mushroom_1", "y": 90  },
+        				{ "model": "block/flower_pot/brown_mushroom_2" },
+        				{ "model": "block/flower_pot/brown_mushroom_2", "y": 90  },
+        				{ "model": "block/flower_pot/brown_mushroom_3" },
+        				{ "model": "block/flower_pot/brown_mushroom_3", "y": 90  }
+        			]
+    }
+}

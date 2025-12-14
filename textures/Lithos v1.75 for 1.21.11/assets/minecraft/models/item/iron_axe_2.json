@@ -1,0 +1,4 @@
+{
+    "parent": "item/handheld",
+        "textures": {"layer0": "item/iron_axe_2"}
+}

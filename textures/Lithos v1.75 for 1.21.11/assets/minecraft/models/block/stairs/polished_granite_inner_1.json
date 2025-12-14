@@ -1,0 +1,9 @@
+{
+    "parent": "block/stairs/master_inner",
+    "textures": {
+        "bottom": "block/polished_granite",
+        "top": "block/polished_granite",
+        "side_a": "block/polished_granite2",
+        "side_b": "block/polished_granite3"
+    }
+}

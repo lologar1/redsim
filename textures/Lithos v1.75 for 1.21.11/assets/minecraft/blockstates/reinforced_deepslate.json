@@ -1,0 +1,9 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/stone/reinforced_deepslate_1" },
+            { "model": "block/stone/reinforced_deepslate_2" },
+            { "model": "block/stone/reinforced_deepslate_3" }
+        ]
+    }
+}

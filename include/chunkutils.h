@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
 #include <stdarg.h>
+#include <inttypes.h>
 #include "usfhashmap.h"
 #include "usfqueue.h"
 #include "rsmlayout.h"

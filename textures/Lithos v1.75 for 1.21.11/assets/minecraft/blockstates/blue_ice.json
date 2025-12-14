@@ -1,0 +1,9 @@
+{
+    "variants": {
+        "": [ 
+            { "model": "block/frozen/blue_ice_1" },
+            { "model": "block/frozen/blue_ice_2" },
+            { "model": "block/frozen/blue_ice_3" }
+        ]
+    }
+}

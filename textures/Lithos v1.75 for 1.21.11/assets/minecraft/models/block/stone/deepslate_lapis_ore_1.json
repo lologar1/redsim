@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/cube_random3",
+    "textures": {
+        "top-bottom": "block/deepslate_lapis_ore",
+        "side_a": "block/deepslate_lapis_ore2",
+        "side_b": "block/deepslate_lapis_ore3"
+    }
+}

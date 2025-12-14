@@ -1,0 +1,18 @@
+{
+	"credit": "Made by Nekzuris with Blockbench",
+	"ambientocclusion": false,
+	"textures": {
+        "particle": "block/redstone_dust_dot"
+	},
+	"elements": [
+		{
+			"from": [0, 0.02, 8],
+			"to": [16, 0.02, 16],
+			"shade": false,
+			"faces": {
+				"up": {"uv": [0, 8, 16, 16], "texture": "#line", "tintindex": 0},
+				"down": {"uv": [0, 16, 16, 8], "texture": "#line", "cullface": "down", "tintindex": 0}
+			}
+		}
+	]
+}

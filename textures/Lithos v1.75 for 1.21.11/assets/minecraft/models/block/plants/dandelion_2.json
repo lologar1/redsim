@@ -1,0 +1,7 @@
+{
+	"parent": "block/plants/single_short_flower_master_2",
+    "textures": {
+        "leaf": "block/plants/dandelion_leaf2",
+        "flower": "block/plants/dandelion_flower"
+    }
+}

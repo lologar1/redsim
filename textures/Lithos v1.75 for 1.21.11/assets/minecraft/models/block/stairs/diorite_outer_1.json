@@ -1,0 +1,9 @@
+{
+    "parent": "block/stairs/master_outer",
+    "textures": {
+        "bottom": "block/diorite",
+        "top": "block/diorite",
+        "side_a": "block/diorite2",
+        "side_b": "block/diorite3"
+    }
+}

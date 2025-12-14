@@ -1,0 +1,219 @@
+{
+    "__comment": "Created in part with opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+        "particle": "block/plants/nether-wart-1-top",
+        "wart": "block/plants/nether-wart-1",
+        "wart-top": "block/plants/nether-wart-1-top"
+    },
+    "elements": [
+        {
+            "from": [1.5,4,2],
+            "to": [6.5,8,7],
+            "faces": {
+                "up": {
+                    "uv": [2,2,7,7],
+                    "texture": "#wart-top"
+                },
+                "down": {
+                    "uv": [2,2,7,7],
+                    "texture": "#wart-top"
+                },
+                "west": {
+                    "uv": [2,8,7,12],
+                    "texture": "#wart"
+                },
+                "east": {
+                    "uv": [2,8,7,12],
+                    "texture": "#wart"
+                },
+                "north": {
+                    "uv": [2,8,7,12],
+                    "texture": "#wart"
+                },
+                "south": {
+                    "uv": [2,8,7,12],
+                    "texture": "#wart"
+                }
+            }
+        },
+        {
+            "from": [2.5,0,3],
+            "to": [5.5,4,6],
+            "faces": {
+                "west": {
+                    "uv": [3,12,6,16],
+                    "texture": "#wart"
+                },
+                "east": {
+                    "uv": [3,12,6,16],
+                    "texture": "#wart"
+                },
+                "north": {
+                    "uv": [3,12,6,16],
+                    "texture": "#wart"
+                },
+                "south": {
+                    "uv": [3,12,6,16],
+                    "texture": "#wart"
+                }
+            }
+        },
+        {
+            "from": [8.5,4.5,2.5],
+            "to": [13.5,8.5,7.5],
+            "faces": {
+                "up": {
+                    "uv": [9,2,14,7],
+                    "texture": "#wart-top"
+                },
+                "down": {
+                    "uv": [9,2,14,7],
+                    "texture": "#wart-top"
+                },
+                "west": {
+                    "uv": [2,8,7,12],
+                    "texture": "#wart"
+                },
+                "east": {
+                    "uv": [2,8,7,12],
+                    "texture": "#wart"
+                },
+                "north": {
+                    "uv": [9,8,14,12],
+                    "texture": "#wart"
+                },
+                "south": {
+                    "uv": [9,8,14,12],
+                    "texture": "#wart"
+                }
+            }
+        },
+        {
+            "from": [2,3.5,10],
+            "to": [7,7.5,15],
+            "faces": {
+                "up": {
+                    "uv": [2,9,7,14],
+                    "texture": "#wart-top"
+                },
+                "down": {
+                    "uv": [2,9,7,14],
+                    "texture": "#wart-top"
+                },
+                "west": {
+                    "uv": [9,8,14,12],
+                    "texture": "#wart"
+                },
+                "east": {
+                    "uv": [9,8,14,12],
+                    "texture": "#wart"
+                },
+                "north": {
+                    "uv": [2,8,7,12],
+                    "texture": "#wart"
+                },
+                "south": {
+                    "uv": [2,8,7,12],
+                    "texture": "#wart"
+                }
+            }
+        },
+        {
+            "from": [9,4,9.5],
+            "to": [14,8,14.5],
+            "faces": {
+                "up": {
+                    "uv": [9,9,14,14],
+                    "texture": "#wart-top"
+                },
+                "down": {
+                    "uv": [9,9,14,14],
+                    "texture": "#wart-top"
+                },
+                "west": {
+                    "uv": [9,8,14,12],
+                    "texture": "#wart"
+                },
+                "east": {
+                    "uv": [9,8,14,12],
+                    "texture": "#wart"
+                },
+                "north": {
+                    "uv": [9,8,14,12],
+                    "texture": "#wart"
+                },
+                "south": {
+                    "uv": [9,8,14,12],
+                    "texture": "#wart"
+                }
+            }
+        },
+        {
+            "from": [9.5,0,3.5],
+            "to": [12.5,4.5,6.5],
+            "faces": {
+                "west": {
+                    "uv": [3,12,6,16],
+                    "texture": "#wart"
+                },
+                "east": {
+                    "uv": [3,12,6,16],
+                    "texture": "#wart"
+                },
+                "north": {
+                    "uv": [10,12,13,16],
+                    "texture": "#wart"
+                },
+                "south": {
+                    "uv": [10,12,13,16],
+                    "texture": "#wart"
+                }
+            }
+        },
+        {
+            "from": [10,0,10.5],
+            "to": [13,4,13.5],
+            "faces": {
+                "west": {
+                    "uv": [10,12,13,16],
+                    "texture": "#wart"
+                },
+                "east": {
+                    "uv": [10,12,13,16],
+                    "texture": "#wart"
+                },
+                "north": {
+                    "uv": [10,12,13,16],
+                    "texture": "#wart"
+                },
+                "south": {
+                    "uv": [10,12,13,16],
+                    "texture": "#wart"
+                }
+            }
+        },
+        {
+            "from": [3,0,11],
+            "to": [6,3.5,14],
+            "faces": {
+                "west": {
+                    "uv": [10,12,13,16],
+                    "texture": "#wart"
+                },
+                "east": {
+                    "uv": [10,12,13,16],
+                    "texture": "#wart"
+                },
+                "north": {
+                    "uv": [3,12,6,16],
+                    "texture": "#wart"
+                },
+                "south": {
+                    "uv": [3,12,6,16],
+                    "texture": "#wart"
+                }
+            }
+        }
+    ]
+}

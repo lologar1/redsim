@@ -16,7 +16,7 @@ int32_t main() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	/* Create window */
-	GLFWwindow* window = glfwCreateWindow(1920, 1080, WINDOW_NAME, NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, WINDOW_NAME, NULL, NULL);
 
 	if (window == NULL) {
 		fprintf(stderr, "Fatal error creating GLFW window, exiting.\n");

@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_upper",
+    "textures": {
+        "bottom": "block/weathered_cut_copper_top3",
+        "top":    "block/weathered_cut_copper_top3",
+        "side_a": "block/weathered_cut_copper",
+        "side_b": "block/weathered_cut_copper2"
+    }
+}

@@ -12,7 +12,7 @@ Note that the texture tile specification ($) must come before the metadata speci
 
 Inside blocks/ lives two or three files per texture, named [handle].png, [handle].mesh and [handle].boundingbox.
 
-The first is a RSM_BLOCK_TEXTURE_SIZE_PIXELS squared sized .png file containing the image data for the texture.
+The first is a RSM_BLOCK_TEXTURE_SIZE_PIXELS by (number of textures) sized .png file containing the image data for the texture.
 
 The second is actually a text file containing the mesh data and how it associates with the texture data
 in the following format:
@@ -38,5 +38,5 @@ The third is optional and only required of blocks which have collision with the 
 
 GUI texture mapping documentation
 Each line in guimap.txt maps to a unique GUI element. No variants are possible ; one element per line.
-Inside gui/ lives one .png file (sized RSM_GUI_TEXTURE_SIZE_PIXELS) representing the element texture.
+Inside gui/ lives one .png file (sized RSM_GUI_TEXTURE_SIZE_PIXELS squared) representing the element texture.
 For icons, a .layout file also exists specifying an item name (same name as in blockmap) per line, in order, which will be displayed in that inventory submenu

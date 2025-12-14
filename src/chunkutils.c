@@ -32,20 +32,21 @@ void cu_updateMeshlist(void) {
 
 	GLuint **meshlist, *mesh;
 	uint64_t meshindex;
-	int64_t a, b, c, x, y, z;
+	int64_t i[3], chunk[3], pos[3];
 
 	meshlist = meshes;
 	nmesh = 0;
+	pos[0] = position[0] / CHUNKSIZE; pos[1] = position[1] / CHUNKSIZE; pos[2] = position[2] / CHUNKSIZE;
 
-    for (a = 0; a < RSM_LOADING_DISTANCE * 2 + 1; a++) {
-        x = (int64_t) (position[0] / CHUNKSIZE + a - RSM_LOADING_DISTANCE);
-        for (b = 0; b < RSM_LOADING_DISTANCE * 2 + 1; b++) {
-			y = (int64_t) (position[1] / CHUNKSIZE + b - RSM_LOADING_DISTANCE);
-            for (c = 0; c < RSM_LOADING_DISTANCE * 2 + 1; c++) {
-				z = (int64_t) (position[2] / CHUNKSIZE + c - RSM_LOADING_DISTANCE);
+	for (i[0] = -RSM_LOADING_DISTANCE; i[0] < RSM_LOADING_DISTANCE + 1; i[0]++) {
+		chunk[0] = pos[0] + i[0];
+		for (i[1] = -RSM_LOADING_DISTANCE; i[1] < RSM_LOADING_DISTANCE + 1; i[1]++) {
+			chunk[1] = pos[1] + i[1];
+			for (i[2] = -RSM_LOADING_DISTANCE; i[2] < RSM_LOADING_DISTANCE + 1; i[2]++) {
+				chunk[2] = pos[2] + i[2];
 
 				/* Set mesh for this chunk */
-				meshindex = TOCHUNKINDEX(x, y, z);
+				meshindex = TOCHUNKINDEX(chunk[0], chunk[1], chunk[2]);
 				mesh = (GLuint *) usf_inthmget(meshmap, meshindex).p;
 
 				if (mesh == NULL) continue; /* No mesh for this chunk; empty */
@@ -231,13 +232,14 @@ void *pushRawmesh(void *chunkindexptr) {
 		exit(RSM_EXIT_NOCHUNK);
 	}
 
-	float culled[4 * 8 * 6]; /* Face culling buffer and rotation information */
+	float culled[4 * 8 * 6], *cullbuf; /* Face culling buffer and rotation information */
 	static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
 	static const Rotation FROMWEST[7] = { WEST, WEST, NORTH, EAST, SOUTH, WEST, WEST };
 	static const Rotation FROMSOUTH[7] = { SOUTH, SOUTH, WEST, NORTH, EAST, UP, DOWN };
 	static const Rotation FROMEAST[7] = { EAST, EAST, SOUTH, WEST, NORTH, EAST, EAST };
 	static const Rotation FROMUP[7] = { UP, UP, UP, UP, UP, NORTH, SOUTH };
 	static const Rotation FROMDOWN[7] = { DOWN, DOWN, DOWN, DOWN, DOWN, SOUTH, NORTH };
+	uint32_t culltrans;
 
 	/* Template blockmesh */
 	float ov_buf[RSM_MAX_BLOCKMESH_VERTICES], tv_buf[RSM_MAX_BLOCKMESH_VERTICES];
@@ -274,18 +276,21 @@ void *pushRawmesh(void *chunkindexptr) {
 				getBlockmesh(&blockmesh, block.id, block.variant, block.rotation,
 						x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
 
-				/* For fullblock (must be all opaque) culling, meshdata must be four vertices per face and
+				/* For fullblock (must be all opaque/trans) culling, meshdata must be four vertices per face and
 				 * respect the order : front, left, back, right, top, bottom */
-				if (block.metadata & RSM_BIT_FULLBLOCK) { /* Cull faces depending on neighbors */
+				if (block.metadata & RSM_BIT_CULLFACES) {
+					if ((culltrans = !(block.metadata & RSM_BIT_CONDUCTOR))) cullbuf = blockmesh.transVertices;
+					else cullbuf = blockmesh.opaqueVertices;
+
 					i = 0; /* Valid faces processed */
 
-					/* Checks the block at X, Y, Z, and cull vertices at index FACE if it is a FULLBLOCK. */
+					/* Checks the block at X, Y, Z, and cull vertices at index FACE if it CULLFACES too. */
 #define CHECKFACE(X, Y, Z, FACE) \
 					/* If block is unobstructed or on chunkborder (don't bother checking other chunks) */ \
 					if (!((X) < CHUNKSIZE && (Y) < CHUNKSIZE && (Z) < CHUNKSIZE \
-							&& ((*chunk)[X][Y][Z].metadata & RSM_BIT_FULLBLOCK))) { \
-						\
-						memcpy(culled + 32 * i, blockmesh.opaqueVertices + 32 * (FACE-1), 32 * sizeof(float)); \
+							&& ((*chunk)[X][Y][Z].metadata & RSM_BIT_CULLFACES) \
+							&& (!((*chunk)[X][Y][Z].metadata & RSM_BIT_CONDUCTOR)) == culltrans)) { \
+						memcpy(culled + 32 * i, cullbuf + 32 * (FACE-1), 32 * sizeof(float)); \
 						i++; \
 					}
 
@@ -296,11 +301,11 @@ void *pushRawmesh(void *chunkindexptr) {
 					CHECKFACE(a - 1, b, c, FROMEAST[block.rotation]);
 					CHECKFACE(a, b + 1, c, FROMUP[block.rotation]);
 					CHECKFACE(a, b - 1, c, FROMDOWN[block.rotation]);
-					memcpy(blockmesh.opaqueVertices, culled, 32 * i * sizeof(float));
+					memcpy(cullbuf, culled, 32 * i * sizeof(float));
 
 					/* Adjust index count. O.K. since indices are agnostic of vertices and all triangles in the
 					 * fullblock mesh are rendered according to the same pattern */
-					blockmesh.count[2] = 6 * i;
+					blockmesh.count[culltrans + 2] = 6 * i;
 				}
 
 				/* Adjust indices with running total. All vertices assumed to be used at least once */

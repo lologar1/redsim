@@ -1,0 +1,53 @@
+{
+	"credit": "Made by Nekzuris with Blockbench",
+	"ambientocclusion": false,
+	"textures": {
+		"edge": "block/bamboo_door_edge",
+		"back": "block/bamboo_door_lower_rh",
+		"particle": "block/bamboo_door_lower",
+		"front": "block/bamboo_door_lower"
+	},
+	"elements": [
+		{
+			"from": [0, 0, 3],
+			"to": [3, 15, 13],
+			"faces": {
+				"east": {"uv": [3, 1, 13, 16], "texture": "#back"},
+				"west": {"uv": [3, 1, 13, 16], "texture": "#front", "cullface": "west"},
+				"up": {"uv": [3, 8, 13, 11], "rotation": 90, "texture": "#edge"},
+				"down": {"uv": [3, 0, 13, 3], "rotation": 90, "texture": "#edge", "cullface": "down"}
+			}
+		},
+		{
+			"from": [1.5, 15, 3],
+			"to": [1.5, 16, 13],
+			"faces": {
+				"east": {"uv": [3, 0, 13, 1], "texture": "#back"},
+				"west": {"uv": [3, 0, 13, 1], "texture": "#front", "cullface": "west"},
+				"down": {"uv": [0, 0, 0.5, 0.5], "texture": "#front"}
+			}
+		},
+		{
+			"from": [0, 0, 13],
+			"to": [3, 16, 16],
+			"faces": {
+				"north": {"uv": [13, 16, 16, 0], "texture": "#edge"},
+				"east": {"uv": [0, 0, 3, 16], "texture": "#back"},
+				"south": {"uv": [13, 0, 16, 16], "texture": "#back", "cullface": "south"},
+				"west": {"uv": [13, 0, 16, 16], "texture": "#front", "cullface": "west"},
+				"down": {"uv": [13, 0, 16, 3], "rotation": 90, "texture": "#edge", "cullface": "down"}
+			}
+		},
+		{
+			"from": [0, 0, 0],
+			"to": [3, 16, 3],
+			"faces": {
+				"north": {"uv": [0, 0, 3, 16], "texture": "#front", "cullface": "north"},
+				"east": {"uv": [13, 0, 16, 16], "texture": "#back"},
+				"south": {"uv": [0, 16, 3, 0], "texture": "#edge"},
+				"west": {"uv": [0, 0, 3, 16], "texture": "#front", "cullface": "west"},
+				"down": {"uv": [0, 0, 3, 3], "rotation": 90, "texture": "#edge", "cullface": "down"}
+			}
+		}
+	]
+}

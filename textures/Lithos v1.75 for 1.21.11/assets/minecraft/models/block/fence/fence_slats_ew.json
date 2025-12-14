@@ -1,0 +1,79 @@
+{
+    "__comment": "Created in part with opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+        "particle": "#slats",
+        "slats": "#slats",
+        "post": "#post"
+    },
+    "elements": [
+        {
+            "from": [6,0,6],
+            "to": [10,16,10],
+            "faces": {
+                "west": {
+                    "uv": [12.0,0.0,16.0,16.0],
+                    "texture": "#post"
+                }
+            }
+        },
+        {
+            "from": [0,12,7],
+            "to": [7,15,9],
+            "faces": {
+                "up": {
+                    "uv": [6.0,9.0,8.0,16.0],
+                    "texture": "#slats",
+                    "rotation": 90
+                },
+                "down": {
+                    "uv": [8.0,9.0,10.0,16.0],
+                    "texture": "#slats",
+                    "rotation": 90
+                },
+                "west": {
+                    "uv": [4.0,0.5,6.0,3.5],
+                    "texture": "#post",
+                    "cullface": "west"
+                },
+                "north": {
+                    "uv": [9.0,10.0,16.0,13.0],
+                    "texture": "#slats"
+                },
+                "south": {
+                    "uv": [0.0,10.0,7.0,13.0],
+                    "texture": "#slats"
+                }
+            }
+        },
+        {
+            "from": [0,6,7],
+            "to": [7,9,9],
+            "faces": {
+                "up": {
+                    "uv": [6.0,0.0,8.0,7.0],
+                    "texture": "#slats",
+                    "rotation": 270
+                },
+                "down": {
+                    "uv": [8.0,0.0,10.0,7.0],
+                    "texture": "#slats",
+                    "rotation": 270
+                },
+                "west": {
+                    "uv": [5.0,9.0,7.0,12.0],
+                    "texture": "#post",
+                    "cullface": "west"
+                },
+                "north": {
+                    "uv": [9.0,13.0,16.0,16.0],
+                    "texture": "#slats"
+                },
+                "south": {
+                    "uv": [0.0,13.0,7.0,16.0],
+                    "texture": "#slats"
+                }
+            }
+        }
+    ]
+}

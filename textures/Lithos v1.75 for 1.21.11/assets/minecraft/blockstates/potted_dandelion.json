@@ -1,0 +1,12 @@
+{
+    "variants": {
+        "": [
+        								{ "model": "block/flower_pot/dandelion_1"   },
+        								{ "model": "block/flower_pot/dandelion_1", "y": 90  },
+        								{ "model": "block/flower_pot/dandelion_2"  },
+        								{ "model": "block/flower_pot/dandelion_2", "y": 90  },
+        								{ "model": "block/flower_pot/dandelion_3", "y": 180 },
+        								{ "model": "block/flower_pot/dandelion_3", "y": 270 }
+        							]
+    }
+}

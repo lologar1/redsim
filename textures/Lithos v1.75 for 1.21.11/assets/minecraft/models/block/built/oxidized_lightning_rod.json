@@ -1,0 +1,6 @@
+{
+	"parent": "block/built/lightning_rod_base",
+	"textures": {
+		"all": "block/oxidized_lightning_rod"
+	}
+}

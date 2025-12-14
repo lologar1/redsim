@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_half",
+    "textures": {
+        "bottom": "block/purpur_block_top3",
+        "top":    "block/purpur_block_top",
+        "side_a": "block/purpur_block3",
+        "side_b": "block/purpur_block"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_half",
+    "textures": {
+        "bottom": "block/polished_andesite3",
+        "top":    "block/polished_andesite",
+        "side_a": "block/polished_andesite_double3",
+        "side_b": "block/polished_andesite_double"
+    }
+}

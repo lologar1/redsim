@@ -1,0 +1,6 @@
+{
+	"parent": "block/plants/glow_lichen_u_master",
+    "textures": {
+        "texture": "block/glow_lichen3"
+    }
+}

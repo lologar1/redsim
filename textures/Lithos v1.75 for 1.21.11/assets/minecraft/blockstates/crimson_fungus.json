@@ -1,0 +1,14 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/plants/crimson_fungus_1" },
+            { "model": "block/plants/crimson_fungus_1", "y": 90 },
+            { "model": "block/plants/crimson_fungus_1", "y": 180 },
+            { "model": "block/plants/crimson_fungus_1", "y": 270 },
+            { "model": "block/plants/crimson_fungus_2" },
+            { "model": "block/plants/crimson_fungus_2", "y": 90 },
+            { "model": "block/plants/crimson_fungus_2", "y": 180 },
+            { "model": "block/plants/crimson_fungus_2", "y": 270 }
+        ]
+    }
+}

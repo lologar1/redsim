@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/cube_random3",
+    "textures": {
+        "top-bottom": "block/gilded_blackstone_top3",
+        "side_a": "block/gilded_blackstone",
+        "side_b": "block/gilded_blackstone2"
+    }
+}

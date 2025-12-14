@@ -28,6 +28,7 @@ extern pthread_mutex_t meshlock;
 extern usf_queue *meshqueue;
 
 void client_init(void);
+void client_savedata(void);
 
 void client_frameEvent(GLFWwindow *window);
 void client_getOrientationVector(vec3 ori);

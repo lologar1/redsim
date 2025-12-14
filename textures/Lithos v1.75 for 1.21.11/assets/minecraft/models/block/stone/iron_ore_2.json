@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/cube_random3",
+    "textures": {
+        "top-bottom": "block/iron_ore2",
+        "side_a": "block/iron_ore3",
+        "side_b": "block/iron_ore"
+    }
+}

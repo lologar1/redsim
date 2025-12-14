@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/misc/cross_double",
+  "textures": {
+    "A": "minecraft:block/small_amethyst_bud2",
+    "B": "minecraft:block/small_amethyst_bud3"
+  }
+}

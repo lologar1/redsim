@@ -1,0 +1,9 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/column_side_z",
+    "textures": {
+        "end": "block/mangrove_log_top",
+        "side_a": "block/mangrove_log3",
+        "side_b": "block/mangrove_log"
+        }
+}

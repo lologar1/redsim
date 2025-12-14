@@ -13,6 +13,7 @@
 typedef enum {
 	pItemIcons0, /* This prio is used for all icons ; the others are simply for texture loading (contiguous) */
 	pItemIcons1,
+	pItemIcons2,
 	pSolidIcon,
 	pTransIcon,
 	pComponentIcon,

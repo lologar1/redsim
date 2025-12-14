@@ -1,0 +1,18 @@
+{
+    "variants": {
+        "type=bottom": [ 
+            { "model": "block/slabs/bamboo_mosaic_bottom_1" },
+            { "model": "block/slabs/bamboo_mosaic_bottom_2" }
+        ],
+        
+        "type=top":  [
+            { "model": "block/slabs/bamboo_mosaic_top_1" },
+            { "model": "block/slabs/bamboo_mosaic_top_2" }
+        ],
+        
+        "type=double": [ 
+            { "model": "block/slabs/bamboo_mosaic_double_1" },
+            { "model": "block/slabs/bamboo_mosaic_double_2" }
+        ]
+    }
+}

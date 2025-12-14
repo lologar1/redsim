@@ -1,0 +1,10 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/dotsaglow_cube_bottom_top_a_b",
+    "textures": {
+        "top": "block/foo_top",
+        "bottom": "block/foo_top",
+        "side_a": "block/foo_side",
+        "side_b": "block/foo_side2"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "parent": "block/stairs/master_outer",
+    "textures": {
+        "top": "block/polished_blackstone_top",
+        "bottom": "block/polished_blackstone_top",
+        "side_a": "block/polished_blackstone_double",
+        "side_b": "block/polished_blackstone_double2"
+    }
+}

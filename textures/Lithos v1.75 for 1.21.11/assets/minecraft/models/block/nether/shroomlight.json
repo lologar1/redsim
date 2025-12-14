@@ -1,0 +1,9 @@
+{
+    "parent": "block/dotsaglow_cube_bottom_top_a_b",
+    "textures": {
+        "bottom": "block/shroomlight_top",
+        "top": "block/shroomlight_top",
+        "side_a": "block/shroomlight",
+        "side_b": "block/shroomlight2"
+    }
+}

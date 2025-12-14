@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "minecraft:block/redstone/spruce_pressure_plate"
+    },
+    "powered=true": {
+      "model": "minecraft:block/redstone/spruce_pressure_plate_down"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+    "variants": {
+        "type=bottom": [ 
+            { "model": "block/slabs/mossy_cobblestone_bottom_1" },
+            { "model": "block/slabs/mossy_cobblestone_bottom_2" },
+            { "model": "block/slabs/mossy_cobblestone_bottom_3" }
+        ],
+        
+        "type=top":  [
+            { "model": "block/slabs/mossy_cobblestone_top_1" },
+            { "model": "block/slabs/mossy_cobblestone_top_2" },
+            { "model": "block/slabs/mossy_cobblestone_top_3" }
+        ],
+        
+        "type=double": [ 
+            { "model": "block/slabs/mossy_cobblestone_double_1" },
+            { "model": "block/slabs/mossy_cobblestone_double_2" },
+            { "model": "block/slabs/mossy_cobblestone_double_3" }
+        ]
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/stone/purple_concrete" },
+            { "model": "block/stone/purple_concrete", "y": 90 },
+            { "model": "block/stone/purple_concrete", "y": 180 },
+            { "model": "block/stone/purple_concrete", "y": 270 }
+        ]
+    }
+}

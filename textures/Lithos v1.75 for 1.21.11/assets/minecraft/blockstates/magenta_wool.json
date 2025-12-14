@@ -1,0 +1,9 @@
+{
+    "variants": {
+        "": [ 
+            { "model": "block/wool/magenta_1" },
+            { "model": "block/wool/magenta_2" },
+            { "model": "block/wool/magenta_3" }
+        ]
+    }
+}

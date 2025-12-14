@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/frogspawn" },
+            { "model": "block/frogspawn", "y": 90 },
+            { "model": "block/frogspawn", "y": 180 },
+            { "model": "block/frogspawn", "y": 270 }
+        ]
+    }
+}

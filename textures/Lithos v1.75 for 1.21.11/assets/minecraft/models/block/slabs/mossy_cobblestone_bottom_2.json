@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_half",
+    "textures": {
+        "bottom": "block/mossy_cobblestone_top2",
+        "top":    "block/mossy_cobblestone_top3",
+        "side_a": "block/mossy_cobblestone2",
+        "side_b": "block/mossy_cobblestone3"
+    }
+}

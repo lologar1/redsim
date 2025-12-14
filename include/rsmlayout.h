@@ -72,7 +72,6 @@ extern float RSM_COMMAND_TEXT_SIZE;
 
 #define PLAYER_BOUNDINGBOX_RELATIVE_CORNER ((vec3) {-0.3f, -1.6f, -0.3f})
 #define PLAYER_BOUNDINGBOX_DIMENSIONS ((vec3) {0.6f, 1.8f, 0.6f})
-#define BLOCK_BOUNDINGBOX_ADJUST_OFFSET 0.00048828125f /* 1/2048 */
 
 #define RSM_TEXTURE_PADDING 0.01f
 #define RSM_BLOCK_TEXTURE_SIZE_PIXELS 32
@@ -102,13 +101,15 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 
 #define RSM_BIT_COLLISION (1UL << 0) /* Collidable */
 #define RSM_BIT_ROTATION (1UL << 1) /* Rotatable */
-#define RSM_BIT_FULLBLOCK (1UL << 2) /* Cull triangles if neighbors hide faces (needs to match fullblock mesh) */
+#define RSM_BIT_CULLFACES (1UL << 2) /* Cull triangles if neighbors hide faces (needs to match fullblock mesh) */
+#define RSM_BIT_CONDUCTOR (1UL << 3) /* Can be hard-powered */
 
 #define TYPEFACE_PATH "typefaces/"
 #define RESOURCE_BASE_PATH "textures/"
 #define TEXTURE_BLOCK_PATH "blocks/"
 #define TEXTURE_GUI_PATH "gui/"
-#define FONT_PATH "arial.ttf"
+#define SAVES_PATH "saves/"
+#define FONT_PATH "liberation-mono/LiberationMono-Regular.ttf"
 #define BLOCKMAP_PATH "blockmap.txt"
 #define GUIMAP_PATH "guimap.txt"
 #define MESH_EXTENSION ".mesh"

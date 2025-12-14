@@ -1,0 +1,10 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/dotsaglow_cube_bottom_top_a_b",
+    "textures": {
+        "top": "block/resin_bricks_top3",
+        "bottom": "block/resin_bricks_top3",
+        "side_a": "block/resin_bricks3",
+        "side_b": "block/resin_bricks"
+    }
+}

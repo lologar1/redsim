@@ -1,0 +1,8 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/nether/chiseled_nether_bricks_1" },
+            { "model": "block/nether/chiseled_nether_bricks_2" }
+        ]
+    }
+}

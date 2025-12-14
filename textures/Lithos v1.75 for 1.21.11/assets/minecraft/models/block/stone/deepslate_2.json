@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/dotsaglow_cube_bottom_top_a_b",
+  "textures": {
+    "top": "minecraft:block/deepslate_top2",
+    "bottom": "minecraft:block/deepslate_top2",
+    "side_a": "minecraft:block/deepslate2",
+    "side_b": "minecraft:block/deepslate3"
+  }
+}

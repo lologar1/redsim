@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_half",
+    "textures": {
+        "bottom": "block/bamboo_planks",
+        "top":    "block/bamboo_planks",
+        "side_a": "block/bamboo_planks2",
+        "side_b": "block/bamboo_planks"
+    }
+}

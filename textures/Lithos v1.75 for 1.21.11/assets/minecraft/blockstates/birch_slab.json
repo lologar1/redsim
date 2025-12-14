@@ -1,0 +1,21 @@
+{
+    "variants": {
+        "type=bottom": [ 
+            { "model": "block/slabs/birch_bottom_1" },
+            { "model": "block/slabs/birch_bottom_2" },
+            { "model": "block/slabs/birch_bottom_3" }
+        ],
+        
+        "type=top":  [
+            { "model": "block/slabs/birch_top_1" },
+            { "model": "block/slabs/birch_top_2" },
+            { "model": "block/slabs/birch_top_3" }
+        ],
+        
+        "type=double": [ 
+            { "model": "block/slabs/birch_double_1" },
+            { "model": "block/slabs/birch_double_2" },
+            { "model": "block/slabs/birch_double_3" }
+        ]
+    }
+}

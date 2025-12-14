@@ -1,0 +1,9 @@
+{
+    "parent": "block/dotsaglow_cube_rotate_2_sides",
+    "textures": {
+        "top": "block/netherrack_top3",
+        "bottom": "block/netherrack_bottom3",
+        "side_a": "block/netherrack3",
+        "side_b": "block/netherrack4"
+    }
+}

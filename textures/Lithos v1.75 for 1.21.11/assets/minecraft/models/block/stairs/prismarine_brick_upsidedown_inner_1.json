@@ -1,0 +1,9 @@
+{
+    "parent": "block/stairs/master_inner",
+    "textures": {
+        "bottom": "block/prismarine_bricks_top",
+        "top": "block/prismarine_bricks_bottom",
+        "side_a": "block/prismarine_bricks_double",
+        "side_b": "block/prismarine_bricks_double"
+    }
+}

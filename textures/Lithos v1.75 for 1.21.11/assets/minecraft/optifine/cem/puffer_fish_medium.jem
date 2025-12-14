@@ -1,0 +1,155 @@
+{
+	"textureSize": [32, 32],
+	"models": [
+		{
+			"part": "body",
+			"id": "body",
+			"invertAxis": "xy",
+			"translate": [0, 0, 0],
+			"boxes": [
+				{"coordinates": [-2.5, 1, -2.5, 5, 5, 5], "textureOffset": [12, 22]},
+				{"coordinates": [0, 3, 2.5, 0, 3, 3], "textureOffset": [1, 1]}
+			],
+			"submodels": [
+				{
+					"id": "top_front_spikes",
+					"invertAxis": "xy",
+					"translate": [0, 6, -2.5],
+					"rotate": [-45, 0, 0],
+					"boxes": [
+						{"coordinates": [-2.5, -1, 1, 5, 1, 0], "textureOffset": [17, 17]}
+					]
+				},
+				{
+					"id": "left_front_spikes",
+					"invertAxis": "xy",
+					"translate": [-2.5, 3.5, -2.5],
+					"rotate": [0, -45, 0],
+					"boxes": [
+						{"coordinates": [-1, -2.5, 0, 1, 5, 1], "textureOffset": [0, 16]}
+					]
+				},
+				{
+					"id": "right_front_spikes",
+					"invertAxis": "xy",
+					"translate": [2.5, 3.5, -2.5],
+					"rotate": [0, 45, 0],
+					"boxes": [
+						{"coordinates": [0, -2.5, 0, 1, 5, 1], "textureOffset": [8, 16]}
+					]
+				},
+				{
+					"id": "bottom_front_spikes",
+					"invertAxis": "xy",
+					"translate": [0, 1, -2.5],
+					"rotate": [45, 0, 0],
+					"boxes": [
+						{"coordinates": [-2.5, -1, 0, 5, 1, 0], "textureOffset": [16, 17]}
+					]
+				},
+				{
+					"id": "top_back_spikes",
+					"invertAxis": "xy",
+					"translate": [0, 6, 2.5],
+					"rotate": [45, 0, 0],
+					"boxes": [
+						{"coordinates": [-2.5, 0, 0, 5, 1, 0], "textureOffset": [12, 20]}
+					]
+				},
+				{
+					"id": "left_back_spikes",
+					"invertAxis": "xy",
+					"translate": [2.5, 3.5, 2.5],
+					"rotate": [0, -45, 0],
+					"boxes": [
+						{"coordinates": [0, -2.5, 0, 1, 5, 1], "textureOffset": [8, 16]}
+					]
+				},
+				{
+					"id": "right_back_spikes",
+					"invertAxis": "xy",
+					"translate": [-2.5, 3.5, 2.5],
+					"rotate": [0, 45, 0],
+					"boxes": [
+						{"coordinates": [-1, -2.5, 0, 1, 5, 1], "textureOffset": [4, 16]}
+					]
+				},
+				{
+					"id": "bottom_back_spikes",
+					"invertAxis": "xy",
+					"translate": [-1, 1, 2.5],
+					"rotate": [-45, 0, 0],
+					"boxes": [
+						{"coordinates": [-1.5, -1, 0, 5, 1, 0], "textureOffset": [17, 20]}
+					]
+				}
+			]
+		},
+		{
+			"part": "fin_right",
+			"id": "fin_right",
+			"invertAxis": "xy",
+			"translate": [-2.5, -5, 1.5],
+			"boxes": [
+				{"coordinates": [2.5, 5, -1.49, 2, 0, 2], "textureOffset": [24, 0]}
+			]
+		},
+		{
+			"part": "fin_left",
+			"id": "fin_left",
+			"invertAxis": "xy",
+			"translate": [2.5, -5, 1.5],
+			"boxes": [
+				{"coordinates": [-4.5, 5, -1.5, 2, 0, 2], "textureOffset": [24, 3]}
+			]
+		},
+		{
+			"part": "spikes_front_top",
+			"id": "spikes_front_top",
+			"invertAxis": "xy",
+			"translate": [0, 0, 0]
+		},
+		{
+			"part": "spikes_back_top",
+			"id": "spikes_back_top",
+			"invertAxis": "xy",
+			"translate": [0, 0, 0]
+		},
+		{
+			"part": "spikes_front_right",
+			"id": "spikes_front_right",
+			"invertAxis": "xy",
+			"translate": [0, 0, 0]
+		},
+		{
+			"part": "spikes_back_right",
+			"id": "spikes_back_right",
+			"invertAxis": "xy",
+			"translate": [0, 0, 0]
+		},
+		{
+			"part": "spikes_front_left",
+			"id": "spikes_front_left",
+			"invertAxis": "xy",
+			"translate": [0, 0, 0]
+		},
+		{
+			"part": "spikes_back_left",
+			"id": "spikes_back_left",
+			"invertAxis": "xy",
+			"translate": [0, 0, 0]
+		},
+		{
+			"part": "spikes_front_bottom",
+			"id": "spikes_front_bottom",
+			"invertAxis": "xy",
+			"translate": [0, 0, 0]
+		},
+		{
+			"part": "spikes_back_bottom",
+			"id": "spikes_back_bottom",
+			"invertAxis": "xy",
+			"translate": [0, 0, 0]
+		}
+	]
+}

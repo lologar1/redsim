@@ -1,0 +1,7 @@
+{
+    "parent": "block/flower_pot/flower_pot_doublecross_64",
+    "textures": {
+        "A": "block/plants/dead_bush_2",
+        "B": "block/plants/dead_bush_3"
+    }
+}

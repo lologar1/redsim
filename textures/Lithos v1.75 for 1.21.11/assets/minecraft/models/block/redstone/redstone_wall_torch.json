@@ -1,0 +1,76 @@
+{
+	"credit": "Made by Nekzuris with Blockbench",
+	"ambientocclusion": false,
+	"textures": {
+		"torch": "block/redstone_torch",
+		"particle": "block/redstone_torch"
+	},
+	"elements": [
+		{
+			"from": [2, 3, 7],
+			"to": [4, 13, 9],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "z", "origin": [3, 11, 8]},
+			"faces": {
+				"up": {"uv": [7, 6, 9, 8], "texture": "#torch"},
+				"down": {"uv": [7, 13.5, 9, 15.5], "texture": "#torch", "cullface": "down"}
+			}
+		},
+		{
+			"from": [2, 3, 0],
+			"to": [4, 19, 16],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "z", "origin": [3, 11, 8]},
+			"faces": {
+				"east": {"uv": [0, 0, 16, 16], "texture": "#torch"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#torch"}
+			}
+		},
+		{
+			"from": [4, 3, 0],
+			"to": [6, 19, 16],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "z", "origin": [3, 11, 8]},
+			"faces": {
+				"west": {"uv": [0, 0, 16, 16], "texture": "#torch"}
+			}
+		},
+		{
+			"from": [0, 3, 0],
+			"to": [2, 19, 16],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "z", "origin": [3, 11, 8]},
+			"faces": {
+				"east": {"uv": [0, 0, 16, 16], "texture": "#torch"}
+			}
+		},
+		{
+			"from": [-5, 3, 7],
+			"to": [11, 19, 9],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "z", "origin": [3, 11, 8]},
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#torch"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#torch"}
+			}
+		},
+		{
+			"from": [-5, 3, 5],
+			"to": [11, 19, 7],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "z", "origin": [3, 11, 8]},
+			"faces": {
+				"south": {"uv": [0, 0, 16, 16], "texture": "#torch"}
+			}
+		},
+		{
+			"from": [-5, 3, 9],
+			"to": [11, 19, 11],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "z", "origin": [3, 11, 8]},
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#torch"}
+			}
+		}
+	]
+}

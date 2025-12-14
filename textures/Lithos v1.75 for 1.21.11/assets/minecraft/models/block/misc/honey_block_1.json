@@ -1,0 +1,10 @@
+{   "parent": "block/misc/honey_block_master",
+    "textures": {
+        "up": "block/honey_block",
+        "sideA": "block/honey_block2",        
+        "sideB": "block/honey_block3",
+        "in_up": "block/honey_block4",
+        "in_sideA": "block/honey_block5",        
+        "in_sideB": "block/honey_block6"
+    }
+}

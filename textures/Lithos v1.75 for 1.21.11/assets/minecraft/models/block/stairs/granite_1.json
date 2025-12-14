@@ -1,0 +1,9 @@
+{
+    "parent": "block/stairs/master",
+    "textures": {
+        "bottom": "block/granite",
+        "top": "block/granite",
+        "side_a": "block/granite2",
+        "side_b": "block/granite3"
+    }
+}

@@ -1,0 +1,6 @@
+{
+    "parent": "block/dotsaglow_cube_rotate_all",
+    "textures": {
+        "all": "block/sculk2"
+    }
+}

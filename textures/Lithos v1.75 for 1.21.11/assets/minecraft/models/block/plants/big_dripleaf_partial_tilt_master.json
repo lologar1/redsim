@@ -1,0 +1,73 @@
+{
+    "parent": "block/block",
+    "textures": {
+        "top": "#top",
+        "stem1": "#stem1",
+        "stem2": "#stem2",
+        "side": "#side",
+        "tip": "#tip",
+        "particle": "#top"
+    },
+	"elements": [
+		{
+			"from": [0, 16, 0],
+			"to": [16, 16, 16],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8, 13.75, 12.00025]},
+			"faces": {
+				"up": {"uv": [0, 0, 16, 16], "texture": "#top"},
+				"down": {"uv": [16, 16, 0, 0], "texture": "#top"}
+			}
+		},
+		{
+			"from": [0, 12, 0],
+			"to": [16, 16, 0.002],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8, 13.75, 12.00025]},
+			"faces": {
+				"north": {"uv": [0, 0, 16, 4], "texture": "#tip", "cullface": "north"},
+				"south": {"uv": [0, 0, 16, 4], "texture": "#tip"}
+			}
+		},
+		{
+			"from": [0, 12, 0],
+			"to": [0.002, 16, 16],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8, 13.75, 12.00025]},
+			"faces": {
+				"east": {"uv": [16, 0, 0, 4], "texture": "#side"},
+				"west": {"uv": [0, 0, 16, 4], "texture": "#side", "cullface": "west"}
+			}
+		},
+		{
+			"from": [15.998, 12, 0],
+			"to": [16, 16, 16],
+			"shade": false,
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8, 13.75, 12.00025]},
+			"faces": {
+				"east": {"uv": [16, 0, 0, 4], "texture": "#side", "cullface": "east"},
+				"west": {"uv": [0, 0, 16, 4], "texture": "#side"}
+			}
+		},
+		{
+			"from": [5, 0, 12],
+			"to": [11, 15, 12],
+			"shade": false,
+			"rotation": {"angle": 45, "axis": "y", "origin": [8, 8, 12], "rescale": true},
+			"faces": {
+				"north": {"uv": [14, 0, 2, 16], "texture": "#stem1"},
+				"south": {"uv": [2, 0, 14, 16], "texture": "#stem1"}
+			}
+		},
+		{
+			"from": [5, 0, 12],
+			"to": [11, 15, 12],
+			"shade": false,
+			"rotation": {"angle": -45, "axis": "y", "origin": [8, 8, 12], "rescale": true},
+			"faces": {
+				"north": {"uv": [2, 0, 14, 16], "texture": "#stem2"},
+				"south": {"uv": [14, 0, 2, 16], "texture": "#stem2"}
+			}
+		}
+	]
+}

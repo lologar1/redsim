@@ -1,0 +1,9 @@
+{
+    "variants": {
+        "": [ 
+            { "model": "block/stone/chiseled_tuff_1" },
+            { "model": "block/stone/chiseled_tuff_2" },
+            { "model": "block/stone/chiseled_tuff_3" }
+        ]
+    }
+}

@@ -1,0 +1,70 @@
+{
+	"credit": "Made with Blockbench",
+	"parent": "block/block",
+	"ambientocclusion": false,
+	"textures": {
+		"stem_b": "block/azalea_plant2",
+		"particle": "block/azalea_plant",
+		"stem_a": "block/azalea_plant"
+	},
+	"elements": [
+		{
+			"from": [0, 16, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"up": {"uv": [0, 0, 16, 16], "texture": "#top", "cullface": "up"},
+				"down": {"uv": [0, 16, 16, 0], "texture": "#top"}
+			}
+		},
+		{
+			"from": [0, 5, 0],
+			"to": [16, 16, 0.01],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 11], "texture": "#side_a", "cullface": "north"},
+				"south": {"uv": [16, 0, 0, 11], "texture": "#side_a"}
+			}
+		},
+		{
+			"from": [0, 5, 15.99],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [16, 0, 0, 11], "texture": "#side_a"},
+				"south": {"uv": [0, 0, 16, 11], "texture": "#side_a", "cullface": "south"}
+			}
+		},
+		{
+			"from": [0, 5, 0],
+			"to": [0.01, 16, 16],
+			"faces": {
+				"east": {"uv": [16, 0, 0, 11], "texture": "#side_b"},
+				"west": {"uv": [0, 0, 16, 11], "texture": "#side_b", "cullface": "west"}
+			}
+		},
+		{
+			"from": [15.99, 5, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"east": {"uv": [0, 0, 16, 11], "texture": "#side_b", "cullface": "east"},
+				"west": {"uv": [16, 0, 0, 11], "texture": "#side_b"}
+			}
+		},
+		{
+			"from": [0.1, 0, 8],
+			"to": [15.9, 15.9, 8],
+			"rotation": {"angle": 45, "axis": "y", "origin": [8, 8, 8], "rescale": true},
+			"faces": {
+				"north": {"uv": [16, 0, 0, 16], "texture": "#stem_b"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#stem_b"}
+			}
+		},
+		{
+			"from": [8, 0, 0.1],
+			"to": [8, 15.9, 15.9],
+			"rotation": {"angle": 45, "axis": "y", "origin": [8, 8, 8], "rescale": true},
+			"faces": {
+				"east": {"uv": [16, 0, 0, 16], "texture": "#stem_a"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#stem_a"}
+			}
+		}
+	]
+}

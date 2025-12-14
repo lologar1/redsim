@@ -1,0 +1,9 @@
+{
+    "parent": "block/dotsaglow_cube_rotate_2_sides",
+    "textures": {
+        "top": "block/clay3",
+        "bottom": "block/clay3",
+        "side_a": "block/clay3",
+        "side_b": "block/clay"
+    }
+}

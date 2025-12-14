@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/nether/nether_gold_ore" },
+            { "model": "block/nether/nether_gold_ore", "y": 90 },
+            { "model": "block/nether/nether_gold_ore", "y": 180 },
+            { "model": "block/nether/nether_gold_ore", "y": 270 }
+        ]
+    }
+}

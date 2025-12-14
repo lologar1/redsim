@@ -1,0 +1,44 @@
+{
+  "variants": {
+    "moisture=0": [
+            { "model": "block/soil/farmland_1" },
+            { "model": "block/soil/farmland_2" },
+            { "model": "block/soil/farmland_3" }
+        ],
+    "moisture=1": [
+            { "model": "block/soil/farmland_1" },
+            { "model": "block/soil/farmland_2" },
+            { "model": "block/soil/farmland_3" }
+        ],
+    "moisture=2": [
+            { "model": "block/soil/farmland_1" },
+            { "model": "block/soil/farmland_2" },
+            { "model": "block/soil/farmland_3" }
+        ],
+    "moisture=3": [
+            { "model": "block/soil/farmland_1" },
+            { "model": "block/soil/farmland_2" },
+            { "model": "block/soil/farmland_3" }
+        ],
+    "moisture=4": [
+            { "model": "block/soil/farmland_1" },
+            { "model": "block/soil/farmland_2" },
+            { "model": "block/soil/farmland_3" }
+        ],
+    "moisture=5": [
+            { "model": "block/soil/farmland_1" },
+            { "model": "block/soil/farmland_2" },
+            { "model": "block/soil/farmland_3" }
+        ],
+    "moisture=6": [
+            { "model": "block/soil/farmland_1" },
+            { "model": "block/soil/farmland_2" },
+            { "model": "block/soil/farmland_3" }
+        ],
+    "moisture=7": [
+            { "model": "block/soil/farmland_moist_1" },
+            { "model": "block/soil/farmland_moist_2" },
+            { "model": "block/soil/farmland_moist_3" }
+        ]
+  }
+}

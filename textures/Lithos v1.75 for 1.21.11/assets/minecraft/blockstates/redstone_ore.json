@@ -1,0 +1,15 @@
+{
+    "variants": {
+        "lit=false": [ 
+            { "model": "block/stone/redstone_ore_1" },
+            { "model": "block/stone/redstone_ore_2" },
+            { "model": "block/stone/redstone_ore_3" }
+        ],
+        
+        "lit=true": [ 
+            { "model": "block/stone/redstone_ore_1" },
+            { "model": "block/stone/redstone_ore_2" },
+            { "model": "block/stone/redstone_ore_3" }
+        ]
+    }
+}

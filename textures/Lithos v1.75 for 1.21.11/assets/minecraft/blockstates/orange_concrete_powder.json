@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/stone/orange_concrete_powder" },
+            { "model": "block/stone/orange_concrete_powder", "y": 90 },
+            { "model": "block/stone/orange_concrete_powder", "y": 180 },
+            { "model": "block/stone/orange_concrete_powder", "y": 270 }
+        ]
+    }
+}

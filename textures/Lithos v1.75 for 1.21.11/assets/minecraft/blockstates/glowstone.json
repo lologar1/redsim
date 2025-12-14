@@ -1,0 +1,9 @@
+{
+    "variants": {
+        "": [ 
+            { "model": "block/nether/glowstone_1" },
+            { "model": "block/nether/glowstone_2" },
+            { "model": "block/nether/glowstone_3" }
+        ]
+    }
+}

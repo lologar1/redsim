@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "minecraft:block/pearlescent_froglight_horizontal",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": [
+            { "model": "minecraft:block/pearlescent_froglight" },
+            { "model": "minecraft:block/pearlescent_froglight", "y": 90 },
+            { "model": "minecraft:block/pearlescent_froglight", "y": 180 },
+            { "model": "minecraft:block/pearlescent_froglight", "y": 270 }
+        ],
+    "axis=z": {
+      "model": "minecraft:block/pearlescent_froglight_horizontal",
+      "x": 90
+    }
+  }
+}

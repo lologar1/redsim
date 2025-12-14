@@ -1,0 +1,90 @@
+{
+	"variants": {
+		"facing=east,tilt=full": [
+				{ "model": "block/plants/big_dripleaf_full_tilt_1", "y": 90 },
+				{ "model": "block/plants/big_dripleaf_full_tilt_2", "y": 90 },
+				{ "model": "block/plants/big_dripleaf_full_tilt_3", "y": 90 }
+		],
+		"facing=east,tilt=none": [
+				{ "model": "block/plants/big_dripleaf_1", "y": 90 },
+				{ "model": "block/plants/big_dripleaf_2", "y": 90 },
+				{ "model": "block/plants/big_dripleaf_3", "y": 90 }
+		],
+		"facing=east,tilt=partial": [
+				{ "model": "block/plants/big_dripleaf_partial_tilt_1", "y": 90 },
+				{ "model": "block/plants/big_dripleaf_partial_tilt_2", "y": 90 },
+				{ "model": "block/plants/big_dripleaf_partial_tilt_3", "y": 90 }
+		],
+		"facing=east,tilt=unstable": [
+				{ "model": "block/plants/big_dripleaf_1", "y": 90 },
+				{ "model": "block/plants/big_dripleaf_2", "y": 90 },
+				{ "model": "block/plants/big_dripleaf_3", "y": 90 }
+		],
+		
+		
+		"facing=north,tilt=full": [
+				{ "model": "block/plants/big_dripleaf_full_tilt_1" },
+				{ "model": "block/plants/big_dripleaf_full_tilt_2" },
+				{ "model": "block/plants/big_dripleaf_full_tilt_3" }
+		],
+		"facing=north,tilt=none": [
+				{ "model": "block/plants/big_dripleaf_1" },
+				{ "model": "block/plants/big_dripleaf_2" },
+				{ "model": "block/plants/big_dripleaf_3" }
+		],
+		"facing=north,tilt=partial": [
+				{ "model": "block/plants/big_dripleaf_partial_tilt_1" },
+				{ "model": "block/plants/big_dripleaf_partial_tilt_2" },
+				{ "model": "block/plants/big_dripleaf_partial_tilt_3" }
+		],
+		"facing=north,tilt=unstable": [
+				{ "model": "block/plants/big_dripleaf_1" },
+				{ "model": "block/plants/big_dripleaf_2" },
+				{ "model": "block/plants/big_dripleaf_3" }
+		],
+		
+		
+		"facing=south,tilt=full": [
+				{ "model": "block/plants/big_dripleaf_full_tilt_1", "y": 180 },
+				{ "model": "block/plants/big_dripleaf_full_tilt_2", "y": 180 },
+				{ "model": "block/plants/big_dripleaf_full_tilt_3", "y": 180 }
+		],
+		"facing=south,tilt=none": [
+				{ "model": "block/plants/big_dripleaf_1", "y": 180 },
+				{ "model": "block/plants/big_dripleaf_2", "y": 180 },
+				{ "model": "block/plants/big_dripleaf_3", "y": 180 }
+		],
+		"facing=south,tilt=partial": [
+				{ "model": "block/plants/big_dripleaf_partial_tilt_1", "y": 180 },
+				{ "model": "block/plants/big_dripleaf_partial_tilt_2", "y": 180 },
+				{ "model": "block/plants/big_dripleaf_partial_tilt_3", "y": 180 }
+		],
+		"facing=south,tilt=unstable": [
+				{ "model": "block/plants/big_dripleaf_1", "y": 180 },
+				{ "model": "block/plants/big_dripleaf_2", "y": 180 },
+				{ "model": "block/plants/big_dripleaf_3", "y": 180 }
+		],
+		
+		
+		"facing=west,tilt=full": [
+				{ "model": "block/plants/big_dripleaf_full_tilt_1", "y": 270 },
+				{ "model": "block/plants/big_dripleaf_full_tilt_2", "y": 270 },
+				{ "model": "block/plants/big_dripleaf_full_tilt_3", "y": 270 }
+		],
+		"facing=west,tilt=none": [
+				{ "model": "block/plants/big_dripleaf_1", "y": 270 },
+				{ "model": "block/plants/big_dripleaf_2", "y": 270 },
+				{ "model": "block/plants/big_dripleaf_3", "y": 270 }
+		],
+		"facing=west,tilt=partial": [
+				{ "model": "block/plants/big_dripleaf_partial_tilt_1", "y": 270 },
+				{ "model": "block/plants/big_dripleaf_partial_tilt_2", "y": 270 },
+				{ "model": "block/plants/big_dripleaf_partial_tilt_3", "y": 270 }
+		],
+		"facing=west,tilt=unstable": [
+				{ "model": "block/plants/big_dripleaf_1", "y": 270 },
+				{ "model": "block/plants/big_dripleaf_2", "y": 270 },
+				{ "model": "block/plants/big_dripleaf_3", "y": 270 }
+		]
+	}
+}

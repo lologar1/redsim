@@ -1,0 +1,10 @@
+{
+    "__comment": "This file was created by Eleazzaar for Lithos:Core",
+    "parent": "block/dotsaglow_cube_bottom_top_a_b",
+    "textures": {
+        "top": "block/copper_ore3",
+        "bottom": "block/copper_ore3",
+        "side_a": "block/copper_ore",
+        "side_b": "block/copper_ore2"
+    }
+}

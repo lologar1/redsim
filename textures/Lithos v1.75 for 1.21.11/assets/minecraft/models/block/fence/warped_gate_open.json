@@ -1,0 +1,7 @@
+{
+    "parent": "block/fence/gate_open",
+    "textures": {
+        "post": "block/warped_post",
+        "gate": "block/warped_gate"
+    }
+}

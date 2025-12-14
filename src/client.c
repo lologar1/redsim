@@ -76,50 +76,26 @@ void client_init(void) {
 		.id = 1,
 		.variant = 4,
 		.rotation = NONE,
-		.metadata = 7
+		.metadata = 13
 	};
 
 	Blockdata t0 = {
 		.id = 2,
-		.variant = 0,
+		.variant = 5,
 		.rotation = NORTH,
-		.metadata = 7
-	};
-	Blockdata t1 = {
-		.id = 2,
-		.variant = 0,
-		.rotation = EAST,
-		.metadata = 0
-	};
-	Blockdata t2 = {
-		.id = 2,
-		.variant = 0,
-		.rotation = SOUTH,
-		.metadata = 0
+		.metadata = 5
 	};
 	Blockdata t3 = {
 		.id = 1,
 		.variant = 6,
 		.rotation = WEST,
-		.metadata = 7
-	};
-	Blockdata t4 = {
-		.id = 2,
-		.variant = 0,
-		.rotation = UP,
-		.metadata = 0
-	};
-	Blockdata t5 = {
-		.id = 2,
-		.variant = 0,
-		.rotation = DOWN,
-		.metadata = 0
+		.metadata = 13
 	};
 	Blockdata t6 = {
 		.id = 1,
 		.variant = 8,
 		.rotation = DOWN,
-		.metadata = 1
+		.metadata = 13
 	};
 
 	Chunkdata *c0 = calloc(1, sizeof(Chunkdata));
@@ -132,15 +108,9 @@ void client_init(void) {
 	Chunkdata *p3 = calloc(1, sizeof(Chunkdata));
 	Chunkdata *p4 = calloc(1, sizeof(Chunkdata));
 
-	//(*c0)[0][0][0] = t0;
-	(*c0)[5][5][5] = b0;
-	//(*c0)[1][0][0] = t6;
-	//(*c0)[1][1][1] = b0;
-	(*c0)[CHUNKSIZE-1][CHUNKSIZE-1][CHUNKSIZE-1] = t0;
-
 	(*c1)[0][0][0] = b0;
-	//(*c1)[CHUNKSIZE-1][CHUNKSIZE-1][CHUNKSIZE-1] = t0;
-	//(*c1)[CHUNKSIZE-1][CHUNKSIZE-2][CHUNKSIZE-1] = b0;
+	(*c1)[CHUNKSIZE-1][CHUNKSIZE-1][CHUNKSIZE-1] = t0;
+	(*c1)[CHUNKSIZE-1][CHUNKSIZE-2][CHUNKSIZE-1] = b0;
 
 	for (int x = 0; x < CHUNKSIZE; x++) {
 		for (int y = 0; y < CHUNKSIZE; y++) {
@@ -156,20 +126,10 @@ void client_init(void) {
 			}
 		}
 	}
-
-	(*c2)[0][0][0] = t0;
-	(*c2)[0][0][2] = t1;
-	(*c2)[0][0][4] = t2;
-	(*c2)[0][0][6] = t3;
-	(*c2)[0][0][8] = t4;
-	(*c2)[0][0][10] = t5;
-	(*c2)[0][2][4] = t6;
-	(*c2)[0][2][2] = t6;
-	(*c2)[0][2][0] = t6;
-
 	usf_inthmput(chunkmap, TOCHUNKINDEX(0L, 0L, 0L), USFDATAP(c0));
 	usf_inthmput(chunkmap, TOCHUNKINDEX(-1L, -1L, -1L), USFDATAP(c1));
 	usf_inthmput(chunkmap, TOCHUNKINDEX(0L, 0L, 1L), USFDATAP(c2));
+
 	for (int x = 0; x < CHUNKSIZE; x++) {
 		for (int y = 0; y < CHUNKSIZE; y += 2) {
 			for (int z = 0; z < CHUNKSIZE; z++) {
@@ -202,6 +162,11 @@ void client_init(void) {
 
 	cu_generateMeshlist(); /* Subsequently called only on render distance change */
 	gui_updateGUI(); /* Subsequently called only on GUI modification (from user input) */
+}
+
+void client_savedata(void) {
+	/* Save world to disk */
+
 }
 
 /* View stuff */
@@ -253,6 +218,9 @@ void client_getPosition(vec3 pos) {
 extern GLuint opaqueShader, transShader, compositionShader, guiShader, FBO, GUIFBO;
 extern GLuint opaqueColorTex, accTex, revealTex, depthTex, guiColorTex, guiDepthTex;
 void client_terminate(void) {
+	/* Write world to disk */
+	client_savedata();
+
 	/* Free RSM resources before program exit */
 	uint64_t i, j;
 	GLuint *mesh;

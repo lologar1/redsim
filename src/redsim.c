@@ -88,11 +88,6 @@ void rsm_move(vec3 position) {
 				glm_vec3_sub(boundingbox+3, boundingbox, boundingbox+3);
 			}
 
-			/* To prevent phasing through a float imprecision-induced offset boundingbox poking in an
-			 * adjacent block, downsize it by an adjusted offset first */
-			glm_vec3_adds(boundingbox, BLOCK_BOUNDINGBOX_ADJUST_OFFSET, boundingbox);
-			glm_vec3_subs(boundingbox+3, BLOCK_BOUNDINGBOX_ADJUST_OFFSET * 2, boundingbox+3);
-
 			/* Landing position is not inside a block; no collision occurs.
 			 * AABBIntersect also normalizes BBs. */
 			if (!cu_AABBIntersect(boundingbox, boundingbox+3, relativePCNew, PLAYER_BOUNDINGBOX_DIMENSIONS))
@@ -105,10 +100,10 @@ void rsm_move(vec3 position) {
 			if (boundingbox[axis] + boundingbox[axis+3] < relativePCOld[axis])
 				/* Player is "above" */
 				movement[axis] = -(relativePCOld[axis] - (boundingbox[axis]+boundingbox[axis+3]))
-					+ fmaxf(SAFEDISTANCE, 0.000001f); /* Close to 0, SAFEDISTANCE < calculation */
+					+ USF_MAX(SAFEDISTANCE, 0.00048828125f); /* Close to 0, SAFEDISTANCE < imprecision */
 			else /* Player is "under */
 				movement[axis] = boundingbox[axis] - (relativePCOld[axis] +
-					PLAYER_BOUNDINGBOX_DIMENSIONS[axis]) - fmaxf(SAFEDISTANCE, 0.000001f);
+					PLAYER_BOUNDINGBOX_DIMENSIONS[axis]) - USF_MAX(SAFEDISTANCE, 0.00048828125f);
 #undef SAFEDISTANCE
 
 			/* Match speed to orientation, kill component and replace it */
@@ -301,7 +296,6 @@ void rsm_checkMeshes(void) {
 	GLint VBO;
 
 	pthread_mutex_lock(&meshlock);
-
 	while ((rawmesh = (Rawmesh *) usf_dequeue(meshqueue).p)) { /* For every new mesh this frame */
 		chunkindex = rawmesh->chunkindex;
 		mesh = (GLuint *) usf_inthmget(meshmap, chunkindex).p;
@@ -337,8 +331,6 @@ void rsm_checkMeshes(void) {
 			glBindVertexArray(0); /* Unbind to avoid modification */
 			mesh[0] = opaqueVAO; mesh[1] = transVAO;
 			usf_inthmput(meshmap, chunkindex, USFDATAP(mesh)); /* Set mesh */
-
-			cu_updateMeshlist(); /* Include just created mesh in view */
 		}
 
 		glBindVertexArray(mesh[0]); /* Opaque */
@@ -359,7 +351,8 @@ void rsm_checkMeshes(void) {
 		/* Free scratchpad buffers */
 		free(rawmesh->opaqueVertexBuffer); /* All scratchpads stem from this one allocation */
 		free(rawmesh);
-	}
 
+		cu_updateMeshlist(); /* Include just created mesh in view */
+	}
 	pthread_mutex_unlock(&meshlock);
 }

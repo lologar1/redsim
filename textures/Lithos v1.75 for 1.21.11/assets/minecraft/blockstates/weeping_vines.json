@@ -1,0 +1,11 @@
+
+{
+    "variants": {
+        "": [
+            { "model": "block/plants/weeping_vines" },
+            { "model": "block/plants/weeping_vines", "y": 90 },
+            { "model": "block/plants/weeping_vines", "y": 180 },
+            { "model": "block/plants/weeping_vines", "y": 270 }
+        ]
+    }
+}

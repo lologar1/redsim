@@ -1,0 +1,9 @@
+{
+    "parent": "block/slabs/master_half",
+    "textures": {
+        "bottom": "block/cobbled_deepslate_top2",
+        "top":    "block/cobbled_deepslate_top2",
+        "side_a": "block/cobbled_deepslate3",
+        "side_b": "block/cobbled_deepslate"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "variants": {
+        "": [
+            { "model": "block/misc/cut_copper_1" },
+            
+            { "model": "block/misc/cut_copper_2" },
+            
+            { "model": "block/misc/cut_copper_3" }
+        ]
+    }
+}

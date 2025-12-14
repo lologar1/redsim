@@ -1,0 +1,9 @@
+{
+    "parent": "block/stairs/master",
+    "textures": {
+        "bottom": "block/mossy_cobblestone_top2",
+        "top": "block/mossy_cobblestone_top2",
+        "side_a": "block/mossy_cobblestone2",
+        "side_b": "block/mossy_cobblestone3"
+    }
+}
