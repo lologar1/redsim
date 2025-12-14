@@ -1,9 +1,0 @@
-{
-    "__comment": "This file was created by Eleazzaar for Lithos:Core",
-    "parent": "block/cube_random3",
-    "textures": {
-        "top-bottom": "block/prismarine3",
-        "side_a": "block/prismarine",
-        "side_b": "block/prismarine2"
-    }
-}

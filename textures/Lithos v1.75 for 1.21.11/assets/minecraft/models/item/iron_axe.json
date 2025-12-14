@@ -1,8 +1,0 @@
-{
-    "parent": "item/handheld",
-    "textures": {"layer0": "item/iron_axe"},
-	"overrides": [
-        {"predicate": {"damage": 0.55},"model": "item/iron_axe_2"},
-        {"predicate": {"damage": 0.9},"model": "item/iron_axe_3"}
-    	]
-}

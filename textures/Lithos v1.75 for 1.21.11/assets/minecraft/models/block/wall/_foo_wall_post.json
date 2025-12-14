@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/wall/aglow_wall_post",
-  "textures": {
-    "top": "minecraft:block/foo_wall_top",
-    "side": "minecraft:block/foo_wall_post"
-  }
-}

@@ -1,6 +1,0 @@
-{
-	"parent": "block/plants/warped_fungus_1_master",
-    "textures": {
-        "texture": "block/plants/warped_fungus3d"
-    }
-}

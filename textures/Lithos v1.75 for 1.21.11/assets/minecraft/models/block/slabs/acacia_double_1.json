@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/acacia_planks",
-        "top":    "block/acacia_planks",
-        "side_a": "block/acacia_planks_double",
-        "side_b": "block/acacia_planks_double"
-    }
-}

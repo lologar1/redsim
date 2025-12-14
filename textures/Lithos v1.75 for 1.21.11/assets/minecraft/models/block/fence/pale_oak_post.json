@@ -1,7 +1,0 @@
-{
-    "parent": "block/fence/fence_post",
-    "textures": {
-        "post": "block/pale_oak_post",
-        "slats": "block/pale_oak_slats"
-    }
-}

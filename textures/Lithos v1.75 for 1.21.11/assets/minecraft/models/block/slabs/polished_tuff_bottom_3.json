@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_half",
-    "textures": {
-        "bottom": "block/polished_tuff3",
-        "top":    "block/polished_tuff",
-        "side_a": "block/polished_tuff_double3",
-        "side_b": "block/polished_tuff_double"
-    }
-}

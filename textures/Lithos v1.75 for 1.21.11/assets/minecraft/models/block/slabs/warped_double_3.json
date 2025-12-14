@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/warped_planks3",
-        "top":    "block/warped_planks3",
-        "side_a": "block/warped_planks_double",
-        "side_b": "block/warped_planks_double"
-    }
-}

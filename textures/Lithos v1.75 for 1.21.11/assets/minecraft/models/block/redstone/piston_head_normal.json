@@ -1,9 +1,0 @@
-{
-    "parent": "block/redstone/piston_head",
-    "textures": {
-        "unsticky": "block/piston_top",
-        "side": "block/piston_side",
-        "platform": "block/piston_top",
-        "rod": "block/piston_rod"
-    }
-}

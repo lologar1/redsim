@@ -1,9 +1,0 @@
-{
-    "__comment": "This file was created by Eleazzaar for Lithos:Core",
-    "parent": "block/cube_random3",
-    "textures": {
-        "top-bottom": "block/chiseled_polished_blackstone_top3",
-        "side_a": "block/chiseled_polished_blackstone",
-        "side_b": "block/chiseled_polished_blackstone2"
-    }
-}

@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/wall/aglow_wall_inventory",
-  "textures": {
-    "top": "minecraft:block/resin_bricks_wall_top",
-    "post": "minecraft:block/resin_bricks_wall_post",
-    "side": "minecraft:block/resin_bricks"
-  }
-}

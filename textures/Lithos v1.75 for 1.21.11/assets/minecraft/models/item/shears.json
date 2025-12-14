@@ -1,8 +1,0 @@
-{
-    "parent": "item/handheld",
-    "textures": {"layer0": "item/shears"},
-	"overrides": [
-        {"predicate": {"damage": 0.55},"model": "item/shears_2"},
-        {"predicate": {"damage": 0.9},"model": "item/shears_3"}
-    	]
-}

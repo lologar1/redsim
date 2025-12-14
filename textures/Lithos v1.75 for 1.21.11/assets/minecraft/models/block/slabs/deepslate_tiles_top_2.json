@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_upper",
-    "textures": {
-        "bottom": "block/deepslate_tiles2",
-        "top":    "block/deepslate_tiles2",
-        "side_a": "block/deepslate_tiles_double3",
-        "side_b": "block/deepslate_tiles_double"
-    }
-}

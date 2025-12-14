@@ -1,6 +1,0 @@
-{
-	"parent": "block/built/lightning_rod_base",
-	"textures": {
-		"all": "block/lightning_rod"
-	}
-}

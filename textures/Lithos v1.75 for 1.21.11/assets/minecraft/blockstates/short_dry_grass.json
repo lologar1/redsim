@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [
-            { "model": "block/plants/short_dry_grass_1" },
-            { "model": "block/plants/short_dry_grass_2" },
-            { "model": "block/plants/short_dry_grass_3" }
-        ]
-    }
-}

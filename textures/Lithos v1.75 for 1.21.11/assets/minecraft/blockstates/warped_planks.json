@@ -1,9 +1,0 @@
-{
-    "variants": {
-                "": [ 
-            { "model": "block/wood/warped_planks_1" },
-            { "model": "block/wood/warped_planks_2" },
-            { "model": "block/wood/warped_planks_3" }
-        ]
-    }
-}

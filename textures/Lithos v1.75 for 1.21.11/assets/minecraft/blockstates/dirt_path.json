@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [
-            { "model": "block/soil/dirt_path_1" },
-			{ "model": "block/soil/dirt_path_2" },
-	        { "model": "block/soil/dirt_path_3" }
-        ]
-    }
-}

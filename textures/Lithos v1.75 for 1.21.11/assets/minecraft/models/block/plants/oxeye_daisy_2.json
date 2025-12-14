@@ -1,9 +1,0 @@
-{
-    "parent": "block/plants/fourcross",
-    "textures": {
-        "A": "block/plants/oxeye_daisy_2",
-        "B": "block/plants/oxeye_daisy_3",
-        "C": "block/plants/oxeye_daisy_4",
-        "D": "block/plants/oxeye_daisy_5"
-    }
-}

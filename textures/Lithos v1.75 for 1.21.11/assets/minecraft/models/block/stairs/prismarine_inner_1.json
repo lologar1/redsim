@@ -1,9 +1,0 @@
-{
-    "parent": "block/stairs/master_inner",
-    "textures": {
-        "bottom": "block/prismarine",
-        "top": "block/prismarine",
-        "side_a": "block/prismarine2",
-        "side_b": "block/prismarine3"
-    }
-}

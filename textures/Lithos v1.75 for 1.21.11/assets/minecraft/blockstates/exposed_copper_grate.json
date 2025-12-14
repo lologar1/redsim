@@ -1,8 +1,0 @@
-{
-    "variants": {
-        "": [
-            { "model": "block/misc/exposed_copper_grate_1" },
-            { "model": "block/misc/exposed_copper_grate_2" }
-        ]
-    }
-}

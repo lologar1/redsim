@@ -1,9 +1,0 @@
-{
-    "parent": "block/stairs/master_inner",
-    "textures": {
-        "bottom": "block/deepslate_bricks3",
-        "top": "block/deepslate_bricks3",
-        "side_a": "block/deepslate_bricks",
-        "side_b": "block/deepslate_bricks2"
-    }
-}

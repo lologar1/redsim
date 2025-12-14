@@ -1,9 +1,0 @@
-{
-  "parent": "minecraft:block/dotsaglow_cube_bottom_top_a_b",
-  "textures": {
-    "top": "minecraft:block/packed_mud",
-    "bottom": "minecraft:block/packed_mud",
-    "side_a": "minecraft:block/packed_mud_side",
-    "side_b": "minecraft:block/packed_mud_side2"
-  }
-}

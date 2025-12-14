@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_half",
-    "textures": {
-        "bottom": "block/end_stone_bricks2",
-        "top":    "block/end_stone_bricks3",
-        "side_a": "block/end_stone_bricks",
-        "side_b": "block/end_stone_bricks2"
-    }
-}

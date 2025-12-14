@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/prismarine_bricks_bottom3",
-        "top": "block/prismarine_bricks_double_top3",
-        "side_a": "block/prismarine_bricks_double3",
-        "side_b": "block/prismarine_bricks_double"
-    }
-}

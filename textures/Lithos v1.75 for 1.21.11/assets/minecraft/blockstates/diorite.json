@@ -1,9 +1,0 @@
-{
-    "variants": {
-         "": [ 
-            { "model": "block/stone/diorite_1" },
-            { "model": "block/stone/diorite_2" },
-            { "model": "block/stone/diorite_3" }
-        ]
-    }
-}

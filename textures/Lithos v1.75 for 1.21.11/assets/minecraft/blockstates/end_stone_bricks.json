@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [
-        	{ "model": "block/end/end_bricks" },
-        	{ "model": "block/end/end_bricks2" },
-        	{ "model": "block/end/end_bricks3" }
-        ]
-    }
-}

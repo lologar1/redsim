@@ -1,9 +1,0 @@
-{
-    "variants": {
-       "": [ 
-            { "model": "block/nether/magma_1" },
-            { "model": "block/nether/magma_2" },
-            { "model": "block/nether/magma_3" }
-        ]
-    }
-}

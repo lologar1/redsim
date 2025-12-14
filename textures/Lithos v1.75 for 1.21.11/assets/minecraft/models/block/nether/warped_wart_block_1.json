@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_rotate_2_sides",
-    "textures": {
-        "top": "block/warped_wart_block3",
-        "bottom": "block/warped_wart_block3",
-        "side_a": "block/warped_wart_block",
-        "side_b": "block/warped_wart_block2"
-    }
-}

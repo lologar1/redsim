@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/ancient_debris_bottom",
-        "top": "block/ancient_debris_top",
-        "side_a": "block/ancient_debris_side",
-        "side_b": "block/ancient_debris_side2"
-    }
-}

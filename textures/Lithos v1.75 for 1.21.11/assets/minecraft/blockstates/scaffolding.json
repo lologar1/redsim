@@ -1,6 +1,0 @@
-{
-    "variants": {
-        "bottom=true": { "model": "block/built/scaffolding_unstable" },
-        "bottom=false": { "model": "block/built/scaffolding_stable" }
-    }
-}

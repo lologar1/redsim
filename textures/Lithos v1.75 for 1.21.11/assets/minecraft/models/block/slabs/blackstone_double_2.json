@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/blackstone_double_top2",
-        "top":    "block/blackstone_double_top3",
-        "side_a": "block/blackstone_double2",
-        "side_b": "block/blackstone_double3"
-    }
-}

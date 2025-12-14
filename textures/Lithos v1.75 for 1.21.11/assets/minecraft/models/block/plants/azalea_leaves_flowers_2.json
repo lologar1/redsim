@@ -1,9 +1,0 @@
-{
-  "parent": "minecraft:block/dotsaglow_cube_bottom_top_a_b",
-  "textures": {
-    "top": "minecraft:block/azalea_leaves_flowers_top2",
-    "bottom": "minecraft:block/azalea_leaves_flowers_top2",
-    "side_a": "minecraft:block/azalea_leaves_flowers2",
-    "side_b": "minecraft:block/azalea_leaves_flowers"
-  }
-}

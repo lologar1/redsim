@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_upper",
-    "textures": {
-        "bottom": "block/mud_bricks_top",
-        "top":    "block/mud_bricks_top2",
-        "side_a": "block/mud_bricks",
-        "side_b": "block/mud_bricks2"
-    }
-}

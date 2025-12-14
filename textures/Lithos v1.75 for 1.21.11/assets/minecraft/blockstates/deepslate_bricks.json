@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [
-            { "model": "block/stone/deepslate_bricks_1" },
-            { "model": "block/stone/deepslate_bricks_2" },
-            { "model": "block/stone/deepslate_bricks_3" }
-        ]
-    }
-}

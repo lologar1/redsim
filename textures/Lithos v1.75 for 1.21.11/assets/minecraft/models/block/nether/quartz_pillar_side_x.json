@@ -1,8 +1,0 @@
-{
-    "parent": "block/column_side_x",
-    "textures": {
-        "end": "block/quartz_pillar_top",
-        "side_a": "block/quartz_pillar",
-        "side_b": "block/quartz_pillar"
-    }
-}

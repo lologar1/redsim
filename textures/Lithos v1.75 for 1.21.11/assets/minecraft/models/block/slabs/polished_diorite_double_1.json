@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/polished_diorite",
-        "top":    "block/polished_diorite2",
-        "side_a": "block/polished_diorite_double",
-        "side_b": "block/polished_diorite_double2"
-    }
-}

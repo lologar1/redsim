@@ -1,7 +1,0 @@
-{
-    "parent": "block/fence/gate_open",
-    "textures": {
-        "post": "block/acacia_post",
-        "gate": "block/acacia_gate"
-    }
-}

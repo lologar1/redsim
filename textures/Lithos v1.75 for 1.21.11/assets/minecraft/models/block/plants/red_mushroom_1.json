@@ -1,6 +1,0 @@
-{
-	"parent": "block/plants/red_mushroom_1_master",
-    "textures": {
-        "texture": "block/plants/red_mushroom"
-    }
-}

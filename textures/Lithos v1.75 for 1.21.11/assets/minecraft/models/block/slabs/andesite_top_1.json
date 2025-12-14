@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_upper",
-    "textures": {
-        "bottom": "block/andesite",
-        "top":    "block/andesite2",
-        "side_a": "block/andesite",
-        "side_b": "block/andesite2"
-    }
-}

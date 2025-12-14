@@ -1,9 +1,0 @@
-{
-    "__comment": "This file was created by Eleazzaar for Lithos:Core",
-    "parent": "block/column_side_z",
-    "textures": {
-        "end": "block/stripped_birch_log",
-        "side_a": "block/stripped_birch_log2",
-        "side_b": "block/stripped_birch_log3"
-        }
-}

@@ -1,9 +1,0 @@
-{
-    "parent": "block/stairs/master",
-    "textures": {
-        "bottom": "block/resin_bricks_top",
-        "top": "block/resin_bricks_top",
-        "side_a": "block/resin_bricks2",
-        "side_b": "block/resin_bricks3"
-    }
-}

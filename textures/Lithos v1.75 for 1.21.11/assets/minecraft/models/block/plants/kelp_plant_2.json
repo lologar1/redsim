@@ -1,8 +1,0 @@
-{
-    "__comment": "This file was created by Eleazzaar for Lithos:Core",
-    "parent": "block/plants/cross_double_tint",
-    "textures": {
-        "A": "block/kelp_plant2",
-        "B": "block/kelp_plant3"    
-    }
-}

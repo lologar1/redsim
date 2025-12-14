@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_upper",
-    "textures": {
-        "bottom": "block/cherry_planks",
-        "top":    "block/cherry_planks2",
-        "side_a": "block/cherry_planks",
-        "side_b": "block/cherry_planks2"
-    }
-}

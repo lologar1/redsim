@@ -1,8 +1,0 @@
-{
-    "variants": {
-        "": [
-            { "model": "block/nether/quartz_bricks_1" },
-            { "model": "block/nether/quartz_bricks_2" }
-        ]
-    }
-}

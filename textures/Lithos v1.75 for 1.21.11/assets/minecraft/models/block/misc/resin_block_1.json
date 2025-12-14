@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_rotate_2_sides",
-    "textures": {
-        "top": "block/resin_block",
-        "bottom": "block/resin_block",
-        "side_a": "block/resin_block",
-        "side_b": "block/resin_block2"
-    }
-}

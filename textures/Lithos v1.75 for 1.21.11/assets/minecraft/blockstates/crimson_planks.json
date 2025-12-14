@@ -1,9 +1,0 @@
-{
-    "variants": {
-                "": [ 
-            { "model": "block/wood/crimson_planks_1" },
-            { "model": "block/wood/crimson_planks_2" },
-            { "model": "block/wood/crimson_planks_3" }
-        ]
-    }
-}

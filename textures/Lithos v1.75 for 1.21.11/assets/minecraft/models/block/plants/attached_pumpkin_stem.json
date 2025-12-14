@@ -1,8 +1,0 @@
-{
-    "parent": "block/plants/stem_fruit",
-    "textures": {
-        "stem_1": "block/pumpkin_stem",
-        "stem_2": "block/pumpkin_stem2",
-        "upperstem": "block/attached_pumpkin_stem"
-    }
-}

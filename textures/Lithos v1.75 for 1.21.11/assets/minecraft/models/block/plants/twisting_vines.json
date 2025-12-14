@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/plants/cross_spinning_double",
-    "textures": {
-        "A": "block/twisting_vines",
-        "B": "block/twisting_vines2"
-    }
-}

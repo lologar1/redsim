@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [
-        		{ "model": "block/pumpkins/uncarved_1" },
-        		{ "model": "block/pumpkins/uncarved_2" },
-        		{ "model": "block/pumpkins/uncarved_3" }
-        	]
-    }
-}

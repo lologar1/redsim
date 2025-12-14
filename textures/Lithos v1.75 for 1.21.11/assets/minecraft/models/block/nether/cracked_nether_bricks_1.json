@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/cracked_nether_bricks_top",
-        "top": "block/cracked_nether_bricks_top2",
-        "side_a": "block/cracked_nether_bricks",
-        "side_b": "block/cracked_nether_bricks2"
-    }
-}

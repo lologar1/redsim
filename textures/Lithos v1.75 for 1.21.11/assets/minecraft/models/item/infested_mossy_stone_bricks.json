@@ -1,8 +1,0 @@
-{
-    "parent": "block/cube_bottom_top",
-    "textures": {
-    	"bottom": "block/mossy_stone_bricks",
-    	"top": "block/mossy_stone_bricks",
-        "side": "block/infested_mossy_stone_bricks"
-    }
-}

@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [
-            { "model": "block/stone/deepslate_lapis_ore_1" },
-            { "model": "block/stone/deepslate_lapis_ore_2" },
-            { "model": "block/stone/deepslate_lapis_ore_3" }
-        ]
-    }
-}

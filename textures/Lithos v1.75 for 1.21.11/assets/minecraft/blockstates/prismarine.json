@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [ 
-            { "model": "block/aquatic/prismarine_1" },
-            { "model": "block/aquatic/prismarine_2" },
-            { "model": "block/aquatic/prismarine_3" }
-        ]
-    }
-}

@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [ 
-            { "model": "block/nether/chiseled_quartz_1" },
-            { "model": "block/nether/chiseled_quartz_2" },
-            { "model": "block/nether/chiseled_quartz_3" }
-        ]
-    }
-}

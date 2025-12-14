@@ -1,7 +1,0 @@
-{
-    "variants": {
-        "": [
-            { "model": "block/spawner/mob_spawner_cage" }
-        ]
-    }
-}

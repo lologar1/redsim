@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_upper",
-    "textures": {
-        "bottom": "block/mangrove_planks3",
-        "top":    "block/mangrove_planks",
-        "side_a": "block/mangrove_planks3",
-        "side_b": "block/mangrove_planks"
-    }
-}

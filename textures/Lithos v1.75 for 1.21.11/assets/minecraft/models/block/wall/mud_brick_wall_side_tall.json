@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/wall/aglow_wall_side_tall",
-  "textures": {
-    "bottom": "minecraft:block/mud_brick_wall_top",
-    "top": "minecraft:block/mud_brick_wall_top",
-    "side": "minecraft:block/mud_bricks"
-  }
-}

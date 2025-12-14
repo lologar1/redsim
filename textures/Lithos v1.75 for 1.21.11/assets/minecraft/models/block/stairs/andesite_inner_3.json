@@ -1,9 +1,0 @@
-{
-    "parent": "block/stairs/master_inner",
-    "textures": {
-        "bottom": "block/andesite3",
-        "top": "block/andesite3",
-        "side_a": "block/andesite",
-        "side_b": "block/andesite2"
-    }
-}

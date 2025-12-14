@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/wall/aglow_wall_side",
-  "textures": {
-    "bottom": "minecraft:block/polished_blackstone_wall_top",
-    "top": "minecraft:block/polished_blackstone_wall_top",
-    "side": "minecraft:block/polished_blackstone_wall_side"
-  }
-}

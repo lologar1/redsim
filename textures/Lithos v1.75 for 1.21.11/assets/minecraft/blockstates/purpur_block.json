@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [ 
-            { "model": "block/end/purpur_block_1" },
-            { "model": "block/end/purpur_block_2" },
-            { "model": "block/end/purpur_block_3" }
-        ]
-    }
-}

@@ -1,8 +1,0 @@
-{
-    "parent": "block/plants/chorus_flower0",
-    "textures": {
-        "side": "block/plants/chorus_f5",
-        "top-bottom": "block/plants/chorus_w2",
-        "particle": "block/plants/chorus1"
-    }
-}

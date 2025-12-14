@@ -1,9 +1,0 @@
-{
-    "variants": {
-                "": [ 
-            { "model": "block/wood/oak_planks_1" },
-            { "model": "block/wood/oak_planks_2" },
-            { "model": "block/wood/oak_planks_3" }
-        ]
-    }
-}

@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/oxidized_cut_copper_double_top",
-        "top":    "block/oxidized_cut_copper_double_top",
-        "side_a": "block/oxidized_cut_copper_double2",
-        "side_b": "block/oxidized_cut_copper_double3"
-    }
-}

@@ -1,9 +1,0 @@
-{
-    "parent": "block/stairs/master",
-    "textures": {
-        "bottom": "block/oxidized_cut_copper_top2",
-        "top": "block/oxidized_cut_copper_top2",
-        "side_a": "block/oxidized_cut_copper3",
-        "side_b": "block/oxidized_cut_copper"
-    }
-}

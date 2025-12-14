@@ -1,9 +1,0 @@
-{
-    "variants": {
-        "": [ 
-            { "model": "block/wood/spruce_bark_1" },
-            { "model": "block/wood/spruce_bark_2" },
-            { "model": "block/wood/spruce_bark_3" }
-        ]
-    }
-}

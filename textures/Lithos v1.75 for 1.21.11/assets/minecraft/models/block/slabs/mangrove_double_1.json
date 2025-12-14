@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/mangrove_planks",
-        "top":    "block/mangrove_planks",
-        "side_a": "block/mangrove_planks_double",
-        "side_b": "block/mangrove_planks_double"
-    }
-}

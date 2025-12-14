@@ -1,9 +1,0 @@
-{
-    "__comment": "This file was created by Eleazzaar for Lithos:Core",
-    "parent": "block/column_top",
-    "textures": {
-        "end": "block/spruce_log",
-        "side_a": "block/spruce_log2",
-        "side_b": "block/spruce_log3"
-    }
-}

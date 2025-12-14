@@ -1,6 +1,0 @@
-{
-    "parent": "block/plants/tulip_master",
-    "textures": {
-        "flower": "block/plants/white_tulip"
-    }
-}

@@ -1,9 +1,0 @@
-{
-    "parent": "block/dotsaglow_cube_bottom_top_a_b",
-    "textures": {
-        "bottom": "block/netherrack_bottom3",
-        "top": "block/warped_nylium3",
-        "side_a": "block/warped_nylium_side3",
-        "side_b": "block/warped_nylium_side"
-    }
-}

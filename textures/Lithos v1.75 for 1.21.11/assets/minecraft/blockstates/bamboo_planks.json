@@ -1,8 +1,0 @@
-{
-    "variants": {
-                "": [ 
-            { "model": "block/wood/bamboo_planks_1" },
-            { "model": "block/wood/bamboo_planks_2" }
-        ]
-    }
-}

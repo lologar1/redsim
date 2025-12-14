@@ -1,8 +1,0 @@
-{
-    "parent": "item/handheld",
-    "textures": {"layer0": "item/diamond_pickaxe"},
-	"overrides": [
-        {"predicate": {"damage": 0.55},"model": "item/diamond_pickaxe_2"},
-        {"predicate": {"damage": 0.9},"model": "item/diamond_pickaxe_3"}
-    	]
-}

@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_upper",
-    "textures": {
-        "bottom": "block/bamboo_mosaic",
-        "top":    "block/bamboo_mosaic",
-        "side_a": "block/bamboo_mosaic2",
-        "side_b": "block/bamboo_mosaic"
-    }
-}

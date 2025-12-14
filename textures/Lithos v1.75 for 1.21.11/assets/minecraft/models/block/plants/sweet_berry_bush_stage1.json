@@ -1,7 +1,0 @@
-{
-    "parent": "block/plants/cross_double",
-    "textures": {
-        "A": "block/sweet_berry_bush_stage1",
-        "B": "block/sweet_berry_bush_stage1_2"
-    }
-}

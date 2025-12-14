@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_half",
-    "textures": {
-        "bottom": "block/acacia_planks2",
-        "top":    "block/acacia_planks3",
-        "side_a": "block/acacia_planks2",
-        "side_b": "block/acacia_planks3"
-    }
-}

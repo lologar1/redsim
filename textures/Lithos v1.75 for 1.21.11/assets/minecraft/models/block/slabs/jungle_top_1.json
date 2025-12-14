@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_upper",
-    "textures": {
-        "bottom": "block/jungle_planks",
-        "top":    "block/jungle_planks2",
-        "side_a": "block/jungle_planks",
-        "side_b": "block/jungle_planks2"
-    }
-}

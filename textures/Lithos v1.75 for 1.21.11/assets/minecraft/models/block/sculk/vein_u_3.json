@@ -1,6 +1,0 @@
-{
-	"parent": "block/sculk/vein_u_master",
-    "textures": {
-        "texture": "block/sculk_vein3"
-    }
-}

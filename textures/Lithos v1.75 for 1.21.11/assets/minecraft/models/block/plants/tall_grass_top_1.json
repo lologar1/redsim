@@ -1,7 +1,0 @@
-{
-    "parent": "block/plants/cross_double_big_top_tint",
-    "textures": {
-        "A": "block/plants/tall_grass_top_1",
-        "B": "block/plants/tall_grass_top_2"
-    }
-}

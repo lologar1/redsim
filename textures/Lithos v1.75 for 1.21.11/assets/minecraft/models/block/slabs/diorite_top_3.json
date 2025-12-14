@@ -1,9 +1,0 @@
-{
-    "parent": "block/slabs/master_upper",
-    "textures": {
-        "bottom": "block/diorite3",
-        "top":    "block/diorite",
-        "side_a": "block/diorite3",
-        "side_b": "block/diorite"
-    }
-}

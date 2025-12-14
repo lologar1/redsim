@@ -1,6 +1,0 @@
-{
-    "parent": "item/generated_pane",
-    "textures": {
-        "layer0": "block/black_stained_glass"
-    }
-}
