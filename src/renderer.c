@@ -83,15 +83,6 @@ void renderer_render(GLFWwindow *window) {
 	glUniform1i(glGetUniformLocation(compositionShader, "revealBuffer"), 3);
 	glUniform1i(glGetUniformLocation(compositionShader, "guiBuffer"), 5);
 
-	/* Add value in accumulation buffer; will divide by sum of alphas afterwards */
-	glBlendFuncSeparatei(1, GL_ONE, GL_ONE, GL_ONE, GL_ONE);
-
-	/* Multiply reveal buffer by new source to get opacity factor */
-	glBlendFuncSeparatei(2, GL_ZERO, GL_ONE_MINUS_SRC_COLOR, GL_ZERO, GL_ZERO);
-
-	/* For GUI (writes to its default color buffer of 0) do ordered transparency */
-	glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
 	glBlendEquation(GL_FUNC_ADD);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glFrontFace(GL_CW);
@@ -155,21 +146,22 @@ void renderer_render(GLFWwindow *window) {
 		/* Things we must keep track of during rendering (OpenGL state stuff)
 		 * glDepthMask and glDepthTest
 		 * glCullFace
-		 * glBlend */
+		 * glBlend
+		 * Draw buffer targets */
 
 		/* Rendering */
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
+		/* Opaque rendering */
 		glDepthMask(GL_TRUE); glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
 		glDisable(GL_BLEND);
 
+		static GLenum opaqueDrawTargets[1] = {GL_COLOR_ATTACHMENT0};
+		glDrawBuffers(1, opaqueDrawTargets); /* Set fragment shader output to proper buffers */
 		glClearBufferfv(GL_COLOR, 0, COLOR_CLEAR);
-		glClearBufferfv(GL_COLOR, 1, ZERO_CLEAR);
-		glClearBufferfv(GL_COLOR, 2, ONE_CLEAR);
 		glClearBufferfv(GL_DEPTH, 0, ONE_CLEAR);
 
-		/* Opaque rendering */
 		glUseProgram(opaqueShader);
 		glUniformMatrix4fv(opaqueViewLocation, 1, GL_FALSE, (float *) view);
 		glUniformMatrix4fv(opaqueProjLocation, 1, GL_FALSE, (float *) perspective);
@@ -186,6 +178,15 @@ void renderer_render(GLFWwindow *window) {
 		glDepthMask(GL_FALSE); glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
 		glEnable(GL_BLEND);
+		/* Add value in accumulation buffer; will divide by sum of alphas afterwards */
+		glBlendFuncSeparatei(0, GL_ONE, GL_ONE, GL_ONE, GL_ONE);
+		/* Multiply reveal buffer by new source to get opacity factor */
+		glBlendFuncSeparatei(1, GL_ZERO, GL_ONE_MINUS_SRC_COLOR, GL_ZERO, GL_ZERO);
+
+		static GLenum transDrawTargets[2] = {GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+		glDrawBuffers(2, transDrawTargets); /* Set fragment shader output to proper buffers */
+		glClearBufferfv(GL_COLOR, 0, ZERO_CLEAR); /* Goddamn GL state + indirection */
+		glClearBufferfv(GL_COLOR, 1, ONE_CLEAR);
 
 		glUseProgram(transShader);
 		glUniformMatrix4fv(transViewLocation, 1, GL_FALSE, (float *) view);
@@ -200,7 +201,11 @@ void renderer_render(GLFWwindow *window) {
 		glDepthMask(GL_FALSE); glDisable(GL_DEPTH_TEST);
 		glDisable(GL_CULL_FACE);
 		glEnable(GL_BLEND);
+		/* For GUI, do ordered transparency */
+		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
+		static GLenum guiDrawTargets[1] = {GL_COLOR_ATTACHMENT0};
+		glDrawBuffers(1, guiDrawTargets); /* Set fragment shader output to proper buffers */
 		glClearBufferfv(GL_COLOR, 0, ZERO_CLEAR);
 		glClearBufferfv(GL_DEPTH, 0, ONE_CLEAR);
 
@@ -215,7 +220,10 @@ void renderer_render(GLFWwindow *window) {
 		glDepthMask(GL_FALSE); glDisable(GL_DEPTH_TEST);
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_BLEND);
+
+		/* No glDrawBuffers call as this is the default framebuffer */
 		/* Do not clear as entire screen is overwritten with composed image */
+
 		glUseProgram(compositionShader);
 		glBindVertexArray(compositionVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6); /* Draw final quad */
@@ -290,9 +298,6 @@ void renderer_initBuffers(void) {
 	/* Attach depth buffer */
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
 
-	GLenum drawBuffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-	glDrawBuffers(3, drawBuffers); /* Set fragment shader output to proper buffers */
-
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		fprintf(stderr, "Error making rendering framebuffer (GL_FRAMEBUFFER_COMPLETE)\n");
 
@@ -309,9 +314,6 @@ void renderer_initBuffers(void) {
 	mat4 guiProject;
 	glm_ortho(0.0f, screenWidth, 0.0f, screenHeight, 0.0f, MAX_GUI_PRIORITY, guiProject);
 	glUniformMatrix4fv(glGetUniformLocation(guiShader, "projectionMatrix"), 1, GL_FALSE, (float *) guiProject);
-
-	GLenum guiDrawBuffer = GL_COLOR_ATTACHMENT0;
-	glDrawBuffers(1, &guiDrawBuffer);
 
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		fprintf(stderr, "Error making GUI framebuffer (GL_FRAMEBUFFER_COMPLETE)\n");

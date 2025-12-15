@@ -56,8 +56,8 @@ extern float RSM_MOUSE_SENSITIVITY;
 #define RSM_INVENTORY_SUBMENUS 4
 
 #define RSM_FPS 240.0f
-#define FPS_CAP true
-#define VSYNC true
+#define FPS_CAP false
+#define VSYNC false
 
 #define CHUNKSIZE 32
 extern float RSM_REACH;

@@ -1,6 +1,6 @@
 #version 460 core
-layout (location = 1) out vec4 outAcc; /* RGBA buffer */
-layout (location = 2) out float outReveal; /* Reveal buffer */
+layout (location = 0) out vec4 outAcc; /* RGBA buffer */
+layout (location = 1) out float outReveal; /* Reveal buffer */
 
 in flat vec3 normal;
 in vec2 texPos;
