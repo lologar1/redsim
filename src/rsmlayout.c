@@ -1,12 +1,12 @@
 #include "rsmlayout.h"
 
 /* Default layout */
-float RSM_FLY_ACCELERATION = 45.0f;
+float RSM_FLY_ACCELERATION = 100.0f;
 float RSM_FLY_X_ACCELERATION = 0.0f;
 float RSM_FLY_Y_ACCELERATION = 0.0f;
 float RSM_FLY_Z_ACCELERATION = 0.0f;
 float RSM_FLY_FRICTION = 0.01f;
-float RSM_FLY_SPEED_CAP = 23.0f;
+float RSM_FLY_SPEED_CAP = 100.0f;
 
 //Keybinds defined in header file for fast switch statements
 
@@ -23,5 +23,3 @@ float RSM_DEFAULT_GUI_SCALING_FACTOR = 1.0f;
 float RSM_COMMAND_POS_X_PIXELS = 16.0f;
 float RSM_COMMAND_POS_Y_PIXELS = 16.0f;
 float RSM_COMMAND_TEXT_SIZE = 0.75f;
-
-char *savefile = "world";

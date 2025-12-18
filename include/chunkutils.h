@@ -12,26 +12,12 @@
 #include "rsmlayout.h"
 #include "client.h"
 
-#define UPVECTOR ((vec3) {0.0f, 1.0f, 0.0f})
-#define RIGHTVECTOR ((vec3) {1.0f, 0.0f, 0.0f})
 #define MESHCENTER ((vec3) {0.5f, 0.5f, 0.5f})
 
-#define CHUNKCOORDMASK (0x1FFFFF)
-#define TOCHUNKINDEX(x, y, z) ((uint64_t) ((x) & CHUNKCOORDMASK) << 42 \
-		| (uint64_t) ((y) & CHUNKCOORDMASK) << 21 \
-		| (uint64_t) ((z) & CHUNKCOORDMASK))
-
-#define COORDSTOCHUNKINDEX(v) \
-	TOCHUNKINDEX(cu_chunkOffsetConvertFloat(v[0]), \
-			cu_chunkOffsetConvertFloat(v[1]), \
-			cu_chunkOffsetConvertFloat(v[2]))
-
-#define COORDSTOBLOCKDATA(v, chunk) \
-	 (&(*chunk)[cu_blockOffsetConvertFloat(v[0])] \
-	  [cu_blockOffsetConvertFloat(v[1])] \
-	  [cu_blockOffsetConvertFloat(v[2])])
-
-#define SIGNED21CAST64(n) ((n) | (n & (1 << 20) ? (uint64_t) ~CHUNKCOORDMASK : 0))
+#define CHUNKCOORDMASK (0x1FFFFF) /* Lower 21 bits */
+#define TOCHUNKINDEX(X, Y, Z) ((uint64_t) ((X) & CHUNKCOORDMASK) << 42 \
+		| (uint64_t) ((Y) & CHUNKCOORDMASK) << 21 \
+		| (uint64_t) ((Z) & CHUNKCOORDMASK))
 
 typedef enum {
     NONE,
@@ -54,10 +40,10 @@ typedef struct {
 } Blockmesh;
 
 typedef struct {
-    uint32_t id : 13;       /* Block type e.g. WIRE */
-    uint32_t variant : 8;   /* Block variant e.g. CONCRETE_GREEN */
-    Rotation rotation : 3;      /* Block rotation */
-    uint32_t metadata : 32; /* Metadata field for general purpose per-block storage */
+    uint16_t id;       /* Block type e.g. WIRE */
+    uint8_t variant;   /* Block variant e.g. CONCRETE_GREEN */
+    Rotation rotation;      /* Block rotation */
+    uint32_t metadata; /* Metadata field for general purpose per-block storage */
 } Blockdata;
 
 typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];

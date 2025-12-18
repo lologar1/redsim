@@ -68,97 +68,37 @@ void client_init(void) {
 		}
 	}
 
-	/* TODO: Retrieve data from disk
-	 * And remesh all chunks */
+	/* Retrieve data from disk */
+#define SAVEFILE SAVES_PATH WORLD_PATH
+	void *save;
+	size_t savesize;
+	if ((save = usf_ftob(SAVEFILE, &savesize))) {
+		fprintf(stderr, "Loading save file %s (%zu bytes)\n", SAVEFILE, savesize);
 
-	/* TESTBED */
-	Blockdata b0 = {
-		.id = 1,
-		.variant = 4,
-		.rotation = NONE,
-		.metadata = 13
-	};
+#define SAVESTRIDE (CHUNKSIZE*CHUNKSIZE*CHUNKSIZE * sizeof(uint64_t) + sizeof(int64_t))
+		Chunkdata *chunkdata;
+		Blockdata blockdata;
+		uint64_t x, y, z, saveblock, i, chunkindex, (*savedata)[CHUNKSIZE][CHUNKSIZE];
+		for (i = 0; i < savesize; i += SAVESTRIDE) {
+			chunkindex = *((uint64_t *) (save + i));
+			savedata = (uint64_t (*)[CHUNKSIZE][CHUNKSIZE]) (save + i + sizeof(int64_t));
+			chunkdata = malloc(sizeof(Chunkdata));
 
-	Blockdata t0 = {
-		.id = 2,
-		.variant = 5,
-		.rotation = NORTH,
-		.metadata = 5
-	};
-	Blockdata t3 = {
-		.id = 1,
-		.variant = 6,
-		.rotation = WEST,
-		.metadata = 13
-	};
-	Blockdata t6 = {
-		.id = 1,
-		.variant = 8,
-		.rotation = DOWN,
-		.metadata = 13
-	};
+			for (x = 0; x < CHUNKSIZE; x++) for (y = 0; y < CHUNKSIZE; y++) for (z = 0; z < CHUNKSIZE; z++) {
+				saveblock = savedata[x][y][z];
 
-	Chunkdata *c0 = calloc(1, sizeof(Chunkdata));
-	Chunkdata *c1 = calloc(1, sizeof(Chunkdata));
-	Chunkdata *c2 = calloc(1, sizeof(Chunkdata));
+				blockdata.id = saveblock >> RSM_SAVE_IDSHIFT & 0xFFFF;
+				blockdata.variant = saveblock >> RSM_SAVE_VARIANTSHIFT & 0xFF;
+				blockdata.rotation = saveblock >> RSM_SAVE_ROTATIONSHIFT & 0x7;
+				blockdata.metadata = saveblock >> RSM_SAVE_METADATASHIFT & 0xFFFFFFFF;
 
-	Chunkdata *p0 = calloc(1, sizeof(Chunkdata));
-	Chunkdata *p1 = calloc(1, sizeof(Chunkdata));
-	Chunkdata *p2 = calloc(1, sizeof(Chunkdata));
-	Chunkdata *p3 = calloc(1, sizeof(Chunkdata));
-	Chunkdata *p4 = calloc(1, sizeof(Chunkdata));
-
-	(*c1)[0][0][0] = b0;
-	(*c1)[CHUNKSIZE-1][CHUNKSIZE-1][CHUNKSIZE-1] = t0;
-	(*c1)[CHUNKSIZE-1][CHUNKSIZE-2][CHUNKSIZE-1] = b0;
-
-	for (int x = 0; x < CHUNKSIZE; x++) {
-		for (int y = 0; y < CHUNKSIZE; y++) {
-			for (int z = 0; z < CHUNKSIZE; z++) {
-				(*c2)[x][y][z] = t0;
+				(*chunkdata)[x][y][z] = blockdata;
 			}
+			usf_inthmput(chunkmap, chunkindex, USFDATAP(chunkdata));
+			cu_asyncRemeshChunk(chunkindex);
 		}
-	}
-	for (int x = 0; x < CHUNKSIZE; x++) {
-		for (int y = 0; y < CHUNKSIZE; y++) {
-			for (int z = 0; z < CHUNKSIZE; z++) {
-				(*c1)[x][y][z] = b0;
-			}
-		}
-	}
-	usf_inthmput(chunkmap, TOCHUNKINDEX(0L, 0L, 0L), USFDATAP(c0));
-	usf_inthmput(chunkmap, TOCHUNKINDEX(-1L, -1L, -1L), USFDATAP(c1));
-	usf_inthmput(chunkmap, TOCHUNKINDEX(0L, 0L, 1L), USFDATAP(c2));
-
-	for (int x = 0; x < CHUNKSIZE; x++) {
-		for (int y = 0; y < CHUNKSIZE; y += 2) {
-			for (int z = 0; z < CHUNKSIZE; z++) {
-				(*p0)[x][y][z] = t3;
-				(*p1)[x][y][z] = b0;
-				(*p2)[x][y][z] = t6;
-				(*p3)[x][y][z] = b0;
-				(*p4)[x][y][z] = b0;
-			}
-		}
-	}
-	usf_inthmput(chunkmap, TOCHUNKINDEX(1L, 1L, 1L), USFDATAP(p0));
-	usf_inthmput(chunkmap, TOCHUNKINDEX(2L, 1L, 1L), USFDATAP(p1));
-	usf_inthmput(chunkmap, TOCHUNKINDEX(3L, 1L, 1L), USFDATAP(p2));
-	usf_inthmput(chunkmap, TOCHUNKINDEX(4L, 1L, 1L), USFDATAP(p3));
-	usf_inthmput(chunkmap, TOCHUNKINDEX(5L, 1L, 1L), USFDATAP(p4));
-
-	cu_asyncRemeshChunk(0);
-	cu_asyncRemeshChunk(TOCHUNKINDEX(-1, -1, -1));
-	cu_asyncRemeshChunk(TOCHUNKINDEX(0, 0, 1));
-
-	cu_asyncRemeshChunk(TOCHUNKINDEX(1, 1, 1));
-	cu_asyncRemeshChunk(TOCHUNKINDEX(2, 1, 1));
-	cu_asyncRemeshChunk(TOCHUNKINDEX(3, 1, 1));
-	cu_asyncRemeshChunk(TOCHUNKINDEX(4, 1, 1));
-	cu_asyncRemeshChunk(TOCHUNKINDEX(5, 1, 1));
-	printf("Test scene loaded\n");
-
-	/* END TESTBED */
+		free(save);
+	} else fprintf(stderr, "No save file loaded!\n");
 
 	cu_generateMeshlist(); /* Subsequently called only on render distance change */
 	gui_updateGUI(); /* Subsequently called only on GUI modification (from user input) */
@@ -166,7 +106,42 @@ void client_init(void) {
 
 void client_savedata(void) {
 	/* Save world to disk */
+	uint64_t x, y, z, i, n;
+	usf_data *entry;
+	uint64_t savedata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE]; /* Blockdata is 64 bits */
+	Chunkdata *chunkdata;
+	Blockdata blockdata;
 
+/* Enough space for all chunks and their chunkindex */
+#define SAVESIZE (chunkmap->size * SAVESTRIDE)
+	void *save, *s;
+	s = save = malloc(SAVESIZE);
+
+	GLuint *chunkmesh; /* To check emptiness */
+	n = i = 0;
+	while ((entry = usf_inthmnext(chunkmap, &i))) { /* Normalize and save chunks */
+		if ((chunkmesh = usf_inthmget(meshmap, entry[0].u).p) == NULL || chunkmesh[2] + chunkmesh[3] == 0)
+			continue; /* Either no mesh or mesh is empty : chunk is empty */
+
+		chunkdata = entry[1].p;
+		for (x = 0; x < CHUNKSIZE; x++) for (y = 0; y < CHUNKSIZE; y++) for (z = 0; z < CHUNKSIZE; z++) {
+			blockdata = (*chunkdata)[x][y][z];
+			savedata[x][y][z] =
+				(uint64_t) blockdata.id << RSM_SAVE_IDSHIFT |
+				(uint64_t) blockdata.variant << RSM_SAVE_VARIANTSHIFT |
+				(uint64_t) blockdata.rotation << RSM_SAVE_ROTATIONSHIFT |
+				(uint64_t) blockdata.metadata << RSM_SAVE_METADATASHIFT;
+		}
+
+		memcpy(s, &entry[0], sizeof(int64_t)); s += sizeof(int64_t); /* Chunk index */
+		memcpy(s, savedata, sizeof(savedata)); s += sizeof(savedata); /* Chunk data */
+		n++; /* Saved chunk */
+	}
+
+	usf_btof(SAVEFILE, save, n * SAVESTRIDE); /* Only write chunks which exist */
+	free(save);
+
+	fprintf(stderr, "Saved %"PRIu64" chunks to disk.\n", n);
 }
 
 /* View stuff */

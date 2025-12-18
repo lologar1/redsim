@@ -49,7 +49,7 @@ void cu_updateMeshlist(void) {
 				meshindex = TOCHUNKINDEX(chunk[0], chunk[1], chunk[2]);
 				mesh = (GLuint *) usf_inthmget(meshmap, meshindex).p;
 
-				if (mesh == NULL) continue; /* No mesh for this chunk; empty */
+				if (mesh == NULL) continue; /* Uninitialized chunk */
 
                 *meshlist++ = mesh;
                 nmesh++;
@@ -93,19 +93,19 @@ void cu_rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter) {
 
 	switch (rotation) {
 		case EAST:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), UPVECTOR);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), GLM_YUP);
 			break;
 		case SOUTH:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(180), UPVECTOR);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(180), GLM_YUP);
 			break;
 		case WEST:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), UPVECTOR);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), GLM_YUP);
 			break;
 		case UP:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), RIGHTVECTOR);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), GLM_XUP);
 			break;
 		case DOWN:
-			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), RIGHTVECTOR);
+			glm_rotate_at(rotAdjust, meshcenter, glm_rad(90), GLM_XUP);
 			break;
 		case NONE:
 		case NORTH:
@@ -117,7 +117,19 @@ void cu_rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter) {
 
 Blockdata *cu_coordsToBlock(vec3 coords, uint64_t *chunkindex) {
 	/* Return the blockdata matching these absolute world offsets. If it is provided, also set chunk to
-	 * the chunk of the block. The chunk is created as empty if it doesn't exist */
+	 * the chunk of the block. The chunk is created as empty if it doesn't exist.
+	 * Important: this is the _proper_ way of safely accessing a block. Directly querying chunkmap with
+	 * a chunk index then checking for an offset within it may yield an uninitialized chunk */
+#define COORDSTOCHUNKINDEX(V) \
+	TOCHUNKINDEX(cu_chunkOffsetConvertFloat(V[0]), \
+			cu_chunkOffsetConvertFloat(V[1]), \
+			cu_chunkOffsetConvertFloat(V[2]))
+
+#define COORDSTOBLOCKDATA(V, CHUNK) \
+	 (&(*CHUNK)[cu_blockOffsetConvertFloat(V[0])] \
+	  [cu_blockOffsetConvertFloat(V[1])] \
+	  [cu_blockOffsetConvertFloat(V[2])])
+
 	uint64_t index;
 	Chunkdata *chunkdata;
 
@@ -130,6 +142,8 @@ Blockdata *cu_coordsToBlock(vec3 coords, uint64_t *chunkindex) {
 	if (chunkindex) *chunkindex = index; /* Pass chunk index */
 
 	return COORDSTOBLOCKDATA(coords, chunkdata); /* Return blockdata */
+#undef COORDSTOCHUNKINDEX
+#undef COORDSTOBLOCKDATA
 }
 
 int64_t cu_chunkOffsetConvertFloat(float absoluteComponent) {
@@ -210,6 +224,7 @@ void getBlockmesh(Blockmesh *blockmesh, uint32_t id, uint32_t variant, Rotation 
 
 	TRANSLOCATEVERTICES(0, opaqueVertices);
 	TRANSLOCATEVERTICES(1, transVertices);
+#undef TRANSLOCATEVERTICES
 }
 
 void *pushRawmesh(void *chunkindexptr) {
@@ -223,12 +238,13 @@ void *pushRawmesh(void *chunkindexptr) {
 	chunkindex = (* (uint64_t *) chunkindexptr);
 
 	/* Get chunk index */
+#define SIGNED21CAST64(N) ((N) | (N & (1 << 20) ? (uint64_t) ~CHUNKCOORDMASK : 0))
 	x = SIGNED21CAST64(chunkindex >> 42);
 	y = SIGNED21CAST64((chunkindex >> 21) & CHUNKCOORDMASK);
 	z = SIGNED21CAST64(chunkindex & CHUNKCOORDMASK);
 
 	if ((chunk = (Chunkdata *) usf_inthmget(chunkmap, chunkindex).p) == NULL) {
-		fprintf(stderr, "Chunk at %lu %lu %lu does not exist, aborting.\n", x, y, z);
+		fprintf(stderr, "Chunk at %"PRId64" %"PRId64" %"PRId64" does not exist, aborting.\n", x, y, z);
 		exit(RSM_EXIT_NOCHUNK);
 	}
 

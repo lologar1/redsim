@@ -31,4 +31,8 @@ clean:
 	rm -rf $(OBJ_DIR)
 	rm -f $(TARGET)
 
-.PHONY: all clean
+r:
+	make clean
+	make
+
+.PHONY: all clean r

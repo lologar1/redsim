@@ -40,7 +40,7 @@ void rsm_move(vec3 position) {
 
 	glm_vec3_copy(speed, movement);
 	glm_vec3_scale(movement, deltaTime, movement);
-	glm_vec3_rotate(movement, -glm_rad(yaw), UPVECTOR);
+	glm_vec3_rotate(movement, -glm_rad(yaw), GLM_YUP);
 
 	/* Collision handling */
 	Blockdata *blockdata;
@@ -107,9 +107,9 @@ void rsm_move(vec3 position) {
 #undef SAFEDISTANCE
 
 			/* Match speed to orientation, kill component and replace it */
-			glm_vec3_rotate(speed, -glm_rad(yaw), UPVECTOR);
+			glm_vec3_rotate(speed, -glm_rad(yaw), GLM_YUP);
 			speed[axis] = 0.0f; /* Kill speed for that component */
-			glm_vec3_rotate(speed, glm_rad(yaw), UPVECTOR);
+			glm_vec3_rotate(speed, glm_rad(yaw), GLM_YUP);
 		}
 	}
 

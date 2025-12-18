@@ -99,6 +99,12 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_MAX_COMMAND_LENGTH 64
 #define RSM_MAX_COMMAND_LOG_LINES 32
 
+/* Pack Blockdata into uint64_t before saving to disk */
+#define RSM_SAVE_IDSHIFT 43
+#define RSM_SAVE_VARIANTSHIFT 35
+#define RSM_SAVE_ROTATIONSHIFT 32
+#define RSM_SAVE_METADATASHIFT 0
+
 #define RSM_BIT_COLLISION (1UL << 0) /* Collidable */
 #define RSM_BIT_ROTATION (1UL << 1) /* Rotatable */
 #define RSM_BIT_CULLFACES (1UL << 2) /* Cull triangles if neighbors hide faces (needs to match fullblock mesh) */
@@ -109,6 +115,7 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define TEXTURE_BLOCK_PATH "blocks/"
 #define TEXTURE_GUI_PATH "gui/"
 #define SAVES_PATH "saves/"
+#define WORLD_PATH "world"
 #define FONT_PATH "liberation-mono/LiberationMono-Regular.ttf"
 #define BLOCKMAP_PATH "blockmap.txt"
 #define GUIMAP_PATH "guimap.txt"
@@ -132,7 +139,8 @@ typedef enum RSM_EXITCODE {
 	RSM_EXIT_BADBOUNDINGBOXDATA,
 	RSM_EXIT_NOCHUNK,
 	RSM_EXIT_THREADFAIL,
-	RSM_EXIT_TEXTFAIL
+	RSM_EXIT_TEXTFAIL,
+	RSM_EXIT_NOSAVE
 } RSM_EXITCODE;
 
 #endif

@@ -137,7 +137,7 @@ void renderer_render(GLFWwindow *window) {
 		 * our camera, effectively tilting the world to simulate having
 		 * moved around. */
 		glm_vec3_add(cameraPos, relativeViewTarget, viewTarget);
-		glm_lookat(cameraPos, viewTarget, UPVECTOR, view);
+		glm_lookat(cameraPos, viewTarget, GLM_YUP, view);
 
 		/* Perspective projection matrix */
 		glm_perspective(glm_rad(RSM_FOV), (float) screenWidth / (float) screenHeight,
@@ -147,7 +147,7 @@ void renderer_render(GLFWwindow *window) {
 		 * glDepthMask and glDepthTest
 		 * glCullFace
 		 * glBlend
-		 * Draw buffer targets */
+		 * Draw buffer targets & their blend functions (if applicable) */
 
 		/* Rendering */
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
@@ -167,7 +167,7 @@ void renderer_render(GLFWwindow *window) {
 		glUniformMatrix4fv(opaqueProjLocation, 1, GL_FALSE, (float *) perspective);
 		for (i = 0; i < nmesh; i++) {
 			glBindVertexArray(meshes[i][0]);
-			glDrawElements(GL_TRIANGLES, meshes[i][2], GL_UNSIGNED_INT, 0);
+			if (meshes[i][2]) glDrawElements(GL_TRIANGLES, meshes[i][2], GL_UNSIGNED_INT, 0);
 		}
 
 		/* Wireframe (highlighting) rendering */
@@ -193,7 +193,7 @@ void renderer_render(GLFWwindow *window) {
 		glUniformMatrix4fv(transProjLocation, 1, GL_FALSE, (float *) perspective);
 		for (i = 0; i < nmesh; i++) {
 			glBindVertexArray(meshes[i][1]);
-			glDrawElements(GL_TRIANGLES, meshes[i][3], GL_UNSIGNED_INT, 0);
+			if (meshes[i][3]) glDrawElements(GL_TRIANGLES, meshes[i][3], GL_UNSIGNED_INT, 0);
 		}
 
 		/* GUI rendering */
