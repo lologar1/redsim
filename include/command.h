@@ -6,8 +6,10 @@
 #include <stdarg.h>
 #include <string.h>
 #include <usfhashmap.h>
+#include <usfskiplist.h>
 #include "rsmlayout.h"
 #include "usfstring.h"
+#include "ret.h"
 #include "client.h"
 
 extern char cmdbuffer[RSM_MAX_COMMAND_LENGTH];

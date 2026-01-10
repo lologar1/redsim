@@ -1,2 +1,0 @@
-float selection[6]
-	Represents the current selection in two absolute coordinate XYZ triplets.

@@ -1,5 +1,5 @@
 Blocks
-	Resistor (Opaque & Trans) -> color-coded + numerical display (software)
+	Resistor (Opaque) -> color-coded + numerical display (software)
 	Diodes (Trans) : Upwards & Downwards [DONE]
 	Constant source (Opaque & Trans) -> numerical display (software)
 	Target (Opaque) [DONE]

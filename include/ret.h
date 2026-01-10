@@ -3,6 +3,7 @@
 
 #include "rsmlayout.h"
 
-extern float selection[6];
+extern int64_t ret_selection[6];
+extern int64_t ret_positions[6];
 
 #endif

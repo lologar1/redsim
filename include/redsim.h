@@ -24,6 +24,26 @@ typedef enum {
 	COMMAND
 } Gamestate;
 
+typedef enum {
+	RSM_BLOCK_AIR,
+	RSM_BLOCK_SILICON,
+	RSM_BLOCK_GLASS,
+	RSM_BLOCK_DIODE,
+	RSM_BLOCK_TARGET,
+	RSM_BLOCK_TRANSISTOR_ANALOG,
+	RSM_BLOCK_TRANSISTOR_DIGITAL,
+	RSM_BLOCK_LATCH,
+	RSM_BLOCK_INVERTER,
+	RSM_BLOCK_BUFFER,
+	RSM_BLOCK_RESISTOR
+} Blocktype;
+
+typedef enum {
+	RSM_SPECIAL_ID,
+	RSM_SPECIAL_SUBMENUSELECT,
+	RSM_SPECIAL_SELECTIONTOOL
+} SpecialVariant;
+
 extern Gamestate gamestate;
 extern GLuint wiremesh[2];
 extern vec3 *playerBBOffsets;

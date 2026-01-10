@@ -19,6 +19,8 @@
 extern float pitch, yaw;
 extern vec3 orientation, position;
 
+extern uint8_t sspower;
+
 extern usf_hashmap *chunkmap, *meshmap, *datamap, *namemap;
 
 extern GLuint **meshes;

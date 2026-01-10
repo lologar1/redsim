@@ -13,6 +13,7 @@ void command_config(uint32_t args, char *argv[]);
 void command_lookat(uint32_t args, char *argv[]);
 void command_set(uint32_t args, char *argv[]);
 void command_setraw(uint32_t args, char *argv[]);
+void command_sspower(uint32_t args, char *argv[]);
 void command_teleport(uint32_t args, char *argv[]);
 
 void cmd_init(void) {
@@ -24,6 +25,7 @@ void cmd_init(void) {
 	ALIAS("help", command_help);
 	ALIAS("set", command_set);
 	ALIAS("setraw", command_setraw);
+	ALIAS("sspower", command_sspower);
 	ALIAS("teleport", command_teleport);
 #undef ALIAS
 
@@ -56,6 +58,8 @@ void cmd_init(void) {
 	ALIAS("lookat", "lookat");
 	ALIAS("set", "set");
 	ALIAS("setraw", "setraw");
+	ALIAS("ss", "sspower");
+	ALIAS("sspower", "sspower");
 	ALIAS("teleport", "teleport")
 	ALIAS("tp", "teleport");
 
@@ -215,6 +219,7 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("lookat: Set pitch and yaw in degrees.\n");
 		cmd_logf("set: Set current selection to block (default state).\n");
 		cmd_logf("setraw: Set current selection to exact blockdata (64 bits).\n");
+		cmd_logf("sspower: Set current signal strength power for variable blocks.\n");
 		cmd_logf("teleport: Sets current absolute position in the world.\n");
 		return;
 	}
@@ -246,6 +251,9 @@ void command_help(uint32_t args, char *argv[]) {
 	} else if (unaliasedptr == command_setraw) {
 		cmd_logf("Syntax: setraw [blockdata]\n");
 		cmd_logf("Set selection to blockdata (64 bits) from decimal value.\n");
+	} else if (unaliasedptr == command_sspower) {
+		cmd_logf("Syntax: sspower [power]\n");
+		cmd_logf("Sets power for placed constant sources and resistors. (Max 255)\n");
 	} else if (unaliasedptr == command_teleport) {
 		cmd_logf("Syntax: teleport [x] [y] [z]\n");
 		cmd_logf("Teleports to the specified absolute coordinates.\n");
@@ -323,7 +331,50 @@ void command_set(uint32_t args, char *argv[]) {
 }
 
 void command_setraw(uint32_t args, char *argv[]) {
+	/* Sets blocks in selection to raw data. */
+	if (args < 5) {
+		cmd_logf("Syntax: %ssetraw [id] [variant] [rotation] [metadata]\n", RSM_COMMAND_PREFIX);
+		return;
+	}
 
+	usf_skiplist *toRemesh;
+	toRemesh = usf_newsk();
+
+	Blockdata *blockdata;
+	uint64_t chunkindex;
+	int64_t x, y, z, a, b, c;
+	for (x = ret_selection[0], a = 0; a < ret_selection[3]; a++)
+	for (y = ret_selection[1], b = 0; b < ret_selection[4]; b++)
+	for (z = ret_selection[2], c = 0; c < ret_selection[5]; c++) {
+		blockdata = cu_coordsToBlock(VEC3(x+a, y+b, z+c), &chunkindex);
+
+		blockdata->id = strtoul(argv[1], NULL, 10);
+		blockdata->variant = strtoul(argv[2], NULL, 10);
+		blockdata->rotation = strtoul(argv[3], NULL, 10);
+		blockdata->metadata = strtoul(argv[4], NULL, 10);
+
+		usf_skset(toRemesh, chunkindex, USFTRUE);
+	}
+
+	uint64_t i;
+	usf_skipnode *node; /* Remesh */
+	for (node = toRemesh->base[0], i = 0; i < toRemesh->size; node = node->nextnodes[0], i++)
+		cu_asyncRemeshChunk(node->index);
+
+	usf_freesk(toRemesh);
+
+	cmd_logf("Affected %"PRIu64" blocks.\n", a*b*c);
+}
+
+void command_sspower(uint32_t args, char *argv[]) {
+	/* Sets sspower for constant sources and resistors */
+	if (args < 2) {
+		cmd_logf("Syntax: %ssspower [power]\n", RSM_COMMAND_PREFIX);
+		return;
+	}
+
+	sspower = USF_CLAMP(strtoul(argv[1], NULL, 10), 1, 255);
+	cmd_logf("Set sspower to %"PRIu8".\n", sspower);
 }
 
 void command_teleport(uint32_t args, char *argv[]) {

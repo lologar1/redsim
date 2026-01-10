@@ -18,6 +18,7 @@
 #define TOCHUNKINDEX(X, Y, Z) ((uint64_t) ((X) & CHUNKCOORDMASK) << 42 \
 		| (uint64_t) ((Y) & CHUNKCOORDMASK) << 21 \
 		| (uint64_t) ((Z) & CHUNKCOORDMASK))
+#define VEC3(X, Y, Z) ((vec3) {(float) (X), (float) (Y), (float) (Z)})
 
 typedef enum {
     NONE,
@@ -30,14 +31,6 @@ typedef enum {
     COMPLEX
 } Rotation;
 
-typedef enum {
-	RSM_AIR,
-	RSM_SILICON,
-	RSM_GLASS,
-	RSM_DIODE,
-	RSM_TARGET
-} Blocktype;
-
 typedef struct {
 	float *opaqueVertices; /* Recalculated for rotation */
 	float *transVertices;
@@ -49,8 +42,8 @@ typedef struct {
 
 typedef struct {
     uint16_t id;       /* Block type e.g. WIRE */
-    uint8_t variant;   /* Block variant e.g. CONCRETE_GREEN */
-    Rotation rotation;      /* Block rotation */
+	uint8_t variant;   /* Block variant e.g. CONCRETE_GREEN */
+	Rotation rotation : 8;      /* Block rotation */
     uint32_t metadata; /* Metadata field for general purpose per-block storage */
 } Blockdata;
 

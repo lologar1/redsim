@@ -6,6 +6,8 @@ float yaw;
 vec3 orientation;
 vec3 position;
 
+uint8_t sspower = 1;
+
 usf_hashmap *chunkmap; /* Maps XYZ (21 bits) to corresponding chunk pointer */
 usf_hashmap *meshmap; /* Maps XYZ (21 bits) to corresponding chunk mesh (array of 4), automatically maintained */
 usf_hashmap *datamap; /* Maps UID to default metadata values */
@@ -95,8 +97,11 @@ void client_init(void) {
 				(*chunkdata)[x][y][z] = blockdata;
 			}
 			usf_inthmput(chunkmap, chunkindex, USFDATAP(chunkdata));
-			cu_asyncRemeshChunk(chunkindex);
 		}
+
+		/* Remesh after loading */
+		for (i = 0; i < savesize; i += SAVESTRIDE) cu_asyncRemeshChunk(*((uint64_t *) (save + i)));
+
 		free(save);
 	} else fprintf(stderr, "No save file loaded!\n");
 

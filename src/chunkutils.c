@@ -2,7 +2,7 @@
 
 Blockmesh **blockmeshes; /* Populated by parseBlockdata */
 
-void getBlockmesh(Blockmesh *blockmesh, uint32_t id, uint32_t variant,
+int32_t getBlockmesh(Blockmesh *blockmesh, uint32_t id, uint32_t variant,
 		Rotation rotation, int64_t x, int64_t y, int64_t z);
 void *pushRawmesh(void *chunkindexptr);
 
@@ -189,10 +189,12 @@ void pathcat(char *destination, int32_t n, ...) {
 	}
 }
 
-void getBlockmesh(Blockmesh *blockmesh, uint32_t id, uint32_t variant, Rotation rotation,
+int32_t getBlockmesh(Blockmesh *blockmesh, uint32_t id, uint32_t variant, Rotation rotation,
 		int64_t x, int64_t y, int64_t z) {
 	/* Return a valid blockmesh containing adjusted vertex positions for a block
 	 * of type id of variant variant with rotation rotation at position xyz */
+	if (id >= MAX_BLOCK_ID) return -1; /* Illegal ID */
+	if (variant >= MAX_BLOCK_VARIANT[id]) variant = 0; /* Default to 0; used by software-determined variants */
 
 	Blockmesh *template;
 	template = &blockmeshes[id][variant];
@@ -225,13 +227,14 @@ void getBlockmesh(Blockmesh *blockmesh, uint32_t id, uint32_t variant, Rotation 
 	TRANSLOCATEVERTICES(0, opaqueVertices);
 	TRANSLOCATEVERTICES(1, transVertices);
 #undef TRANSLOCATEVERTICES
+
+	return 0;
 }
 
 void *pushRawmesh(void *chunkindexptr) {
 	/* Push a new rawmesh to meshqueue for transfer to the GPU. Called asynchronously with pthread */
 	uint64_t chunkindex;
-	int64_t x, y, z;
-	uint32_t a, b, c;
+	int64_t x, y, z, a, b, c;
 	Chunkdata *chunk;
 	Blockdata block;
 
@@ -289,8 +292,15 @@ void *pushRawmesh(void *chunkindexptr) {
 
 				if (block.id == 0) continue; /* Air */
 
-				getBlockmesh(&blockmesh, block.id, block.variant, block.rotation,
-						x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
+				if (getBlockmesh(&blockmesh, block.id, block.variant, block.rotation,
+						x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c)) {
+					fprintf(stderr, "Warning: deleting illegal block ID %"PRIu16" variant %"PRIu8
+							" at coordinates %"PRIu64" %"PRIu64" %"PRIu64".\n",
+							block.id, block.variant, x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
+					memset(cu_coordsToBlock(VEC3(x * CHUNKSIZE + a, y*CHUNKSIZE + b, z * CHUNKSIZE + c), NULL),
+							0, sizeof(Blockdata));
+					continue;
+				}
 
 				/* For fullblock (must be all opaque/trans) culling, meshdata must be four vertices per face and
 				 * respect the order : front, left, back, right, top, bottom */
@@ -302,9 +312,9 @@ void *pushRawmesh(void *chunkindexptr) {
 
 					/* Checks the block at X, Y, Z, and cull vertices at index FACE if it CULLFACES too. */
 #define CHECKFACE(X, Y, Z, FACE) \
-					if (!((X) < CHUNKSIZE && (Y) < CHUNKSIZE && (Z) < CHUNKSIZE \
-							&& ((*chunk)[X][Y][Z].metadata & RSM_BIT_CULLFACES) \
-							&& (!((*chunk)[X][Y][Z].metadata & RSM_BIT_CONDUCTOR)) == culltrans)) { \
+					neighbor = cu_coordsToBlock(VEC3(X, Y, Z), NULL); \
+					if (!(neighbor->metadata & RSM_BIT_CULLFACES) \
+							|| (!(neighbor->metadata & RSM_BIT_CONDUCTOR)) != culltrans) { \
 						memcpy(culled + 4 * NMEMB_VERTEX * i, /* Next free spot */ \
 								cullbuf + 4 * NMEMB_VERTEX * (FACE-1), /* Culled face */ \
 								4 * NMEMB_VERTEX * sizeof(float)); /* Size of face */ \
@@ -312,13 +322,15 @@ void *pushRawmesh(void *chunkindexptr) {
 					}
 
 					/* Note that the rotation is decremented by 1 in CHECKFACE to yield true face index */
-					CHECKFACE(a, b, c + 1, FROMNORTH[block.rotation]);
-					CHECKFACE(a + 1, b, c, FROMWEST[block.rotation]);
-					CHECKFACE(a, b, c - 1, FROMSOUTH[block.rotation]);
-					CHECKFACE(a - 1, b, c, FROMEAST[block.rotation]);
-					CHECKFACE(a, b + 1, c, FROMUP[block.rotation]);
-					CHECKFACE(a, b - 1, c, FROMDOWN[block.rotation]);
+					Blockdata *neighbor;
+					CHECKFACE(x*CHUNKSIZE + a, y*CHUNKSIZE + b, z*CHUNKSIZE + c + 1, FROMNORTH[block.rotation]);
+					CHECKFACE(x*CHUNKSIZE + a + 1, y*CHUNKSIZE + b, z*CHUNKSIZE + c, FROMWEST[block.rotation]);
+					CHECKFACE(x*CHUNKSIZE + a, y*CHUNKSIZE + b, z*CHUNKSIZE + c - 1, FROMSOUTH[block.rotation]);
+					CHECKFACE(x*CHUNKSIZE + a - 1, y*CHUNKSIZE + b, z*CHUNKSIZE + c, FROMEAST[block.rotation]);
+					CHECKFACE(x*CHUNKSIZE + a, y*CHUNKSIZE + b + 1, z*CHUNKSIZE + c, FROMUP[block.rotation]);
+					CHECKFACE(x*CHUNKSIZE + a, y*CHUNKSIZE + b - 1, z*CHUNKSIZE + c, FROMDOWN[block.rotation]);
 					memcpy(cullbuf, culled, 4 * NMEMB_VERTEX * i * sizeof(float));
+#undef CHECKFACE
 
 					/* Adjust counts */
 					blockmesh.count[culltrans ? 3 : 2] = 6 * i;

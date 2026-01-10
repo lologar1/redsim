@@ -6,7 +6,7 @@ vec3 *playerBBOffsets;
 uint32_t nPlayerBBOffsets;
 
 Blockdata *lookingAt, *lookingAdjacent;
-uint64_t lookingChunkIndex, lookingAdjChunkIndex;
+uint64_t lookingBlockPos[3], lookingChunkIndex, lookingAdjChunkIndex;
 int32_t lookingAxis;
 
 void rsm_move(vec3 position) {
@@ -147,8 +147,8 @@ void rsm_updateWiremesh(void) {
 	float sx, sy, sz, sa, sb, sc;
 
 	/* Selection coords and dimensions */
-	sa = selection[0]; sb = selection[1]; sc = selection[2];
-	sx = selection[3] - sa; sy = selection[4] - sb; sz = selection[5] - sc;
+	sa = ret_selection[0]; sb = ret_selection[1]; sc = ret_selection[2];
+	sx = ret_selection[3]; sy = ret_selection[4]; sz = ret_selection[5];
 
 	/* Block highlighting coords and dimensions */
 	vec3 looking, pos;
@@ -191,6 +191,8 @@ void rsm_updateWiremesh(void) {
 	/* Once more to catch final step */
 	lookingAt = cu_coordsToBlock(gridpos, &lookingChunkIndex);
 brk:
+	/* Set block pos (uint64_t) for lookingAt */
+	lookingBlockPos[0] = gridpos[0]; lookingBlockPos[1] = gridpos[1]; lookingBlockPos[2] = gridpos[2];
 
 	/* Normals set to point upwards as to not be illegal (still processed by opaque fragment shader) */
 	float vertices[8 * 8 * 2] = {
@@ -244,14 +246,52 @@ void rsm_interact(void) {
 	uint64_t uid, metadata;
 	uid = ASUID(hotbar[hotbarIndex][hotslotIndex][0], hotbar[hotbarIndex][hotslotIndex][1]);
 
-	if (RSM_LEFTCLICK) {
+	if (RSM_MIDDLECLICK && lookingAt->id) { /* Pipette tool */
+		RSM_MIDDLECLICK = 0;
+
+		hotbar[hotbarIndex][hotslotIndex][0] = lookingAt->id;
+		hotbar[hotbarIndex][hotslotIndex][1] = lookingAt->variant;
+		gui_updateGUI();
+		return;
+	}
+
+	if (uid == ASUID(RSM_SPECIAL_ID, RSM_SPECIAL_SELECTIONTOOL)) { /* Selection tool */
+		if (RSM_LEFTCLICK) {
+			RSM_LEFTCLICK = 0;
+			memcpy(ret_positions, lookingBlockPos, 3 * sizeof(uint64_t));
+		} else if (RSM_RIGHTCLICK) {
+			RSM_RIGHTCLICK = 0;
+			memcpy(ret_positions + 3, lookingBlockPos, 3 * sizeof(uint64_t));
+		}
+
+		int64_t i, minpos, maxpos;
+		for (i = 0; i < 3; i++) { /* Create selection */
+			maxpos = USF_MAX(ret_positions[i], ret_positions[i + 3]);
+			minpos = USF_MIN(ret_positions[i], ret_positions[i + 3]);
+
+			ret_selection[i] = minpos;
+			ret_selection[i + 3] = maxpos - minpos + 1;
+		}
+		return;
+	}
+
+	if (RSM_LEFTCLICK) { /* Normal block breaking */
 		RSM_LEFTCLICK = 0; /* Consume */
 		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
 		cu_asyncRemeshChunk(lookingChunkIndex);
 		return;
 	}
 
-	metadata = usf_inthmget(datamap, uid).u; /* 0 if not specified */
+	/* Block placement & interaction */
+	switch(GETID(uid)) { /* Special software-determined variants don't fit the usual mold */
+		case RSM_BLOCK_RESISTOR:
+			metadata = usf_inthmget(datamap, ASUID(RSM_BLOCK_RESISTOR, 0)).u;
+			break;
+		default:
+			metadata = usf_inthmget(datamap, uid).u; /* 0 if not specified */
+			break;
+	}
+
 	if (RSM_RIGHTCLICK) {
 		RSM_RIGHTCLICK = 0;
 
@@ -279,12 +319,6 @@ void rsm_interact(void) {
 
 		cu_asyncRemeshChunk(lookingAdjChunkIndex);
 		cu_asyncRemeshChunk(lookingChunkIndex);
-	}
-
-	if (RSM_MIDDLECLICK && lookingAt->id) { /* Pipette tool; don't consume as it only modifies a hotbar slot */
-		hotbar[hotbarIndex][hotslotIndex][0] = lookingAt->id;
-		hotbar[hotbarIndex][hotslotIndex][1] = lookingAt->variant;
-		gui_updateGUI();
 	}
 }
 
