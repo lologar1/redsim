@@ -1,7 +1,16 @@
-GUI rework (cleaner implementation) (0.8)
-(DO NOT SKIP) Documentation update !
-Commands
-Save to disk
-Textures and 3D models (+ special placements for some) (0.9)
-eval (compiling to graph)
-polishing up (1.0)
+Blocks
+	Resistor (Opaque & Trans) -> color-coded + numerical display (software)
+	Diodes (Trans) : Upwards & Downwards [DONE]
+	Constant source (Opaque & Trans) -> numerical display (software)
+	Target (Opaque) [DONE]
+
+Components
+	Wire
+	Torch [DONE]
+	Analog transistor (SS subtract) [DONE]
+	Digital transistor (SS compare) [DONE]
+	Buffer (SS boost + delay: 1, 2, 4, 8) [DONE]
+	Latch (SS boost + conditional write) [DONE]
+	Digital lamp
+	Analog lamp
+	Lever, button... (player interaction)

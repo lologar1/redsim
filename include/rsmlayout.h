@@ -56,8 +56,8 @@ extern float RSM_MOUSE_SENSITIVITY;
 #define RSM_INVENTORY_SUBMENUS 4
 
 #define RSM_FPS 240.0f
-#define FPS_CAP false
-#define VSYNC false
+#define FPS_CAP true
+#define VSYNC true
 
 #define CHUNKSIZE 32
 extern float RSM_REACH;
@@ -91,6 +91,8 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_INVENTORY_SLOT_SPRITE_OFFSET_PIXELS (RSM_GUI_SCALING_FACTOR * 8)
 #define RSM_COMMAND_TEXT_SCALING (RSM_GUI_SCALING_FACTOR * RSM_COMMAND_TEXT_SIZE)
 
+#define NMEMB_VERTEX (sizeof(Vertex) / sizeof(float))
+
 #define RSM_MAX_BLOCKMESH_VERTICES 512
 #define RSM_MAX_BLOCKMESH_INDICES 2048
 #define RSM_MAX_PATH_NAME_LENGTH 512
@@ -109,6 +111,8 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_BIT_ROTATION (1UL << 1) /* Rotatable */
 #define RSM_BIT_CULLFACES (1UL << 2) /* Cull triangles if neighbors hide faces (needs to match fullblock mesh) */
 #define RSM_BIT_CONDUCTOR (1UL << 3) /* Can be hard-powered */
+#define RSM_BIT_TOPSUPPORTED (1UL << 4) /* Needs support underneath */
+#define RSM_BIT_SIDESUPPORTED (1UL << 5) /* Needs support from the sides */
 
 #define TYPEFACE_PATH "typefaces/"
 #define RESOURCE_BASE_PATH "textures/"

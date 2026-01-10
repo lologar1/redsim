@@ -30,12 +30,20 @@ typedef enum {
     COMPLEX
 } Rotation;
 
+typedef enum {
+	RSM_AIR,
+	RSM_SILICON,
+	RSM_GLASS,
+	RSM_DIODE,
+	RSM_TARGET
+} Blocktype;
+
 typedef struct {
 	float *opaqueVertices; /* Recalculated for rotation */
 	float *transVertices;
 	uint32_t *opaqueIndices; /* Never change */
 	uint32_t *transIndices;
-	/* For count : nmembers is as follows : opaque vertices, trans vertices, opaque indices, trans indices */
+	/* For count : nmembers (of types) is as follows : opaque vert, trans vert, opaque ind, trans ind */
 	uint32_t count[4]; /* Never change */
 } Blockmesh;
 

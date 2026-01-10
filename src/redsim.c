@@ -7,6 +7,7 @@ uint32_t nPlayerBBOffsets;
 
 Blockdata *lookingAt, *lookingAdjacent;
 uint64_t lookingChunkIndex, lookingAdjChunkIndex;
+int32_t lookingAxis;
 
 void rsm_move(vec3 position) {
 	/* Change player position each frame according to movement) */
@@ -130,7 +131,7 @@ void rsm_initWiremesh(void) {
 	/* Need to match attributes with normal rendering as we use the same shaders (weird, but simpler this way
 	 * as wiremeshes are used only for rendering highlighting) */
 	glEnableVertexAttribArray(0); /* Vertex position */
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (0 * sizeof(float)));
 	glEnableVertexAttribArray(1); /* Normals */
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
 	glEnableVertexAttribArray(2); /* Texture mappings */
@@ -170,22 +171,21 @@ void rsm_updateWiremesh(void) {
 #define TMAX(i) tDelta[i] ? (tDelta[i] * ((step[i] > 0 ? (gridpos[i]+1) - pos[i] : pos[i] - gridpos[i]))) : 1.0f
 	vec3 tMax = { TMAX(0), TMAX(1), TMAX(2) };
 
-	int32_t axis;
 	do {
 		lookingAt = cu_coordsToBlock(gridpos, &lookingChunkIndex);
 
 		if (lookingAt->id) goto brk; /* Block exists and isn't air */
 
-		/* Determine which axis is crossed next, update t */
-		axis = tMax[0] < tMax[1] ? 0 : 1;
-		axis = tMax[axis] < tMax[2] ? axis : 2;
+		/* Determine which axis is crossed next, update t. Axis global for use elsewhere. */
+		lookingAxis = tMax[0] < tMax[1] ? 0 : 1;
+		lookingAxis = tMax[lookingAxis] < tMax[2] ? lookingAxis : 2;
 
 		/* Update face position with the one we just entered */
 		lookingAdjChunkIndex = lookingChunkIndex;
 		lookingAdjacent = lookingAt;
 
-		gridpos[axis] += step[axis];
-		tMax[axis] += tDelta[axis];
+		gridpos[lookingAxis] += step[lookingAxis];
+		tMax[lookingAxis] += tDelta[lookingAxis];
 		if (glm_vec3_isnan(tMax)) exit(1);
 	} while (glm_vec3_min(tMax) < 1.0f);
 	/* Once more to catch final step */
@@ -236,7 +236,7 @@ brk:
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_DYNAMIC_DRAW);
 	glBindVertexArray(0);
 
-	wiremesh[1] = sizeof(indices)/sizeof(uint32_t);
+	wiremesh[1] = sizeof(indices)/sizeof(indices[0]);
 }
 
 void rsm_interact(void) {
@@ -314,7 +314,7 @@ void rsm_checkMeshes(void) {
 			glBindVertexArray(opaqueVAO);
 			glBindBuffer(GL_ARRAY_BUFFER, opaqueVBO); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, opaqueEBO);
 			glEnableVertexAttribArray(0); /* Vertex position */
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (0 * sizeof(float)));
 			glEnableVertexAttribArray(1); /* Normals */
 			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
 			glEnableVertexAttribArray(2); /* Texture mappings */
@@ -322,7 +322,7 @@ void rsm_checkMeshes(void) {
 			glBindVertexArray(transVAO);
 			glBindBuffer(GL_ARRAY_BUFFER, transVBO); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, transEBO);
 			glEnableVertexAttribArray(0); /* Vertex position */
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (0 * sizeof(float)));
 			glEnableVertexAttribArray(1); /* Normals */
 			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
 			glEnableVertexAttribArray(2); /* Texture mappings */
@@ -338,6 +338,7 @@ void rsm_checkMeshes(void) {
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, rawmesh->nOV*sizeof(float), rawmesh->opaqueVertexBuffer, GL_DYNAMIC_DRAW);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, rawmesh->nOI * sizeof(uint32_t), rawmesh->opaqueIndexBuffer, GL_DYNAMIC_DRAW);
+
 		glBindVertexArray(mesh[1]); /* Trans */
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);

@@ -4,6 +4,8 @@ Variants live on the same line and are separated by a single space character, wi
 
 If a handle starts with *, then a corresponding item sprite is assumed to exist. The sprites must be packed in their own GUI texture bundles from right to left, up to down, according to the order their handles appear in blockmap.
 
+If a handle instead starts with !, then no corresponding item sprite nor block data is assumed to exist. This is used for on-the-fly computed meshes, such as wires or resistors which have a wide variety of possible states depending on their variant.
+
 If a handle contains $, then the decimal number following it is taken as the number of textures that block uses. The default is 1.
 
 If a handle contains :, then the decimal number following it is taken as the metadata for that handle. The default is 0.

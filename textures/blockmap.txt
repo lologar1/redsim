@@ -1,4 +1,10 @@
 *air *SPRITE_SUBMENUSELECT *SPRITE_SELECTIONTOOL *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER *SPRITE_PLACEHOLDER
 *silicon_black:13 *silicon_gray:13 *silicon_silver:13 *silicon_white:13 *silicon_blue:13 *silicon_cyan:13 *silicon_azure:13 *silicon_green:13 *silicon_red:13 *silicon_orange:13 *silicon_yellow:13 *silicon_lime:13 *silicon_purple:13 *silicon_magenta:13 *silicon_pink:13 *silicon_brown:13
 *glass_black:5 *glass_gray:5 *glass_silver:5 *glass_white:5 *glass_blue:5 *glass_cyan:5 *glass_azure:5 *glass_green:5 *glass_red:5 *glass_orange:5 *glass_yellow:5 *glass_lime:5 *glass_purple:5 *glass_magenta:5 *glass_pink:5 *glass_brown:5
-*stone$2:15 *transstone:5
+*diode_up$2:5 *diode_down$2:5
+*target:13
+*transistor_analog_off$3:19 *transistor_analog_on$3:19
+*transistor_digital_off$3:19 *transistor_digital_on$3:19
+*latch_off$3:19 *latch_on$3:19
+*inverter_top_off:16 *inverter_top_on:16 *inverter_side_off:34 *inverter_side_on:34
+*buffer_1_off$3:19 *buffer_1_on$3:19 *buffer_2_off$3:19 *buffer_2_on$3:19 *buffer_4_off$3:19 *buffer_4_on$3:19 *buffer_8_off$3:19 *buffer_8_on$3:19

@@ -7,6 +7,8 @@
 #include "ft2build.h"
 #include FT_FREETYPE_H
 
+#include "usfmath.h"
+
 /* Priority list for which GUI elements get drawn in front. This list MUST mimic
  * the order in guimap as indices are also used for texture atlas offsetting
  * TOP = shown with most priority (smallest Z) */

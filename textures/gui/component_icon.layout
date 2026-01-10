@@ -1,3 +1,8 @@
-SPRITE_SUBMENUSELECT
-stone
-transstone
+transistor_analog_off
+transistor_digital_off
+latch_off
+inverter_top_off
+buffer_1_off
+buffer_2_off
+buffer_4_off
+buffer_8_off

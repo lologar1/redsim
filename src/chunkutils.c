@@ -248,7 +248,7 @@ void *pushRawmesh(void *chunkindexptr) {
 		exit(RSM_EXIT_NOCHUNK);
 	}
 
-	float culled[4 * 8 * 6], *cullbuf; /* Face culling buffer and rotation information */
+	float culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* Face culling buffer and rotation information */
 	static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
 	static const Rotation FROMWEST[7] = { WEST, WEST, NORTH, EAST, SOUTH, WEST, WEST };
 	static const Rotation FROMSOUTH[7] = { SOUTH, SOUTH, WEST, NORTH, EAST, UP, DOWN };
@@ -302,11 +302,12 @@ void *pushRawmesh(void *chunkindexptr) {
 
 					/* Checks the block at X, Y, Z, and cull vertices at index FACE if it CULLFACES too. */
 #define CHECKFACE(X, Y, Z, FACE) \
-					/* If block is unobstructed or on chunkborder (don't bother checking other chunks) */ \
 					if (!((X) < CHUNKSIZE && (Y) < CHUNKSIZE && (Z) < CHUNKSIZE \
 							&& ((*chunk)[X][Y][Z].metadata & RSM_BIT_CULLFACES) \
 							&& (!((*chunk)[X][Y][Z].metadata & RSM_BIT_CONDUCTOR)) == culltrans)) { \
-						memcpy(culled + 32 * i, cullbuf + 32 * (FACE-1), 32 * sizeof(float)); \
+						memcpy(culled + 4 * NMEMB_VERTEX * i, /* Next free spot */ \
+								cullbuf + 4 * NMEMB_VERTEX * (FACE-1), /* Culled face */ \
+								4 * NMEMB_VERTEX * sizeof(float)); /* Size of face */ \
 						i++; \
 					}
 
@@ -317,18 +318,18 @@ void *pushRawmesh(void *chunkindexptr) {
 					CHECKFACE(a - 1, b, c, FROMEAST[block.rotation]);
 					CHECKFACE(a, b + 1, c, FROMUP[block.rotation]);
 					CHECKFACE(a, b - 1, c, FROMDOWN[block.rotation]);
-					memcpy(cullbuf, culled, 32 * i * sizeof(float));
+					memcpy(cullbuf, culled, 4 * NMEMB_VERTEX * i * sizeof(float));
 
-					/* Adjust index count. O.K. since indices are agnostic of vertices and all triangles in the
-					 * fullblock mesh are rendered according to the same pattern */
-					blockmesh.count[culltrans + 2] = 6 * i;
+					/* Adjust counts */
+					blockmesh.count[culltrans ? 3 : 2] = 6 * i;
+					blockmesh.count[culltrans ? 1 : 0] = NMEMB_VERTEX * 4 * i;
 				}
 
 				/* Adjust indices with running total. All vertices assumed to be used at least once */
 				for (i = 0; i < blockmesh.count[2]; i++) blockmesh.opaqueIndices[i] += runningOpaqueIndexOffset;
 				for (i = 0; i < blockmesh.count[3]; i++) blockmesh.transIndices[i] += runningTransIndexOffset;
-				runningOpaqueIndexOffset += blockmesh.count[0] / (sizeof(Vertex) / sizeof(float));
-				runningTransIndexOffset += blockmesh.count[1] / (sizeof(Vertex) / sizeof(float));
+				runningOpaqueIndexOffset += blockmesh.count[0] / NMEMB_VERTEX;
+				runningTransIndexOffset += blockmesh.count[1] / NMEMB_VERTEX;
 
 				/* Copy to rawmesh while updating pointers */
 				memcpy(ov_bufptr, blockmesh.opaqueVertices, blockmesh.count[0] * sizeof(float));

@@ -23,7 +23,7 @@ void gu_initGUI(void) {
 		glBindBuffer(GL_ARRAY_BUFFER, guiVBO[i]);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, guiEBO[i]);
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) 0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) (0 * sizeof(float)));
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) (3 * sizeof(float)));
 	}
@@ -204,6 +204,7 @@ float gu_guiAtlasAdjust(float y, GUIPriority priority) {
 }
 
 void gu_meshSet(uint32_t priority, float *v, uint32_t sizev, uint32_t *i, uint32_t sizei) {
+	/* Send GUI mesh to GPU buffers */
 	glBindVertexArray(guiVAO[priority]);
 	glBindBuffer(GL_ARRAY_BUFFER, guiVBO[priority]);
 	glBufferData(GL_ARRAY_BUFFER, sizev * sizeof(float), v, GL_DYNAMIC_DRAW);
