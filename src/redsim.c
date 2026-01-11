@@ -72,7 +72,10 @@ void rsm_move(vec3 position) {
 			if (!(blockdata->metadata & RSM_BIT_COLLISION)) continue; /* Block has no collision */
 
 			/* Get bounding box data and adjust player position for precise float computations */
-			memcpy(boundingbox, boundingboxes[blockdata->id][blockdata->variant], sizeof(float [6]));
+			memcpy(boundingbox, boundingboxes[blockdata->id]
+					[blockdata->variant >= MAX_BLOCK_VARIANT[blockdata->id] ? 0 : blockdata->variant],
+					sizeof(float [6])); /* Clamp variant at 0 for certain blocks */
+
 			glm_vec3_sub(playerCornerNew, blockposition, relativePCNew);
 			glm_vec3_sub(playerCornerOld, blockposition, relativePCOld);
 
@@ -255,24 +258,34 @@ void rsm_interact(void) {
 		return;
 	}
 
-	if (uid == ASUID(RSM_SPECIAL_ID, RSM_SPECIAL_SELECTIONTOOL)) { /* Selection tool */
-		if (RSM_LEFTCLICK) {
-			RSM_LEFTCLICK = 0;
-			memcpy(ret_positions, lookingBlockPos, 3 * sizeof(uint64_t));
-		} else if (RSM_RIGHTCLICK) {
-			RSM_RIGHTCLICK = 0;
-			memcpy(ret_positions + 3, lookingBlockPos, 3 * sizeof(uint64_t));
-		}
+	switch (uid) { /* Tools */
+		case ASUID(RSM_SPECIAL_ID, RSM_SPECIAL_SELECTIONTOOL): /* Selection tool */
+			if (RSM_LEFTCLICK) {
+				RSM_LEFTCLICK = 0;
+				memcpy(ret_positions, lookingBlockPos, 3 * sizeof(uint64_t));
+			} else if (RSM_RIGHTCLICK) {
+				RSM_RIGHTCLICK = 0;
+				memcpy(ret_positions + 3, lookingBlockPos, 3 * sizeof(uint64_t));
+			}
 
-		int64_t i, minpos, maxpos;
-		for (i = 0; i < 3; i++) { /* Create selection */
-			maxpos = USF_MAX(ret_positions[i], ret_positions[i + 3]);
-			minpos = USF_MIN(ret_positions[i], ret_positions[i + 3]);
+			int64_t i, minpos, maxpos;
+			for (i = 0; i < 3; i++) { /* Create selection */
+				maxpos = USF_MAX(ret_positions[i], ret_positions[i + 3]);
+				minpos = USF_MIN(ret_positions[i], ret_positions[i + 3]);
 
-			ret_selection[i] = minpos;
-			ret_selection[i + 3] = maxpos - minpos + 1;
-		}
-		return;
+				ret_selection[i] = minpos;
+				ret_selection[i + 3] = maxpos - minpos + 1;
+			}
+			return;
+
+		case ASUID(RSM_SPECIAL_ID, RSM_SPECIAL_INFORMATIONTOOL): /* Information tool */
+			if (RSM_LEFTCLICK || RSM_RIGHTCLICK || RSM_MIDDLECLICK) {
+				RSM_LEFTCLICK = RSM_RIGHTCLICK = RSM_MIDDLECLICK = 0;
+				cmd_logf("ID: %"PRIu16", VAR: %"PRIu8", ROT: %"PRIu8", MTD: %"PRIu32"\n",
+						lookingAt->id, lookingAt->variant, lookingAt->rotation, lookingAt->metadata);
+				gui_updateGUI();
+			}
+			return;
 	}
 
 	if (RSM_LEFTCLICK) { /* Normal block breaking */
@@ -283,9 +296,11 @@ void rsm_interact(void) {
 	}
 
 	/* Block placement & interaction */
-	switch(GETID(uid)) { /* Special software-determined variants don't fit the usual mold */
+	switch (GETID(uid)) { /* Special software-determined variants don't fit the usual mold */
 		case RSM_BLOCK_RESISTOR:
-			metadata = usf_inthmget(datamap, ASUID(RSM_BLOCK_RESISTOR, 0)).u;
+		case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
+		case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
+			metadata = usf_inthmget(datamap, ASUID(GETID(uid), 0)).u;
 			break;
 		default:
 			metadata = usf_inthmget(datamap, uid).u; /* 0 if not specified */
@@ -295,14 +310,35 @@ void rsm_interact(void) {
 	if (RSM_RIGHTCLICK) {
 		RSM_RIGHTCLICK = 0;
 
-		if (lookingAt->id) {
-			/* TODO block interaction */
-		} else lookingAdjacent = lookingAt; /* Place there instead */
+		if (RSM_DOWN) goto place; /* This is copied from Minecraft; descending prevents interaction */
 
+		switch (lookingAt->id) {
+			case RSM_BLOCK_BUFFER:
+				lookingAt->variant = (lookingAt->variant + 2) % 8; /* Change delay (leave powered state alone) */
+				break;
+			case RSM_BLOCK_AIR: /* Allow air placement */
+				lookingAdjacent = lookingAt; /* Place there instead */
+			default:
+				goto place;
+		}
+		cu_asyncRemeshChunk(lookingChunkIndex); /* Interacted */
+		return;
+
+place:
 		if (lookingAdjacent == NULL) return; /* May happen right after init if spawned in a block */
 
-		if ((lookingAdjacent->id = GETID(uid)) == 0) return; /* Avoid littering when 'placing' items (id 0) */
-		lookingAdjacent->variant = GETVARIANT(uid);
+		if ((lookingAdjacent->id = GETID(uid)) == 0) return; /* Shouldn't place air or items */
+
+		switch (GETID(uid)) {
+			case RSM_BLOCK_RESISTOR:
+			case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
+			case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
+				lookingAdjacent->variant = sspower;
+				break;
+			default:
+				lookingAdjacent->variant = GETVARIANT(uid);
+				break;
+		}
 		lookingAdjacent->metadata = metadata;
 
 		if (metadata & RSM_BIT_ROTATION) {

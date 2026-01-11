@@ -28,17 +28,19 @@ typedef enum {
 } GUIPriority;
 #define GUI_PICON pSolidIcon /* First submenu icon */
 
-extern GLuint guiAtlas, guiVAO[MAX_GUI_PRIORITY];
-extern uint32_t nGUIIndices[MAX_GUI_PRIORITY];
-extern float lineheight;
-extern int32_t GUI_SCHEDULEDUPDATE; /* Flag set by updateGUI, consumed each frame if need be */
-
 typedef struct Textchar {
 	float uv[4]; /* Coords in guiAtlas */
 	int32_t size[2]; /* In pixels */
 	int32_t bearing[2];
 	int32_t advance;
 } Textchar;
+
+extern GLuint guiAtlas, guiVAO[MAX_GUI_PRIORITY];
+extern uint32_t nGUIIndices[MAX_GUI_PRIORITY];
+extern float lineheight;
+extern int32_t GUI_SCHEDULEDUPDATE; /* Flag set by updateGUI, consumed each frame if need be */
+
+extern Textchar textchars[128];
 
 void gu_initGUI(void);
 void gu_parseGUIdata(void);

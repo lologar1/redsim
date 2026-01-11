@@ -190,6 +190,8 @@ void renderItemSprite(uint64_t id, uint64_t variant, float x, float y, float w, 
 	uint64_t spriteid, spritetex, spriteoffset;
 	float sox, soy;
 
+	if (id >= MAX_BLOCK_ID) return; /* Invalid sprite */
+	if (variant >= MAX_BLOCK_VARIANT[id]) variant = 0; /* Default to 0 */
 	if (id == 0 && variant == 0) return; /* Holding air */
 
 	spriteid = spriteids[id][variant]; /* Get sprite addition order to the atlas from spriteids */

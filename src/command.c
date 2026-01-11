@@ -218,7 +218,7 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("config: Change runtime variables.\n");
 		cmd_logf("lookat: Set pitch and yaw in degrees.\n");
 		cmd_logf("set: Set current selection to block (default state).\n");
-		cmd_logf("setraw: Set current selection to exact blockdata (64 bits).\n");
+		cmd_logf("setraw: Set current selection to exact blockdata.\n");
 		cmd_logf("sspower: Set current signal strength power for variable blocks.\n");
 		cmd_logf("teleport: Sets current absolute position in the world.\n");
 		return;
@@ -249,8 +249,8 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("Syntax: set [blockname]\n");
 		cmd_logf("Set selection to default blockdata matching blockname.\n");
 	} else if (unaliasedptr == command_setraw) {
-		cmd_logf("Syntax: setraw [blockdata]\n");
-		cmd_logf("Set selection to blockdata (64 bits) from decimal value.\n");
+		cmd_logf("Syntax: %ssetraw [id] [variant] [rotation] [metadata]\n");
+		cmd_logf("Set selection to exact blockdata.");
 	} else if (unaliasedptr == command_sspower) {
 		cmd_logf("Syntax: sspower [power]\n");
 		cmd_logf("Sets power for placed constant sources and resistors. (Max 255)\n");
@@ -327,7 +327,44 @@ void command_lookat(uint32_t args, char *argv[]) {
 }
 
 void command_set(uint32_t args, char *argv[]) {
+	/* Sets block with default metadata and no rotation */
+	if (args < 2) {
+		cmd_logf("Syntax: %sset [blockname]\n", RSM_COMMAND_PREFIX);
+		return;
+	}
 
+	uint64_t uid, id, variant, metadata;
+	uid = usf_strhmget(namemap, argv[1]).u;
+	id = GETID(uid); variant = GETVARIANT(uid);
+	metadata = usf_inthmget(datamap, uid).u;
+
+	usf_skiplist *toRemesh;
+	toRemesh = usf_newsk();
+
+	Blockdata *blockdata;
+	uint64_t chunkindex;
+	int64_t x, y, z, a, b, c;
+	for (x = ret_selection[0], a = 0; a < ret_selection[3]; a++)
+	for (y = ret_selection[1], b = 0; b < ret_selection[4]; b++)
+	for (z = ret_selection[2], c = 0; c < ret_selection[5]; c++) {
+		blockdata = cu_coordsToBlock(VEC3(x+a, y+b, z+c), &chunkindex);
+
+		blockdata->id = id;
+		blockdata->variant = variant;
+		blockdata->rotation = 0; /* NONE */
+		blockdata->metadata = metadata;
+
+		usf_skset(toRemesh, chunkindex, USFTRUE);
+	}
+
+	uint64_t i;
+	usf_skipnode *node; /* Remesh */
+	for (node = toRemesh->base[0], i = 0; i < toRemesh->size; node = node->nextnodes[0], i++)
+		cu_asyncRemeshChunk(node->index);
+
+	usf_freesk(toRemesh);
+
+	cmd_logf("Affected %"PRIu64" blocks.\n", a*b*c);
 }
 
 void command_setraw(uint32_t args, char *argv[]) {

@@ -251,7 +251,8 @@ void *pushRawmesh(void *chunkindexptr) {
 		exit(RSM_EXIT_NOCHUNK);
 	}
 
-	float culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* Face culling buffer and rotation information */
+	float culled[4 * NMEMB_VERTEX * 6], *cullbuf;
+	cullbuf = NULL; /* Face culling buffer and rotation information */
 	static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
 	static const Rotation FROMWEST[7] = { WEST, WEST, NORTH, EAST, SOUTH, WEST, WEST };
 	static const Rotation FROMSOUTH[7] = { SOUTH, SOUTH, WEST, NORTH, EAST, UP, DOWN };
@@ -275,7 +276,7 @@ void *pushRawmesh(void *chunkindexptr) {
 	/* Scratchpad buffers for the entire mesh. Allocating maximum buffer size to avoid dynamic handling, as
 	 * although it is a large allocation, it is always the same size, avoiding fragmentation */
 	Rawmesh *rawmesh = malloc(sizeof(Rawmesh));
-	char *buffers = malloc(ov_bufsiz + tv_bufsiz + oi_bufsiz + ti_bufsiz); /* char for ptr arithmetic */
+	void *buffers = malloc(ov_bufsiz + tv_bufsiz + oi_bufsiz + ti_bufsiz);
 	rawmesh->chunkindex = chunkindex;
 	float *ov_bufptr = rawmesh->opaqueVertexBuffer = (float *) buffers;
 	float *tv_bufptr = rawmesh->transVertexBuffer = (float *) (buffers += ov_bufsiz);
@@ -336,6 +337,8 @@ void *pushRawmesh(void *chunkindexptr) {
 					blockmesh.count[culltrans ? 3 : 2] = 6 * i;
 					blockmesh.count[culltrans ? 1 : 0] = NMEMB_VERTEX * 4 * i;
 				}
+
+				/* Special case for wires (TODO) */
 
 				/* Adjust indices with running total. All vertices assumed to be used at least once */
 				for (i = 0; i < blockmesh.count[2]; i++) blockmesh.opaqueIndices[i] += runningOpaqueIndexOffset;
