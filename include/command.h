@@ -9,8 +9,10 @@
 #include <usfskiplist.h>
 #include "rsmlayout.h"
 #include "usfstring.h"
-#include "ret.h"
 #include "client.h"
+
+extern int64_t ret_selection[6];
+extern int64_t ret_positions[6];
 
 extern char cmdbuffer[RSM_MAX_COMMAND_LENGTH];
 extern char cmdlog[RSM_MAX_COMMAND_LOG_LINES][RSM_MAX_COMMAND_LENGTH];

@@ -11,6 +11,6 @@ Components
 	Digital transistor (SS compare) [DONE]
 	Buffer (SS boost + delay: 1, 2, 4, 8) [DONE]
 	Latch (SS boost + conditional write) [DONE]
-	Digital lamp
+	Digital lamp [DONE]
 	Analog lamp
 	Lever, button... (player interaction)

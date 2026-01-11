@@ -1,5 +1,8 @@
 #include "command.h"
 
+int64_t ret_selection[6] = {0, 0, 0, 1, 1, 1};
+int64_t ret_positions[6] = {0, 0, 0, 0, 0, 0};
+
 char cmdbuffer[RSM_MAX_COMMAND_LENGTH];
 char cmdlog[RSM_MAX_COMMAND_LOG_LINES][RSM_MAX_COMMAND_LENGTH];
 char (*logptr)[RSM_MAX_COMMAND_LENGTH] = cmdlog;

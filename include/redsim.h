@@ -9,7 +9,6 @@
 #include "usfqueue.h"
 #include "rsmlayout.h"
 #include "userio.h"
-#include "ret.h"
 
 #define ASUID(id, variant) ((uint64_t) (((uint64_t) id << 32) | ((uint64_t) variant)))
 #define GETID(uid) ((uint64_t) uid >> 32)
