@@ -251,8 +251,7 @@ void *pushRawmesh(void *chunkindexptr) {
 		exit(RSM_EXIT_NOCHUNK);
 	}
 
-	float culled[4 * NMEMB_VERTEX * 6], *cullbuf;
-	cullbuf = NULL; /* Face culling buffer and rotation information */
+	float culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* Face culling buffer and rotation information */
 	static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
 	static const Rotation FROMWEST[7] = { WEST, WEST, NORTH, EAST, SOUTH, WEST, WEST };
 	static const Rotation FROMSOUTH[7] = { SOUTH, SOUTH, WEST, NORTH, EAST, UP, DOWN };
@@ -305,6 +304,7 @@ void *pushRawmesh(void *chunkindexptr) {
 
 				/* For fullblock (must be all opaque/trans) culling, meshdata must be four vertices per face and
 				 * respect the order : front, left, back, right, top, bottom */
+				cullbuf = NULL;
 				if (block.metadata & RSM_BIT_CULLFACES) {
 					if ((culltrans = !(block.metadata & RSM_BIT_CONDUCTOR))) cullbuf = blockmesh.transVertices;
 					else cullbuf = blockmesh.opaqueVertices;
@@ -338,7 +338,45 @@ void *pushRawmesh(void *chunkindexptr) {
 					blockmesh.count[culltrans ? 1 : 0] = NMEMB_VERTEX * 4 * i;
 				}
 
-				/* Special case for wires (TODO) */
+				/* Special case for software-variants */
+				switch (block.id) {
+					case RSM_BLOCK_RESISTOR:
+					case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
+					case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
+						if (cullbuf == NULL) {
+							fprintf(stderr, "Block ID %"PRIu16" at %"PRIu64", %"PRIu64", %"PRIu64" has "
+									"no face culling (illegal state); Cannot display variant.\n",
+									block.id, x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
+							break;
+						}
+
+						/* I am a bit lazy, so all of these have the same numerical display */
+						blockmesh.count[culltrans ? 3 : 2] += 6 * 12; /* Re-use indices */
+						blockmesh.count[culltrans ? 1 : 0] += NMEMB_VERTEX * 4 * 12; /* Now vertices */
+
+						memmove(cullbuf + 4 * NMEMB_VERTEX * i, /* After rendered faces */
+								cullbuf + 4 * NMEMB_VERTEX * 6, /* After all possible faces */
+								4 * NMEMB_VERTEX * 12 * sizeof(float)); /* Get display triangles */
+
+						float *uadjust;
+						uadjust = cullbuf + 4 * NMEMB_VERTEX * i + 6;
+
+						uint32_t j, k, digit[3];
+						for (j = 0; j < 4; j++) {
+							digit[0] = (block.variant / 100) % 10;
+							digit[1] = (block.variant / 10) % 10;
+							digit[2] = (block.variant / 1) % 10;
+
+#define ADJUSTU(OFFSET) \
+	*uadjust = (digit[k] + OFFSET) * (3.0f/RSM_BLOCK_TEXTURE_SIZE_PIXELS); \
+	uadjust += NMEMB_VERTEX;
+							for (k = 0; k < 3; k++) { ADJUSTU(0); ADJUSTU(1); ADJUSTU(1); ADJUSTU(0); }
+#undef ADJUSTU
+						}
+						break;
+					case RSM_BLOCK_WIRE:
+						break;
+				}
 
 				/* Adjust indices with running total. All vertices assumed to be used at least once */
 				for (i = 0; i < blockmesh.count[2]; i++) blockmesh.opaqueIndices[i] += runningOpaqueIndexOffset;

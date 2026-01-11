@@ -8,7 +8,7 @@
 *latch_off$3:19 latch_on$3:19
 *inverter_top_off:16 inverter_top_on:16 inverter_side_off:34 inverter_side_on:34
 *buffer_1_off$3:19 buffer_1_on$3:19 *buffer_2_off$3:19 buffer_2_on$3:19 *buffer_4_off$3:19 buffer_4_on$3:19 *buffer_8_off$3:19 buffer_8_on$3:19
-*resistor$2:13
-*constant_source_opaque$2:13
-*constant_source_trans$2:5
+*resistor$3:13
+*constant_source_opaque$3:13
+*constant_source_trans$3:5
 *light_digital_off:13 light_digital_on:13

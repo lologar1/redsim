@@ -16,6 +16,7 @@ void command_config(uint32_t args, char *argv[]);
 void command_lookat(uint32_t args, char *argv[]);
 void command_set(uint32_t args, char *argv[]);
 void command_setraw(uint32_t args, char *argv[]);
+void command_selection(uint32_t args, char *argv[]);
 void command_sspower(uint32_t args, char *argv[]);
 void command_teleport(uint32_t args, char *argv[]);
 
@@ -28,6 +29,7 @@ void cmd_init(void) {
 	ALIAS("help", command_help);
 	ALIAS("set", command_set);
 	ALIAS("setraw", command_setraw);
+	ALIAS("selection", command_selection);
 	ALIAS("sspower", command_sspower);
 	ALIAS("teleport", command_teleport);
 #undef ALIAS
@@ -61,6 +63,8 @@ void cmd_init(void) {
 	ALIAS("lookat", "lookat");
 	ALIAS("set", "set");
 	ALIAS("setraw", "setraw");
+	ALIAS("sel", "selection");
+	ALIAS("selection", "selection");
 	ALIAS("ss", "sspower");
 	ALIAS("sspower", "sspower");
 	ALIAS("teleport", "teleport")
@@ -220,6 +224,7 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("help: Display this menu. Provide argument for more information.\n");
 		cmd_logf("config: Change runtime variables.\n");
 		cmd_logf("lookat: Set pitch and yaw in degrees.\n");
+		cmd_logf("selection: Query current selection positions.\n");
 		cmd_logf("set: Set current selection to block (default state).\n");
 		cmd_logf("setraw: Set current selection to exact blockdata.\n");
 		cmd_logf("sspower: Set current signal strength power for variable blocks.\n");
@@ -248,6 +253,9 @@ void command_help(uint32_t args, char *argv[]) {
 	} else if (unaliasedptr == command_lookat) {
 		cmd_logf("Syntax: lookat [pitch] [yaw]\n");
 		cmd_logf("Set pitch and yaw in degrees.\n");
+	} else if (unaliasedptr == command_selection) {
+		cmd_logf("Syntax: selection\n");
+		cmd_logf("Queries current selection positions.\n");
 	} else if (unaliasedptr == command_set) {
 		cmd_logf("Syntax: set [blockname]\n");
 		cmd_logf("Set selection to default blockdata matching blockname.\n");
@@ -327,6 +335,12 @@ void command_lookat(uint32_t args, char *argv[]) {
 
 	pitch = strtof(argv[1], NULL);
 	yaw = strtof(argv[2], NULL);
+}
+
+void command_selection(uint32_t args, char *argv[]) {
+	/* Queries current selection position */
+	cmd_logf("Pos 1: %"PRIu64", %"PRIu64", %"PRIu64".\n", ret_positions[0], ret_positions[1], ret_positions[2]);
+	cmd_logf("Pos 2: %"PRIu64", %"PRIu64", %"PRIu64".\n", ret_positions[3], ret_positions[4], ret_positions[5]);
 }
 
 void command_set(uint32_t args, char *argv[]) {

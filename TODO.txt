@@ -1,7 +1,7 @@
 Blocks
-	Resistor (Opaque) [DONE]
+	Resistor (Opaque) <NUMERICAL DISPLAY> [DONE]
 	Diodes (Trans) : Upwards & Downwards [DONE]
-	Constant source (Opaque & Trans) [DONE]
+	Constant source (Opaque & Trans) <NUMERICAL DISPLAY> [DONE]
 	Target (Opaque) [DONE]
 
 Components
@@ -12,5 +12,7 @@ Components
 	Buffer (SS boost + delay: 1, 2, 4, 8) [DONE]
 	Latch (SS boost + conditional write) [DONE]
 	Digital lamp [DONE]
+
+	TODO LATER
 	Analog lamp
 	Lever, button... (player interaction)
