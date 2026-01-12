@@ -284,7 +284,7 @@ void *pushRawmesh(void *chunkindexptr) {
 
 	/* This definitely isn't my best code, but it works. Not very expandable, though, that'll have to wait
 	 * for a remake of this program, with better practices. */
-	Blockdata *neighbor, *neighborup, *neighbordown;
+	Blockdata *neighbor, *neighborup, *neighbordown, *neighborleft, *neighborright;
 	for (a = 0; a < CHUNKSIZE; a++) {
 		for (b = 0; b < CHUNKSIZE; b++) {
 			for (c = 0; c < CHUNKSIZE; c++) {
@@ -416,14 +416,20 @@ void *pushRawmesh(void *chunkindexptr) {
 	neighbordown = cu_coordsToBlock(VEC3(X, Y - 1, Z), NULL);
 #define CULLINDICES \
 	if (!(WIRECONNECT_ALL || WIRECONNECT_LINE(1) \
-			|| (neighborup->id == RSM_BLOCK_WIRE && !(neighbortop->metadata & RSM_BIT_CONDUCTOR)) \
-			|| (neighbordown->id == RSM_BLOCK_WIRE && !(neighbor->metadata & RSM_BIT_CONDUCTOR)))) \
+			|| (neighborup->id == RSM_BLOCK_WIRE && !(neighbortop->metadata & RSM_BIT_CONDUCTOR)) /* Up wire */ \
+			|| (neighbordown->id == RSM_BLOCK_WIRE && !(neighbor->metadata & RSM_BIT_CONDUCTOR)) /* Down wire */\
+			|| (neighborleft->id == RSM_BLOCK_AIR && neighborright->id == RSM_BLOCK_AIR))) \
 		memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30, (k -= 30) * sizeof(uint32_t)); \
 	else j += 30;
 
 						/* Ground connections */
+						neighborleft = cu_coordsToBlock(VEC3(xpos - 1, ypos, zpos), NULL);
+						neighborright = cu_coordsToBlock(VEC3(xpos + 1, ypos, zpos), NULL);
 						NEIGHBORS(xpos, ypos, zpos + 1); CULLINDICES; /* North */
 						NEIGHBORS(xpos, ypos, zpos - 1); CULLINDICES; /* South */
+
+						neighborleft = cu_coordsToBlock(VEC3(xpos, ypos, zpos - 1), NULL);
+						neighborright = cu_coordsToBlock(VEC3(xpos, ypos, zpos + 1), NULL);
 						NEIGHBORS(xpos + 1, ypos, zpos); CULLINDICES; /* West */
 						NEIGHBORS(xpos - 1, ypos, zpos); CULLINDICES; /* East */
 #undef NEIGHBORS
