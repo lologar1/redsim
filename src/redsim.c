@@ -302,17 +302,17 @@ void rsm_interact(void) {
 
 		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
 
-#define TESTBLOCK(X, Y, Z, FLAG) \
-	if ((dblock = cu_coordsToBlock(VEC3(lookingBlockPos[0] + X, lookingBlockPos[1] + Y, lookingBlockPos[2] + Z),\
-		&dindex))->metadata & FLAG) { \
+#define TESTBLOCK(X, Y, Z, FLAG, ROT) \
+	if (((dblock = cu_coordsToBlock(VEC3(lookingBlockPos[0]+X, lookingBlockPos[1]+Y, lookingBlockPos[2]+Z),\
+		&dindex))->metadata & FLAG) && dblock->rotation == ROT) { \
 		memset(dblock, 0, sizeof(Blockdata)); /* Destroy */ \
 	}
 
-		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED);
-		TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED);
-		TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED);
-		TESTBLOCK(1, 0, 0, RSM_BIT_SIDESUPPORTED);
-		TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED);
+		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE);
+		TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, SOUTH);
+		TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, NORTH);
+		TESTBLOCK(1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);
+		TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, WEST);
 
 #undef TESTBLOCK
 		goto remesh;
