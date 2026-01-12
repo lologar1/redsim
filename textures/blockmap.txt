@@ -12,3 +12,4 @@
 *constant_source_opaque$3:13
 *constant_source_trans$3:5
 *light_digital_off:13 light_digital_on:13
+*wire:16
