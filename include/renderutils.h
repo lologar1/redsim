@@ -15,6 +15,7 @@ extern uint64_t **spriteids;
 
 extern uint64_t MAX_BLOCK_ID, *MAX_BLOCK_VARIANT;
 extern size_t ov_bufsiz, tv_bufsiz, oi_bufsiz, ti_bufsiz;
+extern uint64_t ntextures;
 
 typedef float Vertex[8];
 

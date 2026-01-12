@@ -10,3 +10,4 @@ obj/
 # Ignore other temp files
 *~
 sync.sh
+redsim

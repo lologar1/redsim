@@ -249,11 +249,14 @@ void rsm_interact(void) {
 	uint64_t uid, metadata;
 	uid = ASUID(hotbar[hotbarIndex][hotslotIndex][0], hotbar[hotbarIndex][hotslotIndex][1]);
 
-	if (RSM_MIDDLECLICK && lookingAt->id) { /* Pipette tool */
+	if (RSM_MIDDLECLICK) { /* Pipette tool */
 		RSM_MIDDLECLICK = 0;
 
 		hotbar[hotbarIndex][hotslotIndex][0] = lookingAt->id;
-		hotbar[hotbarIndex][hotslotIndex][1] = lookingAt->variant;
+		hotbar[hotbarIndex][hotslotIndex][1] = /* Disallow illegal sprites */
+			(lookingAt->variant >= MAX_BLOCK_VARIANT[lookingAt->id]
+			|| spriteids[lookingAt->id][lookingAt->variant] == 0) ? 0 : lookingAt->variant;
+
 		gui_updateGUI();
 		return;
 	}
@@ -315,6 +318,9 @@ void rsm_interact(void) {
 		switch (lookingAt->id) {
 			case RSM_BLOCK_BUFFER:
 				lookingAt->variant = (lookingAt->variant + 2) % 8; /* Change delay (leave powered state alone) */
+				break;
+			case RSM_BLOCK_WIRE: /* DEBUG */
+				lookingAt->variant = (lookingAt->variant + 1) % 256;
 				break;
 			case RSM_BLOCK_AIR: /* Allow air placement */
 				lookingAdjacent = lookingAt; /* Place there instead */

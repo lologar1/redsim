@@ -7,6 +7,7 @@ GLuint textureAtlas;
 uint64_t **spriteids; /* Note that getting a sprite from an item which doesn't have one will yield the first. */
 uint64_t MAX_BLOCK_ID, *MAX_BLOCK_VARIANT;
 size_t ov_bufsiz, tv_bufsiz, oi_bufsiz, ti_bufsiz; /* Remeshing buffer sizes */
+uint64_t ntextures; /* Number of loaded block textures */
 
 void loadVertexData(Vertex vertex, char *vector);
 void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant);
@@ -131,7 +132,7 @@ void ru_parseBlockdata(void) {
 
 	/* Precompute number of textures to get right UV coordinate mappings */
 	char *override;
-	uint64_t ntextures, overrides;
+	uint64_t overrides;
 	for (ntextures = id = 1; id < MAX_BLOCK_ID; id++) { /* Skip id 0 (only one texture for wiremesh */
 		/* For each $ override, add its texture tile count, then add 1 for each default handle */
 		for (overrides = 0, override = strchr(blockmap[id], '$'); override; override = strchr(override, '$')) {

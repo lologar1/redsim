@@ -339,6 +339,8 @@ void *pushRawmesh(void *chunkindexptr) {
 				}
 
 				/* Special case for software-variants */
+				float *uadjust, u, v;
+				uint32_t j, k, digit[3];
 				switch (block.id) {
 					case RSM_BLOCK_RESISTOR:
 					case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
@@ -358,15 +360,11 @@ void *pushRawmesh(void *chunkindexptr) {
 								cullbuf + 4 * NMEMB_VERTEX * 6, /* After all possible faces */
 								4 * NMEMB_VERTEX * 12 * sizeof(float)); /* Get display triangles */
 
-						float *uadjust;
 						uadjust = cullbuf + 4 * NMEMB_VERTEX * i + 6;
-
-						uint32_t j, k, digit[3];
+						digit[0] = (block.variant / 100) % 10;
+						digit[1] = (block.variant / 10) % 10;
+						digit[2] = (block.variant / 1) % 10;
 						for (j = 0; j < 4; j++) {
-							digit[0] = (block.variant / 100) % 10;
-							digit[1] = (block.variant / 10) % 10;
-							digit[2] = (block.variant / 1) % 10;
-
 #define ADJUSTU(OFFSET) \
 	*uadjust = (digit[k] + OFFSET) * (3.0f/RSM_BLOCK_TEXTURE_SIZE_PIXELS); \
 	uadjust += NMEMB_VERTEX;
@@ -375,6 +373,35 @@ void *pushRawmesh(void *chunkindexptr) {
 						}
 						break;
 					case RSM_BLOCK_WIRE:
+						/* 3 steps to render a wire
+						 * First: display signal strength
+						 * Second: Adjust wire color
+						 * Third: remove unnecessary indices */
+
+						/* Display signal strength */
+						digit[0] = (block.variant / 100) % 10;
+						digit[1] = (block.variant / 10) % 10;
+						digit[2] = (block.variant / 1) % 10;
+						for (j = 0; j < 3; j++) {
+#define ADJUSTU(VERTEX, OFFSET) \
+	blockmesh.transVertices[(j * 8 + VERTEX) * 8 + 6] = \
+		(digit[j] + OFFSET) * (3.0f/RSM_BLOCK_TEXTURE_SIZE_PIXELS);
+							/* Pattern here matches wire.mesh */
+							ADJUSTU(0, 0); ADJUSTU(1, 1); ADJUSTU(2, 0); ADJUSTU(3, 1);
+							ADJUSTU(4, 1); ADJUSTU(5, 0); ADJUSTU(6, 1); ADJUSTU(7, 0);
+#undef ADJUSTU
+						}
+
+						/* Adjust wire color */
+						u = (block.variant % 32) * (1.0f/32.0f) + (0.5f/32.0f); /* UVs are offsets from (0,0) */
+						v = (block.variant / 32) * ((1.0f / RSM_BLOCK_TEXTURE_SIZE_PIXELS) / ntextures);
+						for (j = 0; j < 64; j++) { /* Can bunch together everything in 64 vertices */
+							blockmesh.opaqueVertices[j * 8 + 6] += u;
+							blockmesh.opaqueVertices[j * 8 + 7] += v;
+						}
+
+						/* Remove unnecessary indices */
+
 						break;
 				}
 
