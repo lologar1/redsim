@@ -6,8 +6,8 @@ vec3 *playerBBOffsets;
 uint32_t nPlayerBBOffsets;
 
 Blockdata *lookingAt, *lookingAdjacent;
-uint64_t lookingBlockPos[3], lookingChunkIndex, lookingAdjChunkIndex;
-int32_t lookingAxis;
+uint64_t lookingChunkIndex, lookingAdjChunkIndex;
+int64_t lookingBlockPos[3], adjBlockPos[3], lookingAxis, stepAxis;
 
 void rsm_move(vec3 position) {
 	/* Change player position each frame according to movement) */
@@ -186,6 +186,7 @@ void rsm_updateWiremesh(void) {
 		/* Update face position with the one we just entered */
 		lookingAdjChunkIndex = lookingChunkIndex;
 		lookingAdjacent = lookingAt;
+		adjBlockPos[0] = gridpos[0]; adjBlockPos[1] = gridpos[1]; adjBlockPos[2] = gridpos[2];
 
 		gridpos[lookingAxis] += step[lookingAxis];
 		tMax[lookingAxis] += tDelta[lookingAxis];
@@ -196,6 +197,9 @@ void rsm_updateWiremesh(void) {
 brk:
 	/* Set block pos (uint64_t) for lookingAt */
 	lookingBlockPos[0] = gridpos[0]; lookingBlockPos[1] = gridpos[1]; lookingBlockPos[2] = gridpos[2];
+
+	/* Direction of lookingAxis */
+	stepAxis = step[lookingAxis];
 
 	/* Normals set to point upwards as to not be illegal (still processed by opaque fragment shader) */
 	float vertices[8 * 8 * 2] = {
@@ -291,11 +295,27 @@ void rsm_interact(void) {
 			return;
 	}
 
+	Blockdata *dblock;
+	uint64_t dindex;
 	if (RSM_LEFTCLICK) { /* Normal block breaking */
 		RSM_LEFTCLICK = 0; /* Consume */
+
 		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
-		cu_asyncRemeshChunk(lookingChunkIndex);
-		return;
+
+#define TESTBLOCK(X, Y, Z, FLAG) \
+	if ((dblock = cu_coordsToBlock(VEC3(lookingBlockPos[0] + X, lookingBlockPos[1] + Y, lookingBlockPos[2] + Z),\
+		&dindex))->metadata & FLAG) { \
+		memset(dblock, 0, sizeof(Blockdata)); /* Destroy */ \
+	}
+
+		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED);
+		TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED);
+		TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED);
+		TESTBLOCK(1, 0, 0, RSM_BIT_SIDESUPPORTED);
+		TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED);
+
+#undef TESTBLOCK
+		goto remesh;
 	}
 
 	/* Block placement & interaction */
@@ -315,36 +335,68 @@ void rsm_interact(void) {
 
 		if (RSM_DOWN) goto place; /* This is copied from Minecraft; descending prevents interaction */
 
-		switch (lookingAt->id) {
+		switch (lookingAt->id) { /* Block interaction */
 			case RSM_BLOCK_BUFFER:
 				lookingAt->variant = (lookingAt->variant + 2) % 8; /* Change delay (leave powered state alone) */
 				break;
-			case RSM_BLOCK_WIRE: /* DEBUG */
-				lookingAt->variant = (lookingAt->variant + 1) % 256;
-				break;
-			case RSM_BLOCK_AIR: /* Allow air placement */
-				lookingAdjacent = lookingAt; /* Place there instead */
+			case RSM_BLOCK_AIR: /* Air placement */
+				if (RSM_AIRPLACE) {
+					lookingAdjacent = lookingAt; /* Place there instead */
+					memcpy(adjBlockPos, lookingBlockPos, sizeof(adjBlockPos));
+				} else return;
 			default:
 				goto place;
 		}
-		cu_asyncRemeshChunk(lookingChunkIndex); /* Interacted */
+		cu_asyncRemeshChunk(lookingChunkIndex); /* Interacted; no other chunks affected */
 		return;
 
 place:
 		if (lookingAdjacent == NULL) return; /* May happen right after init if spawned in a block */
+		if (GETID(uid) == 0) return; /* Shouldn't place air or items */
 
-		if ((lookingAdjacent->id = GETID(uid)) == 0) return; /* Shouldn't place air or items */
-
-		switch (GETID(uid)) {
+		switch (GETID(uid)) { /* Handle software-defined variants */
 			case RSM_BLOCK_RESISTOR:
 			case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
 			case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
 				lookingAdjacent->variant = sspower;
 				break;
+
+			case RSM_BLOCK_INVERTER: /* Prevent placing in air and find appropriate variant */
+				if (lookingAt == lookingAdjacent || !(lookingAt->metadata & RSM_BIT_CULLFACES)) /* In air */
+					return;
+
+				lookingAdjacent->variant = lookingAxis == 1 ? 0 : 2; /* Fix variant & metadata */
+				metadata = usf_inthmget(datamap, ASUID(GETID(uid), lookingAdjacent->variant)).u;
+
+				switch (lookingAxis) { /* Manual rotation since it is determined by looking block face */
+					case 0:
+						lookingAdjacent->rotation = stepAxis > 0 ? WEST : EAST;
+						break;
+					case 2:
+						lookingAdjacent->rotation = stepAxis > 0 ? NORTH : SOUTH;
+						break;
+					default:
+						lookingAdjacent->rotation = NONE;
+						break;
+				}
+
+				break;
+
+			/* All topsupported blocks */
+			case RSM_BLOCK_TRANSISTOR_ANALOG:
+			case RSM_BLOCK_TRANSISTOR_DIGITAL:
+			case RSM_BLOCK_LATCH:
+			case RSM_BLOCK_WIRE:
+			case RSM_BLOCK_BUFFER:
+				if (lookingAxis != 1 || lookingAt == lookingAdjacent || !(lookingAt->metadata&RSM_BIT_CULLFACES))
+					return;
+				[[fallthrough]]; /* C++ syntax in MY C program??? -> compiler wants it :'( */
 			default:
 				lookingAdjacent->variant = GETVARIANT(uid);
 				break;
 		}
+
+		lookingAdjacent->id = GETID(uid);
 		lookingAdjacent->metadata = metadata;
 
 		if (metadata & RSM_BIT_ROTATION) {
@@ -357,10 +409,23 @@ place:
 			else if (rot < 180.0f) lookingAdjacent->rotation = NORTH;
 			else if (rot < 270.0f) lookingAdjacent->rotation = EAST;
 			else lookingAdjacent->rotation = SOUTH;
-		} else lookingAdjacent->rotation = NONE;
+		} /* Rotation NONE (0) by default */
 
-		cu_asyncRemeshChunk(lookingAdjChunkIndex);
-		cu_asyncRemeshChunk(lookingChunkIndex);
+remesh:
+		usf_skiplist *toRemesh;
+		toRemesh = usf_newsk();
+
+		/* Remesh all chunks in a 3x3 grid to account for other blocks' meshes changing from the new block */
+		int32_t a, b, c;
+		for (a = -1; a < 2; a++) for (b = -1; b < 2; b++) for (c = -1; c < 2; c++) {
+			cu_coordsToBlock(VEC3( lookingBlockPos[0] + a, lookingBlockPos[1] + b, lookingBlockPos[2] + c),
+					&dindex); /* Get chunk index */
+			usf_skset(toRemesh, dindex, USFTRUE);
+		}
+
+		usf_skipnode *n;
+		for (n = toRemesh->base[0]; n; n = n->nextnodes[0]) cu_asyncRemeshChunk(n->index);
+		usf_freesk(toRemesh);
 	}
 }
 

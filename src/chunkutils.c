@@ -282,6 +282,9 @@ void *pushRawmesh(void *chunkindexptr) {
 	uint32_t *oi_bufptr = rawmesh->opaqueIndexBuffer = (uint32_t *) (buffers += tv_bufsiz);
 	uint32_t *ti_bufptr = rawmesh->transIndexBuffer = (uint32_t *) (buffers += oi_bufsiz);
 
+	/* This definitely isn't my best code, but it works. Not very expandable, though, that'll have to wait
+	 * for a remake of this program, with better practices. */
+	Blockdata *neighbor, *neighborup, *neighbordown;
 	for (a = 0; a < CHUNKSIZE; a++) {
 		for (b = 0; b < CHUNKSIZE; b++) {
 			for (c = 0; c < CHUNKSIZE; c++) {
@@ -323,13 +326,15 @@ void *pushRawmesh(void *chunkindexptr) {
 					}
 
 					/* Note that the rotation is decremented by 1 in CHECKFACE to yield true face index */
-					Blockdata *neighbor;
-					CHECKFACE(x*CHUNKSIZE + a, y*CHUNKSIZE + b, z*CHUNKSIZE + c + 1, FROMNORTH[block.rotation]);
-					CHECKFACE(x*CHUNKSIZE + a + 1, y*CHUNKSIZE + b, z*CHUNKSIZE + c, FROMWEST[block.rotation]);
-					CHECKFACE(x*CHUNKSIZE + a, y*CHUNKSIZE + b, z*CHUNKSIZE + c - 1, FROMSOUTH[block.rotation]);
-					CHECKFACE(x*CHUNKSIZE + a - 1, y*CHUNKSIZE + b, z*CHUNKSIZE + c, FROMEAST[block.rotation]);
-					CHECKFACE(x*CHUNKSIZE + a, y*CHUNKSIZE + b + 1, z*CHUNKSIZE + c, FROMUP[block.rotation]);
-					CHECKFACE(x*CHUNKSIZE + a, y*CHUNKSIZE + b - 1, z*CHUNKSIZE + c, FROMDOWN[block.rotation]);
+#define xpos (x * CHUNKSIZE + a)
+#define ypos (y * CHUNKSIZE + b)
+#define zpos (z * CHUNKSIZE + c)
+					CHECKFACE(xpos, ypos, zpos + 1, FROMNORTH[block.rotation]);
+					CHECKFACE(xpos + 1, ypos, zpos, FROMWEST[block.rotation]);
+					CHECKFACE(xpos, ypos, zpos - 1, FROMSOUTH[block.rotation]);
+					CHECKFACE(xpos - 1, ypos, zpos, FROMEAST[block.rotation]);
+					CHECKFACE(xpos, ypos + 1, zpos, FROMUP[block.rotation]);
+					CHECKFACE(xpos, ypos - 1, zpos, FROMDOWN[block.rotation]);
 					memcpy(cullbuf, culled, 4 * NMEMB_VERTEX * i * sizeof(float));
 #undef CHECKFACE
 
@@ -348,7 +353,7 @@ void *pushRawmesh(void *chunkindexptr) {
 						if (cullbuf == NULL) {
 							fprintf(stderr, "Block ID %"PRIu16" at %"PRIu64", %"PRIu64", %"PRIu64" has "
 									"no face culling (illegal state); Cannot display variant.\n",
-									block.id, x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
+									block.id, xpos, ypos, zpos);
 							break;
 						}
 
@@ -401,7 +406,45 @@ void *pushRawmesh(void *chunkindexptr) {
 						}
 
 						/* Remove unnecessary indices */
+						j = 36; k = 240; /* Starting at index 36, 240 indices left */
+#define WIRECONNECT_ALL (neighbor->metadata & RSM_BIT_WIRECONNECT_ALL) /* ROT 1 = NS, ROT 0 = WE */
+#define WIRECONNECT_LINE(R) ((neighbor->metadata & RSM_BIT_WIRECONNECT_LINE) && (neighbor->rotation % 2 == R))
+						Blockdata *neighbortop = cu_coordsToBlock(VEC3(xpos, ypos + 1, zpos), NULL);
+#define NEIGHBORS(X, Y, Z) \
+	neighbor = cu_coordsToBlock(VEC3(X, Y, Z), NULL); \
+	neighborup = cu_coordsToBlock(VEC3(X, Y + 1, Z), NULL); \
+	neighbordown = cu_coordsToBlock(VEC3(X, Y - 1, Z), NULL);
+#define CULLINDICES \
+	if (!(WIRECONNECT_ALL || WIRECONNECT_LINE(1) \
+			|| (neighborup->id == RSM_BLOCK_WIRE && !(neighbortop->metadata & RSM_BIT_CONDUCTOR)) \
+			|| (neighbordown->id == RSM_BLOCK_WIRE && !(neighbor->metadata & RSM_BIT_CONDUCTOR)))) \
+		memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30, (k -= 30) * sizeof(uint32_t)); \
+	else j += 30;
 
+						/* Ground connections */
+						NEIGHBORS(xpos, ypos, zpos + 1); CULLINDICES; /* North */
+						NEIGHBORS(xpos, ypos, zpos - 1); CULLINDICES; /* South */
+						NEIGHBORS(xpos + 1, ypos, zpos); CULLINDICES; /* West */
+						NEIGHBORS(xpos - 1, ypos, zpos); CULLINDICES; /* East */
+#undef NEIGHBORS
+#undef CULLINDICES
+
+#define NEIGHBORS(X, Y, Z) neighbor = cu_coordsToBlock(VEC3(X, Y + 1, Z), NULL);
+#define CULLINDICES \
+	if (!(neighbor->id == RSM_BLOCK_WIRE) || neighbortop->id) \
+		memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30, (k -= 30) * sizeof(uint32_t)); \
+	else j += 30;
+						/* Upwards connections */
+						NEIGHBORS(xpos, ypos, zpos + 1); CULLINDICES; /* North */
+						NEIGHBORS(xpos, ypos, zpos - 1); CULLINDICES; /* South */
+						NEIGHBORS(xpos + 1, ypos, zpos); CULLINDICES; /* West */
+						NEIGHBORS(xpos - 1, ypos, zpos); CULLINDICES; /* East */
+
+#undef NEIGHBORS
+#undef CULLINDICES
+#undef WIRECONNECT_LINE
+#undef WIRECONNECT_ALL
+						blockmesh.count[2] = j; /* Adjust index count */
 						break;
 				}
 

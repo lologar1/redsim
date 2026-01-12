@@ -70,6 +70,8 @@ extern float RSM_COMMAND_POS_X_PIXELS;
 extern float RSM_COMMAND_POS_Y_PIXELS;
 extern float RSM_COMMAND_TEXT_SIZE;
 
+extern float RSM_AIRPLACE;
+
 #define PLAYER_BOUNDINGBOX_RELATIVE_CORNER ((vec3) {-0.3f, -1.6f, -0.3f})
 #define PLAYER_BOUNDINGBOX_DIMENSIONS ((vec3) {0.6f, 1.8f, 0.6f})
 
@@ -113,6 +115,8 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_BIT_CONDUCTOR (1UL << 3) /* Can be hard-powered */
 #define RSM_BIT_TOPSUPPORTED (1UL << 4) /* Needs support underneath */
 #define RSM_BIT_SIDESUPPORTED (1UL << 5) /* Needs support from the sides */
+#define RSM_BIT_WIRECONNECT_ALL (1UL << 6) /* Connects to wires from all directions */
+#define RSM_BIT_WIRECONNECT_LINE (1UL << 7) /* Connects to wires only from front and back */
 
 #define TYPEFACE_PATH "typefaces/"
 #define RESOURCE_BASE_PATH "textures/"

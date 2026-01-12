@@ -52,6 +52,7 @@ void cmd_init(void) {
 	ALIAS("RSM_COMMAND_POS_X_PIXELS", RSM_COMMAND_POS_X_PIXELS);
 	ALIAS("RSM_COMMAND_POS_Y_PIXELS", RSM_COMMAND_POS_Y_PIXELS);
 	ALIAS("RSM_COMMAND_TEXT_SIZE", RSM_COMMAND_TEXT_SIZE);
+	ALIAS("RSM_AIRPLACE", RSM_AIRPLACE);
 #undef ALIAS
 
 #define ALIAS(ALIASNAME, TRUENAME) usf_strhmput(aliasmap, ALIASNAME, USFDATAP(TRUENAME));
@@ -133,6 +134,10 @@ void cmd_init(void) {
 	ALIAS("RSM_COMMAND_TEXT_SIZE", "RSM_COMMAND_TEXT_SIZE");
 	ALIAS("textsize", "RSM_COMMAND_TEXT_SIZE");
 	ALIAS("textscale", "RSM_COMMAND_TEXT_SIZE");
+
+	ALIAS("RSM_AIRPLACE", "RSM_AIRPLACE");
+	ALIAS("airplace", "RSM_AIRPLACE");
+	ALIAS("ap", "RSM_AIRPLACE");
 #undef ALIAS
 }
 
@@ -302,6 +307,8 @@ void command_help(uint32_t args, char *argv[]) {
 		cmd_logf("Command prompt y offset in pixels.\n");
 	} else if (unaliasedptr == &RSM_COMMAND_TEXT_SIZE) {
 		cmd_logf("Command prompt text scaling factor.\n");
+	} else if (unaliasedptr == &RSM_AIRPLACE) {
+		cmd_logf("Toggle block placement in air.\n");
 	}
 }
 
@@ -338,6 +345,9 @@ void command_lookat(uint32_t args, char *argv[]) {
 }
 
 void command_selection(uint32_t args, char *argv[]) {
+	(void) args;
+	(void) argv;
+
 	/* Queries current selection position */
 	cmd_logf("Pos 1: %"PRIu64", %"PRIu64", %"PRIu64".\n", ret_positions[0], ret_positions[1], ret_positions[2]);
 	cmd_logf("Pos 2: %"PRIu64", %"PRIu64", %"PRIu64".\n", ret_positions[3], ret_positions[4], ret_positions[5]);
@@ -374,11 +384,8 @@ void command_set(uint32_t args, char *argv[]) {
 		usf_skset(toRemesh, chunkindex, USFTRUE);
 	}
 
-	uint64_t i;
-	usf_skipnode *node; /* Remesh */
-	for (node = toRemesh->base[0], i = 0; i < toRemesh->size; node = node->nextnodes[0], i++)
-		cu_asyncRemeshChunk(node->index);
-
+	usf_skipnode *n; /* Remesh */
+	for (n = toRemesh->base[0]; n; n = n->nextnodes[0]) cu_asyncRemeshChunk(n->index);
 	usf_freesk(toRemesh);
 
 	cmd_logf("Affected %"PRIu64" blocks.\n", a*b*c);
