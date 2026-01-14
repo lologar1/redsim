@@ -106,7 +106,7 @@ void ru_parseBlockdata(void) {
 
 	char **blockmap;
 
-	blockmap = usf_ftot(blockmapPath, &MAX_BLOCK_ID);
+	blockmap = usf_ftost(blockmapPath, &MAX_BLOCK_ID);
 	MAX_BLOCK_VARIANT = malloc(MAX_BLOCK_ID * sizeof(uint64_t));
 
 	if (blockmap == NULL) {
@@ -149,7 +149,6 @@ void ru_parseBlockdata(void) {
 	/* Now load mesh data */
 	for (spriteid = texid = id = 0; id < MAX_BLOCK_ID; id++) {
 		/* Read specifications from file */
-		blockmap[id][strlen(blockmap[id]) - 1] = '\0'; /* Remove trailing \n */
 		variants = usf_scsplit(blockmap[id], ' ', &nvariants);
 		MAX_BLOCK_VARIANT[id] = nvariants;
 
@@ -204,7 +203,7 @@ void ru_parseBlockdata(void) {
 
 			/* Now build the template using raw mesh data from the text file */
 			pathcat(meshdatapath, 3, texMeshPath, variant, MESH_EXTENSION);
-			meshdata = usf_ftot(meshdatapath, &meshdatalen);
+			meshdata = usf_ftost(meshdatapath, &meshdatalen);
 			if (meshdata == NULL) {
 				fprintf(stderr, "Error reading raw mesh data at %s (Does it exist?), aborting.\n", meshdatapath);
 				exit(RSM_EXIT_NOMESHDATA);
@@ -255,7 +254,7 @@ void ru_parseBlockdata(void) {
 						}
 						break;
 					case '#': /* To allow for comments. Other chars would work but would trigger error message */
-					case '\n':
+					case '\0':
 						continue;
 					default:
 						fprintf(stderr, "Unknown data format %c at line %lu in mesh data template file %s, skipping.\n", vectordata[0], d, meshdatapath);
@@ -281,7 +280,7 @@ void ru_parseBlockdata(void) {
 			ov_bufsiz = USF_MAX(ov_bufsiz, template.count[0]); tv_bufsiz = USF_MAX(tv_bufsiz, template.count[1]);
 			oi_bufsiz = USF_MAX(oi_bufsiz, template.count[2]); ti_bufsiz = USF_MAX(ti_bufsiz, template.count[3]);
 
-			usf_freetxt(meshdata, meshdatalen);
+			usf_freetxt(meshdata, 1); /* usf_ftost */
 
 			/* Set to blockmeshes */
 			blockmeshes[id][nvariant] = template;
@@ -311,7 +310,7 @@ void ru_parseBlockdata(void) {
 
 	/* Cleanup */
 	free(texAtlasData);
-	usf_freetxt(blockmap, MAX_BLOCK_ID);
+	usf_freetxt(blockmap, 1); /* usf_ftost */
 }
 
 void ru_deallocateVAO(GLuint VAO) {

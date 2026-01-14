@@ -370,7 +370,7 @@ void command_set(uint32_t args, char *argv[]) {
 
 	Blockdata *blockdata;
 	uint64_t chunkindex;
-	int64_t x, y, z, a, b, c;
+	int64_t x, y, z, a = 0, b = 0, c = 0;
 	for (x = ret_selection[0], a = 0; a < ret_selection[3]; a++)
 	for (y = ret_selection[1], b = 0; b < ret_selection[4]; b++)
 	for (z = ret_selection[2], c = 0; c < ret_selection[5]; c++) {
@@ -403,7 +403,7 @@ void command_setraw(uint32_t args, char *argv[]) {
 
 	Blockdata *blockdata;
 	uint64_t chunkindex;
-	int64_t x, y, z, a, b, c;
+	int64_t x, y, z, a = 0, b = 0, c = 0;
 	for (x = ret_selection[0], a = 0; a < ret_selection[3]; a++)
 	for (y = ret_selection[1], b = 0; b < ret_selection[4]; b++)
 	for (z = ret_selection[2], c = 0; c < ret_selection[5]; c++) {

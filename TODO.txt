@@ -5,7 +5,7 @@ Blocks
 	Target (Opaque) [DONE]
 
 Components
-	Wire
+	Wire [DONE]
 	Torch [DONE]
 	Analog transistor (SS subtract) [DONE]
 	Digital transistor (SS compare) [DONE]

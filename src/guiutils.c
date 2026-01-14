@@ -63,13 +63,12 @@ void gu_parseGUIdata(void) {
 		/* Reuse same buffer for this name. A bit unpretty, but what do you want */
 		pathcat(guitexturepath, 3, guiPath, element, LAYOUT_EXTENSION);
 
-		if ((submenulayout = usf_ftot(guitexturepath, &nsprites)) == NULL) {
+		if ((submenulayout = usf_ftost(guitexturepath, &nsprites)) == NULL) {
 			fprintf(stderr, "Cannot find inventory submenu layout at %s, aborting.\n", guitexturepath);
 			exit(RSM_EXIT_NOLAYOUT);
 		}
 
 		for (i = 0; i < nsprites; i++) {
-			submenulayout[i][strlen(submenulayout[i]) - 1] = '\0'; /* Remove trailing newline */
 			itemuid = usf_strhmget(namemap, submenulayout[i]).u;
 
 			xslotoffset = i % RSM_INVENTORY_SLOTS_HORIZONTAL;
@@ -78,7 +77,7 @@ void gu_parseGUIdata(void) {
 			submenus[nelement - GUI_PICON][xslotoffset][RSM_INVENTORY_SLOTS_VERTICAL - yslotoffset-1] = itemuid;
 		}
 
-		usf_freetxt(submenulayout, nsprites);
+		usf_freetxt(submenulayout, 1); /* usf_ftost */
 	}
 
 	free(elements);

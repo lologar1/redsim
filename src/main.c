@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "renderer.h"
 #include "client.h"
@@ -46,12 +47,17 @@ int32_t main() {
 	renderer_initBuffers();
 	fprintf(stderr, "Renderer initialization success!\n");
 
+	if (atexit(client_terminate)) /* Register termination function for program exit */
+		fprintf(stderr, "Warning: atexit client_terminate registration failed!\n");
+
 	renderer_render(window);
 
+	/* Window was closed rather than exit() from program */
 	client_terminate(); /* Dealloc everything */
 	glfwDestroyWindow(window);
 	glfwTerminate(); /* On window close */
 
 	fprintf(stderr, "Process exited normally.\n");
-	exit(RSM_EXIT_NORMAL);
+	fflush(stdout); fflush(stderr);
+	_Exit(RSM_EXIT_NORMAL); /* Do not run client_terminate through atexit */
 }

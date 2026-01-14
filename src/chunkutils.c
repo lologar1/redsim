@@ -135,8 +135,10 @@ Blockdata *cu_coordsToBlock(vec3 coords, uint64_t *chunkindex) {
 
 	index = COORDSTOCHUNKINDEX(coords);
 
-	/* Get chunk and allocate it if null */
-	if ((chunkdata = (Chunkdata *) usf_inthmget(chunkmap, index).p) == NULL)
+	/* Get chunk and allocate it if null.
+	 * Thread-safety required as this may be called from remeshing.
+	 * It's a bit clunky, but this project grew along with my understanding of parallelism, lol. Sorry! */
+	if ((chunkdata = usf_inthmget(chunkmap, index).p) == NULL)
 		usf_inthmput(chunkmap, index, USFDATAP(chunkdata = calloc(1, sizeof(Chunkdata))));
 
 	if (chunkindex) *chunkindex = index; /* Pass chunk index */
@@ -178,15 +180,13 @@ void pathcat(char *destination, int32_t n, ...) {
 	va_list args;
 	va_start(args, n);
 
-	int32_t success;
-	success = usf_vstrcat(destination, RSM_MAX_PATH_NAME_LENGTH, n, args);
-	va_end(args);
-
-	if (!success) {
+	if (usf_vstrcat(destination, RSM_MAX_PATH_NAME_LENGTH, n, args)) {
 		fprintf(stderr, "Concatenation of %d paths exceeds max buffer length %u, aborting.\n",
 				n, RSM_MAX_PATH_NAME_LENGTH);
 		exit(RSM_EXIT_EXCBUF);
 	}
+
+	va_end(args);
 }
 
 int32_t getBlockmesh(Blockmesh *blockmesh, uint32_t id, uint32_t variant, Rotation rotation,
@@ -284,7 +284,7 @@ void *pushRawmesh(void *chunkindexptr) {
 
 	/* This definitely isn't my best code, but it works. Not very expandable, though, that'll have to wait
 	 * for a remake of this program, with better practices. */
-	Blockdata *neighbor, *neighborup, *neighbordown, *neighborleft, *neighborright;
+	Blockdata *neighbor, *neighborup, *neighbordown, *neighbortop;
 	for (a = 0; a < CHUNKSIZE; a++) {
 		for (b = 0; b < CHUNKSIZE; b++) {
 			for (c = 0; c < CHUNKSIZE; c++) {
@@ -407,47 +407,52 @@ void *pushRawmesh(void *chunkindexptr) {
 
 						/* Remove unnecessary indices */
 						j = 36; k = 240; /* Starting at index 36, 240 indices left */
+						int8_t connect[4] = {0, 0, 0, 0}; /* North West South West */
+						int8_t straighten[2] = {0, 0}; /* Defer */
+
 #define WIRECONNECT_ALL (neighbor->metadata & RSM_BIT_WIRECONNECT_ALL) /* ROT 1 = NS, ROT 0 = WE */
-#define WIRECONNECT_LINE(R) ((neighbor->metadata & RSM_BIT_WIRECONNECT_LINE) && (neighbor->rotation % 2 == R))
-						Blockdata *neighbortop = cu_coordsToBlock(VEC3(xpos, ypos + 1, zpos), NULL);
+#define WIRECONNECT_LINE(R) ((neighbor->metadata&RSM_BIT_WIRECONNECT_LINE) && ((neighbor->rotation&1)==((R)&1)))
+#define BLOCKAT(X, Y, Z) (cu_coordsToBlock(VEC3(X, Y, Z), NULL))
+						neighbortop = BLOCKAT(xpos, ypos + 1, zpos);
 #define NEIGHBORS(X, Y, Z) \
-	neighbor = cu_coordsToBlock(VEC3(X, Y, Z), NULL); \
-	neighborup = cu_coordsToBlock(VEC3(X, Y + 1, Z), NULL); \
-	neighbordown = cu_coordsToBlock(VEC3(X, Y - 1, Z), NULL);
-#define CULLINDICES \
-	if (!(WIRECONNECT_ALL || WIRECONNECT_LINE(1) \
-			|| (neighborup->id == RSM_BLOCK_WIRE && !(neighbortop->metadata & RSM_BIT_CONDUCTOR)) /* Up wire */ \
-			|| (neighbordown->id == RSM_BLOCK_WIRE && !(neighbor->metadata & RSM_BIT_CONDUCTOR)) /* Down wire */\
-			|| (neighborleft->id == RSM_BLOCK_AIR && neighborright->id == RSM_BLOCK_AIR))) \
-		memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30, (k -= 30) * sizeof(uint32_t)); \
-	else j += 30;
+	neighbor = BLOCKAT(X, Y, Z); \
+	neighborup = BLOCKAT(X, Y + 1, Z); \
+	neighbordown = BLOCKAT(X, Y - 1, Z);
+#define CONNECT(I) \
+	connect[I] = (WIRECONNECT_ALL || WIRECONNECT_LINE(I + 1) \
+			|| (neighborup->id == RSM_BLOCK_WIRE && !(neighbortop->metadata & RSM_BIT_CONDUCTOR)) \
+			|| (neighbordown->id == RSM_BLOCK_WIRE && !(neighbor->metadata & RSM_BIT_CONDUCTOR)));
+						NEIGHBORS(xpos, ypos, zpos + 1); CONNECT(0); NEIGHBORS(xpos + 1, ypos, zpos); CONNECT(1);
+						NEIGHBORS(xpos, ypos, zpos - 1); CONNECT(2); NEIGHBORS(xpos - 1, ypos, zpos); CONNECT(3);
+
+						/* Straighten wire if it doesn't turn */
+						if (!(connect[0] || connect[2])) straighten[0] = 1;
+						if (!(connect[1] || connect[3])) straighten[1] = 1;
+						if (straighten[0]) connect[1] = connect[3] = 1;
+						if (straighten[1]) connect[0] = connect[2] = 1;
 
 						/* Ground connections */
-						neighborleft = cu_coordsToBlock(VEC3(xpos - 1, ypos, zpos), NULL);
-						neighborright = cu_coordsToBlock(VEC3(xpos + 1, ypos, zpos), NULL);
-						NEIGHBORS(xpos, ypos, zpos + 1); CULLINDICES; /* North */
-						NEIGHBORS(xpos, ypos, zpos - 1); CULLINDICES; /* South */
-
-						neighborleft = cu_coordsToBlock(VEC3(xpos, ypos, zpos - 1), NULL);
-						neighborright = cu_coordsToBlock(VEC3(xpos, ypos, zpos + 1), NULL);
-						NEIGHBORS(xpos + 1, ypos, zpos); CULLINDICES; /* West */
-						NEIGHBORS(xpos - 1, ypos, zpos); CULLINDICES; /* East */
+						for (i = 0; i < 4; i++) {
+							if (!connect[i])
+								memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30,
+										(k -= 30) * sizeof(uint32_t));
+							else j += 30;
+						}
 #undef NEIGHBORS
-#undef CULLINDICES
-
 #define NEIGHBORS(X, Y, Z) neighbor = cu_coordsToBlock(VEC3(X, Y + 1, Z), NULL);
 #define CULLINDICES \
-	if (!(neighbor->id == RSM_BLOCK_WIRE) || neighbortop->id) \
+	if (!(neighbor->id == RSM_BLOCK_WIRE) || (neighbortop->metadata & RSM_BIT_CONDUCTOR)) \
 		memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30, (k -= 30) * sizeof(uint32_t)); \
 	else j += 30;
 						/* Upwards connections */
 						NEIGHBORS(xpos, ypos, zpos + 1); CULLINDICES; /* North */
-						NEIGHBORS(xpos, ypos, zpos - 1); CULLINDICES; /* South */
 						NEIGHBORS(xpos + 1, ypos, zpos); CULLINDICES; /* West */
+						NEIGHBORS(xpos, ypos, zpos - 1); CULLINDICES; /* South */
 						NEIGHBORS(xpos - 1, ypos, zpos); CULLINDICES; /* East */
-
-#undef NEIGHBORS
 #undef CULLINDICES
+#undef NEIGHBORS
+#undef CONNECT
+#undef BLOCKAT
 #undef WIRECONNECT_LINE
 #undef WIRECONNECT_ALL
 						blockmesh.count[2] = j; /* Adjust index count */

@@ -24,7 +24,7 @@ void client_init(void) {
 
 	/* Generate template blockmeshes from disk and parse bounding boxes */
 	/* Generate world and mesh lookup tables */
-	chunkmap = usf_newhm();
+	chunkmap = usf_newhm_ts(); /* Accessed async by remeshing */
 	meshmap = usf_newhm();
 
 	/* Generate datamap for default metadata values from disk */
@@ -110,12 +110,14 @@ void client_init(void) {
 }
 
 void client_savedata(void) {
-	/* Save world to disk */
+	/* Save world to disk (thread-safe) */
 	uint64_t x, y, z, i, n;
 	usf_data *entry;
 	uint64_t savedata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE]; /* Blockdata is 64 bits */
 	Chunkdata *chunkdata;
 	Blockdata blockdata;
+
+	pthread_mutex_lock(chunkmap->lock); /* Lock */
 
 /* Enough space for all chunks and their chunkindex */
 #define SAVESIZE (chunkmap->size * SAVESTRIDE)
@@ -142,6 +144,7 @@ void client_savedata(void) {
 		memcpy(s, savedata, sizeof(savedata)); s += sizeof(savedata); /* Chunk data */
 		n++; /* Saved chunk */
 	}
+	pthread_mutex_unlock(chunkmap->lock); /* Unlock */
 
 	usf_btof(SAVEFILE, save, n * SAVESTRIDE); /* Only write chunks which exist */
 	free(save);
@@ -252,9 +255,9 @@ void client_terminate(void) {
 
 	free(meshes); /* Meshlist components free'd in hashmap deallocation */
 
-	usf_freehmptr(chunkmap);
-	usf_freehmptr(meshmap);
-	usf_freehm(datamap);
+	usf_freeinthmptr(chunkmap);
+	usf_freeinthmptr(meshmap);
+	usf_freeinthm(datamap);
 	usf_freestrhm(namemap);
 	usf_freestrhm(cmdmap); /* Don't dealloc func pointers */
 	usf_freestrhm(varmap); /* Idem rsmlayout pointers */
