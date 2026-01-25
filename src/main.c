@@ -1,11 +1,9 @@
 #include <stdio.h>
-#include <stdlib.h>
-
 #include "renderer.h"
 #include "client.h"
 #include "rsmlayout.h"
 
-int32_t main() {
+i32 main(void) {
 	/* Make OpenGL context */
 	glfwInit();
 
@@ -17,8 +15,7 @@ int32_t main() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	/* Create window */
-	GLFWwindow* window = glfwCreateWindow(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, WINDOW_NAME, NULL, NULL);
-
+	GLFWwindow* window = glfwCreateWindow(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, RSM_NAME, NULL, NULL);
 	if (window == NULL) {
 		fprintf(stderr, "Fatal error creating GLFW window, exiting.\n");
 		glfwTerminate();
@@ -41,23 +38,19 @@ int32_t main() {
 	}
 
 	/* Start rendering and gameloop */
-	fprintf(stderr, "Starting %s\n", WINDOW_NAME);
+	fprintf(stderr, "Starting %s\n", RSM_NAME);
 	client_init();
+	fprintf(stderr, "Client initialization success!\n");
 	renderer_initShaders();
 	renderer_initBuffers();
 	fprintf(stderr, "Renderer initialization success!\n");
 
-	if (atexit(client_terminate)) /* Register termination function for program exit */
-		fprintf(stderr, "Warning: atexit client_terminate registration failed!\n");
-
+	/* Main game loop */
 	renderer_render(window);
 
-	/* Window was closed rather than exit() from program */
-	client_terminate(); /* Dealloc everything */
+	client_terminate(); /* Terminate properly before destroying GL context */
 	glfwDestroyWindow(window);
-	glfwTerminate(); /* On window close */
+	glfwTerminate();
 
 	fprintf(stderr, "Process exited normally.\n");
-	fflush(stdout); fflush(stderr);
-	_Exit(RSM_EXIT_NORMAL); /* Do not run client_terminate through atexit */
 }

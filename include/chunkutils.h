@@ -5,22 +5,20 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
-#include <stdarg.h>
-#include <inttypes.h>
 #include "usfhashmap.h"
 #include "usfqueue.h"
+#include "programio.h"
 #include "rsmlayout.h"
 #include "client.h"
 
+#define CHUNKVOLUME (CHUNKSIZE * CHUNKSIZE * CHUNKSIZE)
 #define MESHCENTER ((vec3) {0.5f, 0.5f, 0.5f})
-
 #define CHUNKCOORDMASK (0x1FFFFF) /* Lower 21 bits */
-#define TOCHUNKINDEX(X, Y, Z) ((uint64_t) ((X) & CHUNKCOORDMASK) << 42 \
-		| (uint64_t) ((Y) & CHUNKCOORDMASK) << 21 \
-		| (uint64_t) ((Z) & CHUNKCOORDMASK))
-#define VEC3(X, Y, Z) ((vec3) {(float) (X), (float) (Y), (float) (Z)})
+#define TOCHUNKINDEX(X, Y, Z) (((u64) (X) & CHUNKCOORDMASK) << 42 \
+		| ((u64) (Y) & CHUNKCOORDMASK) << 21 \
+		| ((u64) (Z) & CHUNKCOORDMASK))
 
-typedef enum {
+typedef enum Rotation : u8 {
     NONE,
     NORTH,
     WEST,
@@ -31,44 +29,39 @@ typedef enum {
     COMPLEX
 } Rotation;
 
-typedef struct {
-	float *opaqueVertices; /* Recalculated for rotation */
-	float *transVertices;
-	uint32_t *opaqueIndices; /* Never change */
-	uint32_t *transIndices;
-	/* For count : nmembers (of types) is as follows : opaque vert, trans vert, opaque ind, trans ind */
-	uint32_t count[4]; /* Never change */
+typedef struct Blockmesh {
+	f32 *opaqueVertices;
+	f32 *transVertices;
+	u32 *opaqueIndices;
+	u32 *transIndices;
+	u64 count[4]; /* OV, TV, OI, TI */
 } Blockmesh;
 
-typedef struct {
-    uint16_t id;       /* Block type e.g. WIRE */
-	uint8_t variant;   /* Block variant e.g. CONCRETE_GREEN */
-	Rotation rotation : 8;      /* Block rotation */
-    uint32_t metadata; /* Metadata field for general purpose per-block storage */
+typedef struct Blockdata {
+    u16 id;
+	u8 variant;
+	Rotation rotation;
+    u32 metadata;
 } Blockdata;
 
 typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];
 
-typedef struct Rawmesh { /* Raw data remeshed asynchronously, passed to main thread to dump in GL buffers */
-	uint64_t chunkindex;
-	float *opaqueVertexBuffer, *transVertexBuffer;
-	uint32_t *opaqueIndexBuffer, *transIndexBuffer;
-	uint32_t nOV, nTV, nOI, nTI;
+typedef struct Rawmesh { /* Remeshed data passed back to main thread */
+	u64 chunkindex;
+	f32 *opaqueVertexBuffer, *transVertexBuffer;
+	u32 *opaqueIndexBuffer, *transIndexBuffer;
+	u64 nOV, nTV, nOI, nTI;
 } Rawmesh;
 
-extern Blockmesh **blockmeshes;
-
-void cu_asyncRemeshChunk(uint64_t chunkindex);
+void cu_asyncRemeshChunk(u64 chunkindex);
 void cu_updateMeshlist(void);
 void cu_generateMeshlist(void);
 void cu_translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation);
 void cu_rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter);
-Blockdata *cu_coordsToBlock(vec3 coords, uint64_t *chunkindex);
-int64_t cu_chunkOffsetConvertFloat(float absoluteComponent);
-uint64_t cu_blockOffsetConvertFloat(float absoluteComponent);
-int32_t cu_AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2);
-
-/*TODO*/
-void pathcat(char *destination, int32_t n, ...);
+i64 cu_chunkOffsetConvertFloat(f32 absoluteComponent);
+u64 cu_blockOffsetConvertFloat(f32 absoluteComponent);
+Blockdata *cu_coordsToBlock(vec3 coords, u64 *chunkindex);
+Blockdata *cu_posToBlock(i64 x, i64 y, i64 z, u64 *chunkindex);
+i32 cu_AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2);
 
 #endif

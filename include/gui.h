@@ -8,11 +8,11 @@
 #include "command.h"
 #include "usfmath.h"
 
-extern uint32_t hotslotIndex, hotbarIndex, submenuIndex;
-extern uint64_t hotbar[RSM_HOTBAR_COUNT][RSM_HOTBAR_SLOTS][2];
-extern uint64_t submenus[RSM_INVENTORY_SUBMENUS][RSM_INVENTORY_SLOTS_HORIZONTAL][RSM_INVENTORY_SLOTS_VERTICAL];
+extern i32 gui_scheduleUpdate_;
+extern u64 hotslotIndex_, hotbarIndex_, submenuIndex_;
+extern u64 hotbar_[RSM_HOTBAR_COUNT][RSM_HOTBAR_SLOTS][2];
 
-void gui_updateGUI(void); /* Calls renderGUI at most once per frame */
+void gui_updateGUI(void);
 void gui_renderGUI(void);
 
 #endif

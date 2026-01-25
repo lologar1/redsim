@@ -4,50 +4,50 @@
 #include <ctype.h>
 #include "client.h"
 #include "rsmlayout.h"
-#include "ft2build.h"
-#include FT_FREETYPE_H
-
 #include "usfmath.h"
 
-/* Priority list for which GUI elements get drawn in front. This list MUST mimic
- * the order in guimap as indices are also used for texture atlas offsetting
- * TOP = shown with most priority (smallest Z) */
-typedef enum {
-	pItemIcons0, /* This prio is used for all icons ; the others are simply for texture loading (contiguous) */
-	pItemIcons1,
-	pItemIcons2,
-	pItemIcons3,
-	pSolidIcon,
-	pTransIcon,
-	pComponentIcon,
-	pMiscIcon,
-	pInventorySlot,
-	pSlotSelection,
-	pHotbarSlot,
-	pCrosshair,
-	MAX_GUI_PRIORITY /* Character textures come after this */
-} GUIPriority;
-#define GUI_PICON pSolidIcon /* First submenu icon */
+typedef enum GUITextureID { /* GUI texture IDs must match guimap declaration order! Used for atlas indexing. */
+#define TITEMICONSID tItemIcons0
+	tItemIcons0,
+	tItemIcons1,
+	tItemIcons2,
+	tItemIcons3,
+#define TICONID tSolidIcon
+	tSolidIcon,
+	tTransIcon,
+	tComponentIcon,
+	tMiscIcon,
+	tInventorySlot,
+	tSlotSelection,
+	tHotbarSlot,
+	tCrosshair,
+	MAX_GUI_TEXTUREID
+} GUITextureID;
+
+typedef enum GUIMeshID {
+	mItemIcons,
+	mCommandBackground,
+	mCommand,
+	mInventory,
+	mSlotSelection,
+	mHotbarSlot,
+	mCrosshair,
+	MAX_GUI_MESHID
+} GUIMeshID;
 
 typedef struct Textchar {
-	float uv[4]; /* Coords in guiAtlas */
-	int32_t size[2]; /* In pixels */
-	int32_t bearing[2];
-	int32_t advance;
+	f32 uv[4]; /* Coords in guiAtlas */
+	u64 size[2]; /* Width/height in pixels */
+	u64 bearing[2]; /* x bearing/y bearing in pixels */
+	u64 advance; /* glyph advance in pixels */
 } Textchar;
 
-extern GLuint guiAtlas, guiVAO[MAX_GUI_PRIORITY];
-extern uint32_t nGUIIndices[MAX_GUI_PRIORITY];
-extern float lineheight;
-extern int32_t GUI_SCHEDULEDUPDATE; /* Flag set by updateGUI, consumed each frame if need be */
-
-extern Textchar textchars[128];
+extern GLuint guiVAOs_[MAX_GUI_MESHID];
+extern u64 nGUIIndices_[MAX_GUI_MESHID];
 
 void gu_initGUI(void);
-void gu_parseGUIdata(void);
-void gu_loadFont(unsigned char **guiatlas, GLsizei *atlassize);
-float gu_guiAtlasAdjust(float y, GUIPriority priority);
-void gu_meshSet(uint32_t priority, float *v, uint32_t sizev, uint32_t *i, uint32_t sizei);
-uint32_t drawText(char *str, float *vbuf, uint32_t *ibuf, uint32_t ioffset, float x, float y, float scale, GUIPriority priority);
+f32 gu_guiAtlasAdjust(f32 v, GUITextureID textureid);
+void gu_meshSet(u64 meshid, f32 *v, u64 nvertices, u32 *i, u64 nindices);
+u64 gu_drawText(char *str, f32 *vbuf, u32 *ibuf, u64 ioffset, f32 x, f32 y, f32 scale, GUIMeshID priority);
 
 #endif

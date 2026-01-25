@@ -10,15 +10,13 @@
 #include "rsmlayout.h"
 #include "usfstring.h"
 #include "client.h"
-
-extern int64_t ret_selection[6];
-extern int64_t ret_positions[6];
-
-extern char cmdbuffer[RSM_MAX_COMMAND_LENGTH];
-extern char cmdlog[RSM_MAX_COMMAND_LOG_LINES][RSM_MAX_COMMAND_LENGTH];
-extern char (*logptr)[RSM_MAX_COMMAND_LENGTH];
-extern char *cmdptr;
-extern usf_hashmap *cmdmap, *varmap, *aliasmap;
+extern char cmdbuffer_[RSM_MAX_COMMAND_LENGTH];
+extern char cmdlog_[RSM_MAX_COMMAND_LOG_LINES][RSM_MAX_COMMAND_LENGTH];
+extern char (*logptr_)[RSM_MAX_COMMAND_LENGTH];
+extern char *cmdptr_;
+extern usf_hashmap *cmdmap_;
+extern usf_hashmap *varmap_;
+extern usf_hashmap *aliasmap_;
 
 void cmd_init(void);
 void cmd_parseChar(char c);

@@ -1,36 +1,24 @@
-#include "stb_image.h"
-
+#include "stb_image.h" /* Special .c file which includes stb_image implementation */
 #include "renderutils.h"
 
-float (**boundingboxes)[6];
-GLuint textureAtlas;
-uint64_t **spriteids; /* Note that getting a sprite from an item which doesn't have one will yield the first. */
-uint64_t MAX_BLOCK_ID, *MAX_BLOCK_VARIANT;
-size_t ov_bufsiz, tv_bufsiz, oi_bufsiz, ti_bufsiz; /* Remeshing buffer sizes */
-uint64_t ntextures; /* Number of loaded block textures */
-
-void loadVertexData(Vertex vertex, char *vector);
-void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant);
-
-/* Shader stuff */
 GLuint ru_createShader(GLenum shaderType, char *shaderSource) {
-	/* Creates a shader from source shaderSource of type shaderType and compiles
-	 * it, logging errors to stderr and returning the shader ID */
-	int32_t success;
+	/* Creates and compiles an OpenGL shader from source code with error logging.
+	 * Returns the created shader OpenGL ID */
+
 	char infoLog[RSM_MAX_SHADER_INFOLOG_LENGTH], *src;
 	GLuint shaderID;
-
 	shaderID = glCreateShader(shaderType); /* Create gl shader of proper type */
 	src = usf_ftos(shaderSource, NULL); /* Read shader source file as a single string */
 	glShaderSource(shaderID, 1, (const char **) &src, NULL); /* Set source to file */
 	glCompileShader(shaderID); /* Compile */
-	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success); /* Check compilation status */
 
+	i32 success;
+	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success); /* Check compilation status */
 	if (!success) {
 		glGetShaderInfoLog(shaderID, RSM_MAX_SHADER_INFOLOG_LENGTH, NULL, infoLog); /* Get log */
 		fprintf(stderr, "Error compiling shader at %s, see log:\n%s", shaderSource, infoLog);
+		exit(RSM_EXIT_GLERROR);
 	}
-
 	free(src); /* Free source file memory */
 
 	return shaderID;
@@ -40,19 +28,20 @@ GLuint ru_createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	/* Creates and links a shader program using a vertex and a fragment shader,
 	 * logging errors to stderr and returning the program object ID. The shader
 	 * objects are then deleted as they are no longer needed ! */
-	int32_t success;
+
 	char infoLog[RSM_MAX_SHADER_INFOLOG_LENGTH];
 	GLuint programID;
-
 	programID = glCreateProgram(); /* Create program */
 	glAttachShader(programID, vertexShader); /* Attach vertex shader */
 	glAttachShader(programID, fragmentShader); /* Attach fragment shader */
 	glLinkProgram(programID); /* Link */
-	glGetProgramiv(programID, GL_LINK_STATUS, &success); /* Check linking success */
 
+	i32 success;
+	glGetProgramiv(programID, GL_LINK_STATUS, &success); /* Check linking success */
 	if (!success) {
 		glGetProgramInfoLog(programID, RSM_MAX_SHADER_INFOLOG_LENGTH, NULL, infoLog); /* Get log */
 		fprintf(stderr, "Error linking shader program, see log:\n%s", infoLog);
+		exit(RSM_EXIT_GLERROR);
 	} else { /* Delete shaders as they are no longer needed if the program exists */
 		glDeleteShader(vertexShader);
 		glDeleteShader(fragmentShader);
@@ -61,14 +50,17 @@ GLuint ru_createShaderProgram(GLuint vertexShader, GLuint fragmentShader) {
 	return programID;
 }
 
-void ru_atlasAppend(char *meshname, int32_t texSizeX, int32_t texSizeY, unsigned char **atlasptr, GLsizei *atlassize) {
-	/* Creates a texture atlas (in the texAtlasData temporary buffer)
-	 * and dynamically adjust both the buffer and atlas dimension variables. */
+void ru_atlasAppend(char *meshname, u64 sizex, u64 sizey, u8 **atlasptr, GLsizei *atlassz) {
+	/* Loads and appends an RGBA image into the given texture atlas.
+	 * The atlas is assumed to be of uniform width (sizex).
+	 * If either of the size parameters are 0, this function has no effect. */
+
+	if (sizex == 0 || sizey == 0) return; /* Loading zero-sized image */
+
 	stbi_set_flip_vertically_on_load(1); /* Right images so Y=0 is on bottom */
 
-	int32_t width, height, ncolorchannels;
-	unsigned char *imagedata;
-
+	i32 width, height, ncolorchannels;
+	u8 *imagedata;
 	imagedata = stbi_load(meshname, &width, &height, &ncolorchannels, 4);
 
 	if (imagedata == NULL) {
@@ -76,284 +68,16 @@ void ru_atlasAppend(char *meshname, int32_t texSizeX, int32_t texSizeY, unsigned
 		exit(RSM_EXIT_NOTEXTURE);
 	}
 
-	if (width != texSizeX || height != texSizeY) {
-		fprintf(stderr, "Texture at %s does not match required size %u by %u, aborting.\n",
-				meshname, texSizeX, texSizeY);
+	if ((u64) width != sizex || (u64) height != sizey) {
+		fprintf(stderr, "Texture at %s does not match required size %"PRIu64" by %"PRIu64", aborting.\n",
+				meshname, sizex, sizey);
 		exit(RSM_EXIT_BADTEXTURE);
 	}
 
-	/* Grow texture atlas by the size of the image (+ padding) and append it. We can avoid storing which
-	 * image maps to where by assuming a linear strip (vertical) of texSize by texSize  */
-	size_t texsz = texSizeX * texSizeY * 4;
-
-	*atlasptr = realloc(*atlasptr, *atlassize + texsz);
-	memcpy(*atlasptr + *atlassize, imagedata, texsz);
-	*atlassize += texsz;
+	u64 imagesz = sizex * sizey * 4;
+	*atlasptr = realloc(*atlasptr, *atlassz + imagesz);
+	memcpy(*atlasptr + *atlassz, imagedata, imagesz);
+	*atlassz += imagesz;
 
 	stbi_image_free(imagedata);
-}
-
-void ru_parseBlockdata(void) {
-	/* Create a texture atlas (and set it to textureAtlas, which is used by the renderer) which
-	 * corresponds neatly with adjusted coordinates of meshes, which should then be set as templates
-	 * in blockmeshes (indirection is id, then variant, which gives a pointer to the template itself).
-	 * Also handle collision bounding boxes */
-
-#define texMeshPath RESOURCE_BASE_PATH TEXTURE_BLOCK_PATH
-#define blockmapPath RESOURCE_BASE_PATH BLOCKMAP_PATH
-	fprintf(stderr, "Loading blockmeshes from directory %s\n", texMeshPath);
-	fprintf(stderr, "Loading blockmap from file %s\n", blockmapPath);
-
-	char **blockmap;
-
-	blockmap = usf_ftost(blockmapPath, &MAX_BLOCK_ID);
-	MAX_BLOCK_VARIANT = malloc(MAX_BLOCK_ID * sizeof(uint64_t));
-
-	if (blockmap == NULL) {
-		fprintf(stderr, "Error reading blockmap at %s (Does it exist?), aborting.\n", blockmapPath);
-		exit(RSM_EXIT_NOBLOCKMAP);
-	}
-
-	/* Alloc ID indirection layer (equivalent to number of defined meshes (lines) in blockmap */
-	blockmeshes = malloc(MAX_BLOCK_ID * sizeof(Blockmesh *));
-	boundingboxes = malloc(MAX_BLOCK_ID * sizeof(float (*)[6]));
-	spriteids = malloc(MAX_BLOCK_ID * sizeof(uint64_t *));
-
-	/* Iterate through ids and variants and create appropriate blockmesh templates */
-	uint64_t id, nvariants, nvariant, uid;
-	uint64_t texid, spriteid, ntextiles;
-	Blockmesh template;
-	char **variants, *variant, *metadata;
-
-	char meshdatapath[RSM_MAX_PATH_NAME_LENGTH], **meshdata, *vectordata;
-	char meshtexturepath[RSM_MAX_PATH_NAME_LENGTH];
-	uint64_t meshdatalen, d;
-	Vertex vertexdata; /* Scratchpad for loading raw vertex data from file */
-
-	/* Precompute number of textures to get right UV coordinate mappings */
-	char *override;
-	uint64_t overrides;
-	for (ntextures = id = 1; id < MAX_BLOCK_ID; id++) { /* Skip id 0 (only one texture for wiremesh */
-		/* For each $ override, add its texture tile count, then add 1 for each default handle */
-		for (overrides = 0, override = strchr(blockmap[id], '$'); override; override = strchr(override, '$')) {
-			ntextures += strtoul(++override, NULL, 10); /* Increment override here for next iteration */
-			overrides++;
-		}
-
-		ntextures += usf_scount(blockmap[id], ' ') + 1 - overrides; /* Take default declarations into account */
-	}
-
-	unsigned char *texAtlasData = NULL; /* Temporary buffer */
-	GLsizei texAtlasSize = 0; /* Buffer size in bytes */
-
-	/* Now load mesh data */
-	for (spriteid = texid = id = 0; id < MAX_BLOCK_ID; id++) {
-		/* Read specifications from file */
-		variants = usf_scsplit(blockmap[id], ' ', &nvariants);
-		MAX_BLOCK_VARIANT[id] = nvariants;
-
-		blockmeshes[id] = calloc(nvariants, sizeof(Blockmesh));
-		spriteids[id] = calloc(nvariants, sizeof(uint64_t));
-
-		/* calloc to avoid having uninitialized data in no-collision blocks */
-		boundingboxes[id] = calloc(nvariants, sizeof(float [6]));
-
-		for (nvariant = 0; nvariant < nvariants; nvariant++, texid += ntextiles) {
-			uid = ASUID(id, nvariant); /* Unique id:variant identifier */
-
-			memset(&template, 0, sizeof(Blockmesh)); /* Reset template for this UID */
-			variant = variants[nvariant];
-
-			/* Find all block declaration parameters (*, :, $) */
-			if (variant[0] == '*') {
-				spriteids[id][nvariant] = spriteid++; /* To get sprite from specific identifier (id+variant) */
-				variant++;
-			}
-
-			if ((metadata = strchr(variant, ':'))) { /* Block has default metadata */
-				*metadata++ = '\0'; /* Cut name here */
-				usf_inthmput(datamap, uid, USFDATAU(strtoul(metadata, NULL, 10)));
-			}
-
-			if ((metadata = strchr(variant, '$'))) { /* Texture is bigger than one image */
-				*metadata++ = '\0';
-				if ((ntextiles = strtoul(metadata, NULL, 10)) > RSM_MAX_BLOCKMESH_TEXTURETILES) {
-					fprintf(stderr, "Block %lu variant %lu exceeds maximum texture tile count at %lu > %u, "
-							"aborting.\n", id, nvariant, ntextiles, RSM_MAX_BLOCKMESH_TEXTURETILES);
-					exit(RSM_EXIT_EXCBUF);
-				}
-			} else ntextiles = 1; /* One texture tile used */
-
-			/* Log only the handle into namemap for future reference */
-			usf_strhmput(namemap, variant, USFDATAU(uid));
-
-			/* Allow for SPRITE_PLACEHOLDERs in blockmap not taking space in the atlas */
-			if (id == 0 && nvariant) {
-				ntextiles = 0; /* Not allocating a texture tile for this placeholder */
-				continue;
-			}
-
-			/* If it exists, will parse this block's bounding box to boundingboxes */
-			parseBoundingBox(variant, id, nvariant);
-
-			/* Append texture for this mesh to the atlas */
-			pathcat(meshtexturepath, 3, texMeshPath, variant, TEXTURE_EXTENSION);
-			ru_atlasAppend(meshtexturepath, RSM_BLOCK_TEXTURE_SIZE_PIXELS,
-					RSM_BLOCK_TEXTURE_SIZE_PIXELS * ntextiles, &texAtlasData, &texAtlasSize);
-
-			/* Now build the template using raw mesh data from the text file */
-			pathcat(meshdatapath, 3, texMeshPath, variant, MESH_EXTENSION);
-			meshdata = usf_ftost(meshdatapath, &meshdatalen);
-			if (meshdata == NULL) {
-				fprintf(stderr, "Error reading raw mesh data at %s (Does it exist?), aborting.\n", meshdatapath);
-				exit(RSM_EXIT_NOMESHDATA);
-			}
-
-			/* Loop through mesh data specification lines and adjust tex coords before appending to template */
-			uint64_t nindices, n, tileoffset; /* tileoffset used for multi-texture meshes */
-			char **indices;
-			for (tileoffset = d = 0; d < meshdatalen; d++) {
-				vectordata = meshdata[d];
-
-				switch (vectordata[0]) {
-#define ATLASADJUST(y) (((y) * RSM_BLOCK_TEXTURE_SIZE_PIXELS + RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid) \
-		/ (ntextures * RSM_BLOCK_TEXTURE_SIZE_PIXELS))
-#define texy vertexdata[7] /* V-pos of texture UV */
-#define VERTEXADJUST(COUNTSECTION, VERTEXSECTION) \
-		loadVertexData(vertexdata, vectordata + 1); \
-		texy = ATLASADJUST(USF_CLAMP(texy, RSM_TEXTURE_PADDING, 1 - RSM_TEXTURE_PADDING) + tileoffset); \
-		template.VERTEXSECTION = realloc(template.VERTEXSECTION, \
-				(template.count[COUNTSECTION] + (sizeof(Vertex)/sizeof(float))) * sizeof(float)); \
-		memcpy(template.VERTEXSECTION + template.count[COUNTSECTION], vertexdata, sizeof(Vertex)); \
-		template.count[COUNTSECTION] += sizeof(Vertex)/sizeof(float);
-					case 'o':
-						VERTEXADJUST(0, opaqueVertices);
-						break;
-					case 't':
-						VERTEXADJUST(1, transVertices);
-						break;
-#define INDEXADJUST(COUNTSECTION, INDEXSECTION) \
-		indices = usf_scsplit(vectordata + 1, ' ', &nindices); \
-		template.INDEXSECTION = realloc(template.INDEXSECTION, \
-				(template.count[COUNTSECTION] + nindices) * sizeof(unsigned int)); \
-		for (n = 0; n < nindices; n++) \
-			template.INDEXSECTION[template.count[COUNTSECTION] + n] = strtof(indices[n], NULL); \
-		template.count[COUNTSECTION] += nindices; \
-		free(indices);
-					case 'i':
-						INDEXADJUST(2, opaqueIndices);
-						break;
-					case 'e':
-						INDEXADJUST(3, transIndices);
-						break;
-					case '$':
-						if ((tileoffset = strtoul(vectordata + 1, NULL, 10)) > RSM_MAX_BLOCKMESH_TEXTURETILES) {
-							fprintf(stderr, "Block %lu variant %lu exceeds maximum texture tile count at %lu > "
-									"%u, aborting.\n", id, nvariant, ntextiles, RSM_MAX_BLOCKMESH_TEXTURETILES);
-							exit(RSM_EXIT_EXCBUF);
-						}
-						break;
-					case '#': /* To allow for comments. Other chars would work but would trigger error message */
-					case '\0':
-						continue;
-					default:
-						fprintf(stderr, "Unknown data format %c at line %lu in mesh data template file %s, skipping.\n", vectordata[0], d, meshdatapath);
-						continue;
-				}
-
-			}
-
-			/* Guard against buffer overflow when copying to scratchpad on chunk remeshing */
-			if (template.count[0] > RSM_MAX_BLOCKMESH_VERTICES
-					|| template.count[1] > RSM_MAX_BLOCKMESH_VERTICES) {
-				fprintf(stderr, "Blockmesh for ID %lu variant %lu exceeds maximum blockmesh vertex count (%u or %u) > %u, aborting.\n", id, nvariant, template.count[0], template.count[1], RSM_MAX_BLOCKMESH_VERTICES);
-				exit(RSM_EXIT_EXCBUF);
-			}
-
-			if (template.count[2] > RSM_MAX_BLOCKMESH_INDICES
-					|| template.count[3] > RSM_MAX_BLOCKMESH_INDICES) {
-				fprintf(stderr, "Blockmesh for ID %lu variant %lu exceeds maximum blockmesh index count (%u or %u) > %u, aborting.\n", id, nvariant, template.count[2], template.count[3], RSM_MAX_BLOCKMESH_INDICES);
-				exit(RSM_EXIT_EXCBUF);
-			}
-
-			/* Adjust maximum sizes for buffer allocation */
-			ov_bufsiz = USF_MAX(ov_bufsiz, template.count[0]); tv_bufsiz = USF_MAX(tv_bufsiz, template.count[1]);
-			oi_bufsiz = USF_MAX(oi_bufsiz, template.count[2]); ti_bufsiz = USF_MAX(ti_bufsiz, template.count[3]);
-
-			usf_freetxt(meshdata, 1); /* usf_ftost */
-
-			/* Set to blockmeshes */
-			blockmeshes[id][nvariant] = template;
-		}
-
-		free(variants); /* Alloc'd by usf_scsplit so no new allocations for substrings */
-	}
-
-	/* Size in bytes of each remeshing scratchpad buffer (to alloc buffers in rawmesh) */
-	ov_bufsiz *= sizeof(float) * CHUNKVOLUME; tv_bufsiz *= sizeof(float) * CHUNKVOLUME;
-	oi_bufsiz *= sizeof(unsigned int) * CHUNKVOLUME; ti_bufsiz *= sizeof(unsigned int) * CHUNKVOLUME;
-
-	fprintf(stderr, "Scratchpad buffer sizes for remeshing (vertex opaque/trans, index opaque/trans): "
-			"%.2fMB, %.2fMB, %.2fMB, %.2fMB\n",
-			ov_bufsiz/1e6, tv_bufsiz/1e6, oi_bufsiz/1e6, ti_bufsiz/1e6);
-
-	/* Generate and bind atlas to OpenGL renderer */
-	glGenTextures(1, &textureAtlas);
-	glBindTexture(GL_TEXTURE_2D, textureAtlas);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RSM_BLOCK_TEXTURE_SIZE_PIXELS, texAtlasSize	/ (4 * RSM_BLOCK_TEXTURE_SIZE_PIXELS), 0, GL_RGBA, GL_UNSIGNED_BYTE, texAtlasData);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	/* Cleanup */
-	free(texAtlasData);
-	usf_freetxt(blockmap, 1); /* usf_ftost */
-}
-
-void ru_deallocateVAO(GLuint VAO) {
-	/* Frees the memory (VBO and EBO) associated with a VAO */
-	GLint VBO, EBO;
-	GLuint VBOid, EBOid; /* For some reason getting buffers from VAO returns signed ids */
-
-	glBindVertexArray(VAO);
-	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO); VBOid = (GLuint) VBO;
-	glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &EBO); EBOid = (GLuint) EBO;
-	glDeleteVertexArrays(1, &VAO); glDeleteBuffers(1, &VBOid); glDeleteBuffers(1, &EBOid);
-	glBindVertexArray(0);
-}
-
-void loadVertexData(Vertex vertex, char *vector) {
-	/* Parse textual vector data into numerical vertex data (first char is skipped by caller) */
-
-	if (sscanf(vector, "%f %f %f %f %f %f %f %f", &vertex[0], &vertex[1], &vertex[2], &vertex[3], &vertex[4],
-			&vertex[5], &vertex[6], &vertex[7]) == EOF) {
-		fprintf(stderr, "Error parsing vertex data for line %s, aborting.\n", vector);
-		exit(RSM_EXIT_BADVERTEXDATA);
-	}
-}
-
-void parseBoundingBox(char *boxname, uint64_t id, uint64_t variant) {
-	/* If it exists, parse the bounding box for this block and load it to
-	 * boundingboxes */
-
-	char boundingboxpath[RSM_MAX_PATH_NAME_LENGTH];
-	pathcat(boundingboxpath, 4, RESOURCE_BASE_PATH, TEXTURE_BLOCK_PATH, boxname, BOUNDINGBOX_EXTENSION);
-
-	char *boundingbox;
-	boundingbox = usf_ftos(boundingboxpath, NULL);
-
-	if (boundingbox == NULL) return; /* Block must be passthrough, no bounding box */
-
-	float *bb = boundingboxes[id][variant];
-
-	if (sscanf(boundingbox, "%f %f %f %f %f %f\n",
-				&bb[0], &bb[1], &bb[2], &bb[3], &bb[4], &bb[5]) == EOF) {
-		fprintf(stderr, "Error parsing bounding box data for line %s, aborting.\n", boundingbox);
-		exit(RSM_EXIT_BADBOUNDINGBOXDATA);
-	}
-
-	free(boundingbox); /* Cleanup disk file */
 }

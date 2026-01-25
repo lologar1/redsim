@@ -1,12 +1,13 @@
 #include "renderer.h"
 
-#define COLOR_CLEAR (float [4]) {0.098f, 0.098f, 0.098f, 1.0f}
-#define ZERO_CLEAR (float [4]) {0.0f, 0.0f, 0.0f, 0.0f}
-#define ONE_CLEAR (float [4]) {1.0f, 1.0f, 1.0f, 1.0f}
+#define COLOR_CLEAR (f32 [4]) {0.098f, 0.098f, 0.098f, 1.0f}
+#define ZERO_CLEAR (f32 [4]) {0.0f, 0.0f, 0.0f, 0.0f}
+#define ONE_CLEAR (f32 [4]) {1.0f, 1.0f, 1.0f, 1.0f}
 
-void framebuffer_size_callback(GLFWwindow *window, int32_t width, int32_t height);
+u64 screenWidth_ = DEFAULT_SCREEN_WIDTH;
+u64 screenHeight_ = DEFAULT_SCREEN_HEIGHT;
 
-float compositionQuad[] = {
+static f32 compositionQuad[] = {
 	/* Position		TexPos */
 	-1.0f,  1.0f,	0.0f, 1.0f,
 	-1.0f, -1.0f,	0.0f, 0.0f,
@@ -16,35 +17,35 @@ float compositionQuad[] = {
 	1.0f,  1.0f,	1.0f, 1.0f
 };
 
-uint32_t screenWidth = 1080, screenHeight = 1920;
+static void framebuffer_size_callback(GLFWwindow *window, i32 width, i32 height);
 
-/* Shader programs */
-GLuint vertexShader, opaqueFragmentShader, transFragmentShader, compositionVertexShader,
-	   compositionFragmentShader, guiVertexShader, guiFragmentShader, opaqueShader,
-	   transShader, compositionShader, guiShader;
+/* Shader programs; not static since client_terminate imports them */
+GLuint vertexShader_, opaqueFragmentShader_, transFragmentShader_, compositionVertexShader_,
+	   compositionFragmentShader_, guiVertexShader_, guiFragmentShader_, opaqueShader_,
+	   transShader_, compositionShader_, guiShader_;
 
 /* Framebuffer stuff */
-GLuint FBO, GUIFBO;
-GLuint opaqueColorTex, accTex, revealTex, depthTex, guiColorTex, guiDepthTex;
+static GLuint FBO, GUIFBO;
+static GLuint opaqueColorTex_, accTex_, revealTex_, depthTex_, guiColorTex_, guiDepthTex_;
 
 void renderer_initShaders(void) {
 	/* Compile shaders from GLSL programs and link them */
-	vertexShader = ru_createShader(GL_VERTEX_SHADER, "shaders/vertexshader.glsl");
-	opaqueFragmentShader = ru_createShader(GL_FRAGMENT_SHADER, "shaders/opaquefragmentshader.glsl");
-	transFragmentShader = ru_createShader(GL_FRAGMENT_SHADER, "shaders/transfragmentshader.glsl");
-	compositionVertexShader = ru_createShader(GL_VERTEX_SHADER, "shaders/compositionvertexshader.glsl");
-	compositionFragmentShader = ru_createShader(GL_FRAGMENT_SHADER, "shaders/compositionfragmentshader.glsl");
-	guiVertexShader = ru_createShader(GL_VERTEX_SHADER, "shaders/guivertexshader.glsl");
-	guiFragmentShader = ru_createShader(GL_FRAGMENT_SHADER, "shaders/guifragmentshader.glsl");
+	vertexShader_ = ru_createShader(GL_VERTEX_SHADER, "shaders/vertexshader.glsl");
+	opaqueFragmentShader_ = ru_createShader(GL_FRAGMENT_SHADER, "shaders/opaquefragmentshader.glsl");
+	transFragmentShader_ = ru_createShader(GL_FRAGMENT_SHADER, "shaders/transfragmentshader.glsl");
+	compositionVertexShader_ = ru_createShader(GL_VERTEX_SHADER, "shaders/compositionvertexshader.glsl");
+	compositionFragmentShader_ = ru_createShader(GL_FRAGMENT_SHADER, "shaders/compositionfragmentshader.glsl");
+	guiVertexShader_ = ru_createShader(GL_VERTEX_SHADER, "shaders/guivertexshader.glsl");
+	guiFragmentShader_ = ru_createShader(GL_FRAGMENT_SHADER, "shaders/guifragmentshader.glsl");
 
-	opaqueShader = ru_createShaderProgram(vertexShader, opaqueFragmentShader);
-	transShader = ru_createShaderProgram(vertexShader, transFragmentShader);
-	compositionShader = ru_createShaderProgram(compositionVertexShader, compositionFragmentShader);
-	guiShader = ru_createShaderProgram(guiVertexShader, guiFragmentShader);
+	opaqueShader_ = ru_createShaderProgram(vertexShader_, opaqueFragmentShader_);
+	transShader_ = ru_createShaderProgram(vertexShader_, transFragmentShader_);
+	compositionShader_ = ru_createShaderProgram(compositionVertexShader_, compositionFragmentShader_);
+	guiShader_ = ru_createShaderProgram(guiVertexShader_, guiFragmentShader_);
 }
 
 void renderer_render(GLFWwindow *window) {
-	/* Setup renderer and start rendering loop */
+	/* Setup renderer and start rendering loop; assumes GL buffers are properly initialized */
 
 	/* Set callback functions */
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -54,7 +55,7 @@ void renderer_render(GLFWwindow *window) {
 	glfwSetMouseButtonCallback(window, io_processMouseInput);
 	glfwSetScrollCallback(window, io_processMouseScroll);
 
-	/* To render composition quad at the end of rendering */
+	/* Composition quad */
 	GLuint compositionVAO, compositionVBO;
 	glGenVertexArrays(1, &compositionVAO);
 	glGenBuffers(1, &compositionVBO);
@@ -62,34 +63,30 @@ void renderer_render(GLFWwindow *window) {
 	glBindBuffer(GL_ARRAY_BUFFER, compositionVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(compositionQuad), compositionQuad, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) 0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(f32), (void *) 0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (2 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(f32), (void *) (2 * sizeof(f32)));
 	glBindVertexArray(0);
 
 	/* Link textures with shader samplers ; the textures are set to their proper slots in renderer_initBuffers */
-	glUseProgram(opaqueShader);
-	glUniform1i(glGetUniformLocation(opaqueShader, "atlas"), 0);
-	glUseProgram(transShader);
-	glUniform1i(glGetUniformLocation(transShader, "atlas"), 0);
+	glUseProgram(opaqueShader_);
+	glUniform1i(glGetUniformLocation(opaqueShader_, "atlas"), 0);
+	glUseProgram(transShader_);
+	glUniform1i(glGetUniformLocation(transShader_, "atlas"), 0);
 
 	/* Link textures with shader samplers. The reason for using attachment 4
 	 * is purely because the GUI was introduced after code for the rest was implemented */
-	glUseProgram(guiShader);
-	glUniform1i(glGetUniformLocation(guiShader, "atlas"), 4);
-	glUseProgram(compositionShader);
-	glUniform1i(glGetUniformLocation(compositionShader, "opaqueBuffer"), 1);
-	glUniform1i(glGetUniformLocation(compositionShader, "accBuffer"), 2);
-	glUniform1i(glGetUniformLocation(compositionShader, "revealBuffer"), 3);
-	glUniform1i(glGetUniformLocation(compositionShader, "guiBuffer"), 5);
+	glUseProgram(guiShader_);
+	glUniform1i(glGetUniformLocation(guiShader_, "atlas"), 4);
+	glUseProgram(compositionShader_);
+	glUniform1i(glGetUniformLocation(compositionShader_, "opaqueBuffer"), 1);
+	glUniform1i(glGetUniformLocation(compositionShader_, "accBuffer"), 2);
+	glUniform1i(glGetUniformLocation(compositionShader_, "revealBuffer"), 3);
+	glUniform1i(glGetUniformLocation(compositionShader_, "guiBuffer"), 5);
 
 	glBlendEquation(GL_FUNC_ADD);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glFrontFace(GL_CW);
-
-	/* Rendering variables */
-	float time, lastTime = 0.0f;
-	int32_t i;
 
 	mat4 view, perspective; /* In World Space, the camera is at (0, 0, 0) */
 	vec3 cameraPos = {0.0f, 0.0f, 0.0f};
@@ -97,23 +94,27 @@ void renderer_render(GLFWwindow *window) {
 
 	/* Shader locations */
 	GLint opaqueViewLocation, transViewLocation, opaqueProjLocation, transProjLocation;
-	opaqueViewLocation = glGetUniformLocation(opaqueShader, "viewMatrix");
-	transViewLocation = glGetUniformLocation(transShader, "viewMatrix");
-	opaqueProjLocation = glGetUniformLocation(opaqueShader, "projectionMatrix");
-	transProjLocation = glGetUniformLocation(transShader, "projectionMatrix");
+	opaqueViewLocation = glGetUniformLocation(opaqueShader_, "viewMatrix");
+	transViewLocation = glGetUniformLocation(transShader_, "viewMatrix");
+	opaqueProjLocation = glGetUniformLocation(opaqueShader_, "projectionMatrix");
+	transProjLocation = glGetUniformLocation(transShader_, "projectionMatrix");
 
 	GLenum glError;
 
 	/* Render loop */
+	f32 time, lastTime;
+	u64 i;
+
+	lastTime = 0.0f;
 	while (!glfwWindowShouldClose(window)) {
 		if ((glError = glGetError())) {
-			fprintf(stderr, "OpenGL Error %d\n", glError);
+			fprintf(stderr, "OpenGL Error %"PRIu32"\n", glError);
 			exit(RSM_EXIT_GLERROR);
 		}
 
-		if (GUI_SCHEDULEDUPDATE) { /* Redraw requested by updateGUI */
+		if (gui_scheduleUpdate_) { /* Redraw requested by updateGUI */
 			gui_renderGUI();
-			GUI_SCHEDULEDUPDATE = 0;
+			gui_scheduleUpdate_ = 0;
 		}
 
 		/* Framerate cap */
@@ -129,8 +130,8 @@ void renderer_render(GLFWwindow *window) {
 
 		/* Client communication */
 		client_frameEvent(window);
-		client_getOrientationVector(relativeViewTarget);
-		client_getPosition(cameraPos);
+		glm_vec3_copy(orientation_, relativeViewTarget);
+		glm_vec3_copy(position_, cameraPos);
 
 		/* Create view translation matrix from cameraPos to origin:
 		 * This matrix transforms world coordinates to be in front of
@@ -140,10 +141,10 @@ void renderer_render(GLFWwindow *window) {
 		glm_lookat(cameraPos, viewTarget, GLM_YUP, view);
 
 		/* Perspective projection matrix */
-		glm_perspective(glm_rad(RSM_FOV), (float) screenWidth / (float) screenHeight,
+		glm_perspective(glm_rad(RSM_FOV), (f32) screenWidth_ / (f32) screenHeight_,
 				RSM_NEARPLANE, RSM_RENDER_DISTANCE * CHUNKSIZE, perspective);
 
-		/* Things we must keep track of during rendering (OpenGL state stuff)
+		/* Things we must keep track of during rendering (OpenGL state)
 		 * glDepthMask and glDepthTest
 		 * glCullFace
 		 * glBlend
@@ -162,17 +163,17 @@ void renderer_render(GLFWwindow *window) {
 		glClearBufferfv(GL_COLOR, 0, COLOR_CLEAR);
 		glClearBufferfv(GL_DEPTH, 0, ONE_CLEAR);
 
-		glUseProgram(opaqueShader);
-		glUniformMatrix4fv(opaqueViewLocation, 1, GL_FALSE, (float *) view);
-		glUniformMatrix4fv(opaqueProjLocation, 1, GL_FALSE, (float *) perspective);
-		for (i = 0; i < nmesh; i++) {
-			glBindVertexArray(meshes[i][0]);
-			if (meshes[i][2]) glDrawElements(GL_TRIANGLES, meshes[i][2], GL_UNSIGNED_INT, 0);
+		glUseProgram(opaqueShader_);
+		glUniformMatrix4fv(opaqueViewLocation, 1, GL_FALSE, (f32 *) view);
+		glUniformMatrix4fv(opaqueProjLocation, 1, GL_FALSE, (f32 *) perspective);
+		for (i = 0; i < nmeshes_; i++) {
+			glBindVertexArray(meshes_[i][0]);
+			if (meshes_[i][2]) glDrawElements(GL_TRIANGLES, meshes_[i][2], GL_UNSIGNED_INT, 0);
 		}
 
 		/* Wireframe (highlighting) rendering */
-		glBindVertexArray(wiremesh[0]);
-		glDrawElements(GL_LINES, wiremesh[1], GL_UNSIGNED_INT, 0);
+		glBindVertexArray(wiremesh_[0]);
+		glDrawElements(GL_LINES, wiremesh_[1], GL_UNSIGNED_INT, 0);
 
 		/* Transparent rendering */
 		glDepthMask(GL_FALSE); glEnable(GL_DEPTH_TEST);
@@ -188,12 +189,12 @@ void renderer_render(GLFWwindow *window) {
 		glClearBufferfv(GL_COLOR, 0, ZERO_CLEAR); /* Goddamn GL state + indirection */
 		glClearBufferfv(GL_COLOR, 1, ONE_CLEAR);
 
-		glUseProgram(transShader);
-		glUniformMatrix4fv(transViewLocation, 1, GL_FALSE, (float *) view);
-		glUniformMatrix4fv(transProjLocation, 1, GL_FALSE, (float *) perspective);
-		for (i = 0; i < nmesh; i++) {
-			glBindVertexArray(meshes[i][1]);
-			if (meshes[i][3]) glDrawElements(GL_TRIANGLES, meshes[i][3], GL_UNSIGNED_INT, 0);
+		glUseProgram(transShader_);
+		glUniformMatrix4fv(transViewLocation, 1, GL_FALSE, (f32 *) view);
+		glUniformMatrix4fv(transProjLocation, 1, GL_FALSE, (f32 *) perspective);
+		for (i = 0; i < nmeshes_; i++) {
+			glBindVertexArray(meshes_[i][1]);
+			if (meshes_[i][3]) glDrawElements(GL_TRIANGLES, meshes_[i][3], GL_UNSIGNED_INT, 0);
 		}
 
 		/* GUI rendering */
@@ -209,10 +210,10 @@ void renderer_render(GLFWwindow *window) {
 		glClearBufferfv(GL_COLOR, 0, ZERO_CLEAR);
 		glClearBufferfv(GL_DEPTH, 0, ONE_CLEAR);
 
-		glUseProgram(guiShader);
-		for (i = MAX_GUI_PRIORITY - 1; i >= 0; i--) {
-			glBindVertexArray(guiVAO[i]);
-			if (nGUIIndices[i]) glDrawElements(GL_TRIANGLES, nGUIIndices[i], GL_UNSIGNED_INT, 0);
+		glUseProgram(guiShader_);
+		for (i = MAX_GUI_MESHID; i > 0; i--) {
+			glBindVertexArray(guiVAOs_[i - 1]);
+			if (nGUIIndices_[i - 1]) glDrawElements(GL_TRIANGLES, nGUIIndices_[i - 1], GL_UNSIGNED_INT, 0);
 		}
 
 		/* Composition */
@@ -224,7 +225,7 @@ void renderer_render(GLFWwindow *window) {
 		/* No glDrawBuffers call as this is the default framebuffer */
 		/* Do not clear as entire screen is overwritten with composed image */
 
-		glUseProgram(compositionShader);
+		glUseProgram(compositionShader_);
 		glBindVertexArray(compositionVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6); /* Draw final quad */
 
@@ -240,31 +241,32 @@ void renderer_initBuffers(void) {
 	 * then render transparent scene (with depth check) to both accTex
 	 * and revealTex (for WB-OIT algorithm) and finally composite them
 	 * both and draw to screen framebuffer */
+
 	/* Opaque color buffer */
-	glGenTextures(1, &opaqueColorTex);
-	glBindTexture(GL_TEXTURE_2D, opaqueColorTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glGenTextures(1, &opaqueColorTex_);
+	glBindTexture(GL_TEXTURE_2D, opaqueColorTex_);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth_, screenHeight_, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	/* Accumulator buffer (nearest for interpolation) */
-    glGenTextures(1, &accTex);
-	glBindTexture(GL_TEXTURE_2D, accTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+    glGenTextures(1, &accTex_);
+	glBindTexture(GL_TEXTURE_2D, accTex_);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth_, screenHeight_, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	/* Reveal buffer (R32F precision) */
-	glGenTextures(1, &revealTex);
-	glBindTexture(GL_TEXTURE_2D, revealTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, screenWidth, screenHeight, 0, GL_RED, GL_FLOAT, NULL);
+	glGenTextures(1, &revealTex_);
+	glBindTexture(GL_TEXTURE_2D, revealTex_);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, screenWidth_, screenHeight_, 0, GL_RED, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	/* Depth buffer */
-	glGenTextures(1, &depthTex);
-	glBindTexture(GL_TEXTURE_2D, depthTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, screenWidth, screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glGenTextures(1, &depthTex_);
+	glBindTexture(GL_TEXTURE_2D, depthTex_);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, screenWidth_, screenHeight_, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -272,16 +274,16 @@ void renderer_initBuffers(void) {
 	 * composition stage) with depth check (only draw "closest" (priority) GUI elements) */
 
 	/* GUI color buffer */
-	glGenTextures(1, &guiColorTex);
-	glBindTexture(GL_TEXTURE_2D, guiColorTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glGenTextures(1, &guiColorTex_);
+	glBindTexture(GL_TEXTURE_2D, guiColorTex_);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth_, screenHeight_, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	/* GUI depth buffer */
-	glGenTextures(1, &guiDepthTex);
-	glBindTexture(GL_TEXTURE_2D, guiDepthTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, screenWidth, screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glGenTextures(1, &guiDepthTex_);
+	glBindTexture(GL_TEXTURE_2D, guiDepthTex_);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, screenWidth_, screenHeight_, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -291,12 +293,12 @@ void renderer_initBuffers(void) {
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
 	/* Attach color buffers */
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, opaqueColorTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, accTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, revealTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, opaqueColorTex_, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, accTex_, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, revealTex_, 0);
 
 	/* Attach depth buffer */
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex_, 0);
 
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		fprintf(stderr, "Error making rendering framebuffer (GL_FRAMEBUFFER_COMPLETE)\n");
@@ -305,54 +307,55 @@ void renderer_initBuffers(void) {
 	glBindFramebuffer(GL_FRAMEBUFFER, GUIFBO);
 
 	/* Attach color buffer */
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, guiColorTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, guiColorTex_, 0);
 
 	/* Attach depth buffer */
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, guiDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, guiDepthTex_, 0);
 
-	glUseProgram(guiShader);
+	glUseProgram(guiShader_);
 	mat4 guiProject;
-	glm_ortho(0.0f, screenWidth, 0.0f, screenHeight, 0.0f, MAX_GUI_PRIORITY, guiProject);
-	glUniformMatrix4fv(glGetUniformLocation(guiShader, "projectionMatrix"), 1, GL_FALSE, (float *) guiProject);
+	glm_ortho(0.0f, screenWidth_, 0.0f, screenHeight_, 0.0f, MAX_GUI_MESHID, guiProject);
+	glUniformMatrix4fv(glGetUniformLocation(guiShader_, "projectionMatrix"), 1, GL_FALSE, (f32 *) guiProject);
 
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		fprintf(stderr, "Error making GUI framebuffer (GL_FRAMEBUFFER_COMPLETE)\n");
 
 	/* Texture mapping */
-	glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, textureAtlas);
-	glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, opaqueColorTex);
-	glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, accTex);
-	glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, revealTex);
-	glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, guiAtlas);
-	glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, guiColorTex);
+	glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, blockTextureAtlas_);
+	glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, opaqueColorTex_);
+	glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, accTex_);
+	glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, revealTex_);
+	glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, guiTextureAtlas_);
+	glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, guiColorTex_);
 	glActiveTexture(GL_TEXTURE15); /* Avoid disconnecting textures on subsequent calls */
-	glViewport(0, 0, screenWidth, screenHeight);
+	glViewport(0, 0, screenWidth_, screenHeight_);
 }
 
 void renderer_freeBuffers() {
 	/* Free rendering GL buffers */
-	/* Delete textures */
-    glDeleteTextures(1, &opaqueColorTex);
-    glDeleteTextures(1, &accTex);
-    glDeleteTextures(1, &revealTex);
-    glDeleteTextures(1, &depthTex);
 
-    glDeleteTextures(1, &guiColorTex);
-    glDeleteTextures(1, &guiDepthTex);
+	/* Delete textures */
+    glDeleteTextures(1, &opaqueColorTex_);
+    glDeleteTextures(1, &accTex_);
+    glDeleteTextures(1, &revealTex_);
+    glDeleteTextures(1, &depthTex_);
+
+    glDeleteTextures(1, &guiColorTex_);
+    glDeleteTextures(1, &guiDepthTex_);
 
 	/* Delete framebuffers */
 	glDeleteFramebuffers(1, &FBO);
 	glDeleteFramebuffers(1, &GUIFBO);
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int32_t width, int32_t height) {
+static void framebuffer_size_callback(GLFWwindow *window, i32 width, i32 height) {
 	/* Resize viewport when this function (window resize) is called.
 	 * This function is called when the window is first displayed too. */
 
 	(void) window; /* Needed to fit prototype */
 
-	screenWidth = width;
-	screenHeight = height;
+	screenWidth_ = width;
+	screenHeight_ = height;
 
 	renderer_freeBuffers();
 	renderer_initBuffers();

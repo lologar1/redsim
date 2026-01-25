@@ -15,27 +15,29 @@
 #include "usfhashmap.h"
 #include "usfqueue.h"
 
-/* Client procedures */
-extern float pitch, yaw;
-extern vec3 orientation, position;
+extern vec3 *PLAYERBBOFFSETS;
+extern u64 NPLAYERBBOFFSETS;
 
-extern uint8_t sspower;
+extern f32 pitch_;
+extern f32 yaw_;
+extern vec3 orientation_;
+extern vec3 position_;
 
-extern usf_hashmap *chunkmap, *meshmap, *datamap, *namemap;
+extern u8 sspower_;
 
-extern GLuint **meshes;
-extern int32_t nmesh;
+extern usf_hashmap *chunkmap_;
+extern usf_hashmap *meshmap_;
+extern usf_hashmap *datamap_;
+extern usf_hashmap *namemap_;
+extern usf_queue *meshqueue_;
 
-extern pthread_mutex_t meshlock;
-extern usf_queue *meshqueue;
+extern GLuint **meshes_;
+extern u64 nmeshes_;
+extern GLuint wiremesh_[2];
 
 void client_init(void);
 void client_savedata(void);
-
 void client_frameEvent(GLFWwindow *window);
-void client_getOrientationVector(vec3 ori);
-void client_getPosition(vec3 pos);
-
 void client_terminate(void);
 
 #endif

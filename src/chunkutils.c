@@ -1,27 +1,24 @@
 #include "chunkutils.h"
 
-Blockmesh **blockmeshes; /* Populated by parseBlockdata */
+static i32 getBlockmesh(Blockmesh *blockmesh, u64 id, u64 variant, Rotation rotation, i64 x, i64 y, i64 z);
+static void *pushRawmesh(void *chunkindexptr);
 
-int32_t getBlockmesh(Blockmesh *blockmesh, uint32_t id, uint32_t variant,
-		Rotation rotation, int64_t x, int64_t y, int64_t z);
-void *pushRawmesh(void *chunkindexptr);
-
-void cu_asyncRemeshChunk(uint64_t chunkindex) {
+void cu_asyncRemeshChunk(u64 chunkindex) {
 	/* Asynchronously pushes a new rawmesh to be sent to the GPU */
-	int32_t rc;
-	pthread_t id;
-	uint64_t *arg;
 
-	arg = malloc(sizeof(uint64_t)); /* Allow thread to operate separately; it cleans up its argument after */
+	u64 *arg;
+	arg = malloc(sizeof(u64)); /* Allow thread to operate separately; it cleans up its argument after */
 	*arg = chunkindex;
 
+	i32 rc;
+	pthread_t id;
 	if ((rc = pthread_create(&id, NULL, pushRawmesh, arg))) {
-		fprintf(stderr, "Error creating thread (async remesh): error code %d, aborting.\n", rc);
+		fprintf(stderr, "Error creating thread (async remesh): error code %"PRId32", aborting.\n", rc);
 		exit(RSM_EXIT_THREADFAIL);
 	}
 
 	if ((rc = pthread_detach(id))) { /* Since thread is detached, cleanup is automatic */
-		fprintf(stderr, "Error detaching thread (async remesh): error code %d, aborting.\n", rc);
+		fprintf(stderr, "Error detaching thread (async remesh): error code %"PRId32", aborting.\n", rc);
 		exit(RSM_EXIT_THREADFAIL);
 	}
 }
@@ -30,48 +27,35 @@ void cu_updateMeshlist(void) {
     /* Generate new required meshes since movement from lastPosition
      * and remove out of render distance ones */
 
-	GLuint **meshlist, *mesh;
-	uint64_t meshindex;
-	int64_t i[3], chunk[3], pos[3];
+	GLuint **meshlist;
+	meshlist = meshes_;
+	nmeshes_ = 0; /* Reset mesh count */
 
-	meshlist = meshes;
-	nmesh = 0;
-	pos[0] = position[0] / CHUNKSIZE; pos[1] = position[1] / CHUNKSIZE; pos[2] = position[2] / CHUNKSIZE;
+	GLuint *mesh;
+	u64 chunkindex;
+	i64 i, j, k, chunk[3];
+	i64 pos[3] = {position_[0]/CHUNKSIZE, position_[1]/CHUNKSIZE, position_[2]/CHUNKSIZE };
+	for (i = -RSM_LOADING_DISTANCE; i < RSM_LOADING_DISTANCE + 1; i++) { chunk[0] = pos[0] + i;
+	for (j = -RSM_LOADING_DISTANCE; j < RSM_LOADING_DISTANCE + 1; j++) { chunk[1] = pos[1] + j;
+	for (k = -RSM_LOADING_DISTANCE; k < RSM_LOADING_DISTANCE + 1; k++) { chunk[2] = pos[2] + k;
+		chunkindex = TOCHUNKINDEX(chunk[0], chunk[1], chunk[2]);
 
-	for (i[0] = -RSM_LOADING_DISTANCE; i[0] < RSM_LOADING_DISTANCE + 1; i[0]++) {
-		chunk[0] = pos[0] + i[0];
-		for (i[1] = -RSM_LOADING_DISTANCE; i[1] < RSM_LOADING_DISTANCE + 1; i[1]++) {
-			chunk[1] = pos[1] + i[1];
-			for (i[2] = -RSM_LOADING_DISTANCE; i[2] < RSM_LOADING_DISTANCE + 1; i[2]++) {
-				chunk[2] = pos[2] + i[2];
+		if ((mesh = usf_inthmget(meshmap_, chunkindex).p) == NULL) continue; /* Uninitialized */
 
-				/* Set mesh for this chunk */
-				meshindex = TOCHUNKINDEX(chunk[0], chunk[1], chunk[2]);
-				mesh = (GLuint *) usf_inthmget(meshmap, meshindex).p;
-
-				if (mesh == NULL) continue; /* Uninitialized chunk */
-
-                *meshlist++ = mesh;
-                nmesh++;
-            }
-        }
-	}
+		*meshlist++ = mesh;
+		nmeshes_++;
+	}}} /* Is this a Minecraft command block one-block mod ?!? */
 }
 
 void cu_generateMeshlist(void) {
-    /* Regenerate entire meshes for all chunks in render distance */
-	uint64_t chunkvolume;
+    /* Regenerate the render distance meshlist */
 
-    /* Allocate enough mem for all chunks in cubic view.
-     * Note that each cell is a pointer to a chunk mesh so even with
-     * 100 chunk render distance, the size is only
-     * (100 * 2 + 1) ^ 3 * 8 = 64964808 = 65 MB of memory */
+	free(meshes_); /* Free old meshlist; first free(NULL) is OK */
 
-	/* Cleanup old meshlist ; on startup it is null but free(NULL) is safe */
-    free(meshes); /* OK since all mesh chunks are stored in meshmap */
-
-	chunkvolume = pow(RSM_LOADING_DISTANCE * 2 + 1, 3);
-    meshes = malloc(chunkvolume * sizeof(GLuint *)); /* Store meshes for all chunks */
+	u64 chunkvolume;
+	chunkvolume = (u64) pow(RSM_LOADING_DISTANCE * 2 + 1, 3);
+    meshes_ = malloc(chunkvolume * sizeof(GLuint *));
+	nmeshes_ = 0;
 
 	cu_updateMeshlist();
 }
@@ -79,6 +63,7 @@ void cu_generateMeshlist(void) {
 void cu_translocationMatrix(mat4 translocation, vec3 translation, Rotation rotation) {
 	/* Makes an appropriate translocation (translation + rotation) matrix given
 	 * a translation vector (position) and a rotation */
+
 	mat4 rotAdjust;
 	cu_rotationMatrix(rotAdjust, rotation, MESHCENTER);
 
@@ -89,8 +74,8 @@ void cu_translocationMatrix(mat4 translocation, vec3 translation, Rotation rotat
 
 void cu_rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter) {
 	/* Makes an appropriate rotation matrix for a given rotation */
-	glm_mat4_identity(rotAdjust);
 
+	glm_mat4_identity(rotAdjust);
 	switch (rotation) {
 		case EAST:
 			glm_rotate_at(rotAdjust, meshcenter, glm_rad(270), GLM_YUP);
@@ -115,378 +100,354 @@ void cu_rotationMatrix(mat4 rotAdjust, Rotation rotation, vec3 meshcenter) {
 	}
 }
 
-Blockdata *cu_coordsToBlock(vec3 coords, uint64_t *chunkindex) {
-	/* Return the blockdata matching these absolute world offsets. If it is provided, also set chunk to
-	 * the chunk of the block. The chunk is created as empty if it doesn't exist.
-	 * Important: this is the _proper_ way of safely accessing a block. Directly querying chunkmap with
-	 * a chunk index then checking for an offset within it may yield an uninitialized chunk */
-#define COORDSTOCHUNKINDEX(V) \
-	TOCHUNKINDEX(cu_chunkOffsetConvertFloat(V[0]), \
-			cu_chunkOffsetConvertFloat(V[1]), \
-			cu_chunkOffsetConvertFloat(V[2]))
-
-#define COORDSTOBLOCKDATA(V, CHUNK) \
-	 (&(*CHUNK)[cu_blockOffsetConvertFloat(V[0])] \
-	  [cu_blockOffsetConvertFloat(V[1])] \
-	  [cu_blockOffsetConvertFloat(V[2])])
-
-	uint64_t index;
-	Chunkdata *chunkdata;
-
-	index = COORDSTOCHUNKINDEX(coords);
-
-	/* Get chunk and allocate it if null.
-	 * Thread-safety required as this may be called from remeshing.
-	 * It's a bit clunky, but this project grew along with my understanding of parallelism, lol. Sorry! */
-	if ((chunkdata = usf_inthmget(chunkmap, index).p) == NULL)
-		usf_inthmput(chunkmap, index, USFDATAP(chunkdata = calloc(1, sizeof(Chunkdata))));
-
-	if (chunkindex) *chunkindex = index; /* Pass chunk index */
-
-	return COORDSTOBLOCKDATA(coords, chunkdata); /* Return blockdata */
-#undef COORDSTOCHUNKINDEX
-#undef COORDSTOBLOCKDATA
-}
-
-int64_t cu_chunkOffsetConvertFloat(float absoluteComponent) {
+i64 cu_chunkOffsetConvertFloat(f32 absoluteComponent) {
 	/* Converts a float absoluteComponent to its chunk offset equivalent */
-	return (int64_t) floorf(absoluteComponent / CHUNKSIZE);
+
+	return floorf(absoluteComponent / (f32) CHUNKSIZE);
 }
 
-uint64_t cu_blockOffsetConvertFloat(float absoluteComponent) {
+u64 cu_blockOffsetConvertFloat(f32 absoluteComponent) {
 	/* Converts a float absoluteComponent to its block offset (within a chunk) equivalent */
+
 	return absoluteComponent < 0 ?
-		CHUNKSIZE - 1 - ((uint64_t) -floorf(absoluteComponent) - 1) % CHUNKSIZE :
-		(uint64_t) absoluteComponent % CHUNKSIZE;
+		CHUNKSIZE - 1 - ((u64) -floorf(absoluteComponent) - 1) % CHUNKSIZE :
+		(u64) absoluteComponent % CHUNKSIZE;
 }
 
-int32_t cu_AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2) {
+Blockdata *cu_coordsToBlock(vec3 coords, u64 *chunkindex) {
+	/* Returns a pointer to the Blockdata at these coordinates.
+	 * Also initializes the chunk if it did not exist. */
+
+	u64 index;
+	index = TOCHUNKINDEX(cu_chunkOffsetConvertFloat(coords[0]),
+			cu_chunkOffsetConvertFloat(coords[1]),
+			cu_chunkOffsetConvertFloat(coords[2]));
+
+	Chunkdata *chunkdata;
+	if ((chunkdata = usf_inthmget(chunkmap_, index).p) == NULL) /* Alloc empty if uninitialized */
+		usf_inthmput(chunkmap_, index, USFDATAP(chunkdata = calloc(1, sizeof(Chunkdata))));
+
+	if (chunkindex) *chunkindex = index;
+
+	return &(*chunkdata)[cu_blockOffsetConvertFloat(coords[0])]
+		[cu_blockOffsetConvertFloat(coords[1])]
+		[cu_blockOffsetConvertFloat(coords[2])];
+}
+
+Blockdata *cu_posToBlock(i64 x, i64 y, i64 z, u64 *chunkindex) {
+	/* Position (integer) wrapper for cu_coordsToBlock */
+
+	vec3 coords = { (f32) x, (f32) y, (f32) z };
+	return cu_coordsToBlock(coords, chunkindex);
+}
+
+i32 cu_AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2) {
 	/* Returns whether or not two 3D boxes intersect on all 3 axes */
 
 	/* First normalize dimensions and corner */
-#define NORMALIZEDIM(dim, corner, i) if (dim[i] < 0.0f) { dim[i] = fabsf(dim[i]); corner[i] -= dim[i]; }
-	NORMALIZEDIM(dim1, corner1, 0); NORMALIZEDIM(dim1, corner1, 1); NORMALIZEDIM(dim1, corner1, 2);
-	NORMALIZEDIM(dim2, corner2, 0); NORMALIZEDIM(dim2, corner2, 1); NORMALIZEDIM(dim2, corner2, 2);
+#define _NORMALIZEDIM(_DIM, _CORNER, _I) \
+	if (_DIM[_I] < 0.0f) { _DIM[_I] = fabsf(_DIM[_I]); _CORNER[_I] -= _DIM[_I]; }
+	_NORMALIZEDIM(dim1, corner1, 0); _NORMALIZEDIM(dim1, corner1, 1); _NORMALIZEDIM(dim1, corner1, 2);
+	_NORMALIZEDIM(dim2, corner2, 0); _NORMALIZEDIM(dim2, corner2, 1); _NORMALIZEDIM(dim2, corner2, 2);
+#undef _NORMALIZED
 
-#define AXISCOMPARE(i) \
-	if ((corner1[i]) + (dim1[i]) < (corner2[i]) || (corner1[i]) > (corner2[i]) + (dim2[i])) return 0;
-	AXISCOMPARE(0); AXISCOMPARE(1); AXISCOMPARE(2);
+#define _AXISCOMPARE(_I) \
+	if ((corner1[_I]) + (dim1[_I]) < (corner2[_I]) || (corner1[_I]) > (corner2[_I]) + (dim2[_I])) return 0;
+	_AXISCOMPARE(0); _AXISCOMPARE(1); _AXISCOMPARE(2);
+#undef _AXISCOMPARE
 
 	return 1;
 }
 
-void pathcat(char *destination, int32_t n, ...) {
-	/* Concatenates a path into destination */
-	va_list args;
-	va_start(args, n);
-
-	if (usf_vstrcat(destination, RSM_MAX_PATH_NAME_LENGTH, n, args)) {
-		fprintf(stderr, "Concatenation of %d paths exceeds max buffer length %u, aborting.\n",
-				n, RSM_MAX_PATH_NAME_LENGTH);
-		exit(RSM_EXIT_EXCBUF);
-	}
-
-	va_end(args);
-}
-
-int32_t getBlockmesh(Blockmesh *blockmesh, uint32_t id, uint32_t variant, Rotation rotation,
-		int64_t x, int64_t y, int64_t z) {
+static i32 getBlockmesh(Blockmesh *blockmesh, u64 id, u64 variant, Rotation rotation, i64 x, i64 y, i64 z) {
 	/* Return a valid blockmesh containing adjusted vertex positions for a block
 	 * of type id of variant variant with rotation rotation at position xyz */
+
 	if (id >= MAX_BLOCK_ID) return -1; /* Illegal ID */
 	if (variant >= MAX_BLOCK_VARIANT[id]) variant = 0; /* Default to 0; used by software-determined variants */
 
 	Blockmesh *template;
-	template = &blockmeshes[id][variant];
+	template = &BLOCKMESHES[id][variant];
 
 	/* Copy state to scratchpad ; safe as buffer sizes are checked in parsing (renderutils) */
-	memcpy(blockmesh->opaqueVertices, template->opaqueVertices, sizeof(float) * template->count[0]);
-	memcpy(blockmesh->transVertices, template->transVertices, sizeof(float) * template->count[1]);
-	memcpy(blockmesh->opaqueIndices, template->opaqueIndices, sizeof(uint32_t) * template->count[2]);
-	memcpy(blockmesh->transIndices, template->transIndices, sizeof(uint32_t) * template->count[3]);
+	memcpy(blockmesh->opaqueVertices, template->opaqueVertices, sizeof(f32) * template->count[0]);
+	memcpy(blockmesh->transVertices, template->transVertices, sizeof(f32) * template->count[1]);
+	memcpy(blockmesh->opaqueIndices, template->opaqueIndices, sizeof(u32) * template->count[2]);
+	memcpy(blockmesh->transIndices, template->transIndices, sizeof(u32) * template->count[3]);
+	memcpy(blockmesh->count, template->count, sizeof(template->count)); /* Get counts (never changes) */
 
-	memcpy(blockmesh->count, template->count, sizeof(uint32_t) * 4); /* Get counts (never changes) */
-
-	uint32_t i;
 	mat4 adjust, rotAdjust;
-	vec3 posAdjust = {(float) x, (float) y, (float) z};
-
+	vec3 posAdjust = {(f32) x, (f32) y, (f32) z};
 	cu_translocationMatrix(adjust, posAdjust, rotation);
-	cu_rotationMatrix(rotAdjust, rotation, MESHCENTER); /* Needed for normal adjustment */
+	cu_rotationMatrix(rotAdjust, rotation, MESHCENTER);
 
-	float *vertexPos;
-
-	/* Rotate, translate and adjust vertex coords (and normals for rotation) for opaque vertices */
-#define TRANSLOCATEVERTICES(COUNTSECTION, VERTEXSECTION) \
-	for (i = 0; i < template->count[COUNTSECTION] / (sizeof(Vertex)/sizeof(float)); i++) { \
-		vertexPos = blockmesh->VERTEXSECTION + i * (sizeof(Vertex)/sizeof(float)); \
-		glm_mat4_mulv3(adjust, vertexPos, 1.0f, vertexPos); \
-		glm_mat4_mulv3(rotAdjust, vertexPos + 3, 1.0f, vertexPos + 3); /* Rotate normals */ \
+	/* Rotate, translate and adjust vertex coords and normals */
+	u64 i;
+	f32 *vertex;
+#define _TRANSLOCATE(_COUNT, _VERTEX) \
+	for (i = 0; i < template->count[_COUNT] / NMEMB_VERTEX; i++) { \
+		vertex = blockmesh->_VERTEX + i * NMEMB_VERTEX; \
+		glm_mat4_mulv3(adjust, vertex, 1.0f, vertex); \
+		glm_mat4_mulv3(rotAdjust, vertex + 3, 1.0f, vertex + 3); /* Rotate normals */ \
 	}
-
-	TRANSLOCATEVERTICES(0, opaqueVertices);
-	TRANSLOCATEVERTICES(1, transVertices);
-#undef TRANSLOCATEVERTICES
+	_TRANSLOCATE(0, opaqueVertices);
+	_TRANSLOCATE(1, transVertices);
+#undef _TRANSLOCATE
 
 	return 0;
 }
 
-void *pushRawmesh(void *chunkindexptr) {
-	/* Push a new rawmesh to meshqueue for transfer to the GPU. Called asynchronously with pthread */
-	uint64_t chunkindex;
-	int64_t x, y, z, a, b, c;
+static void *pushRawmesh(void *chunkindexptr) {
+	/* Push a new rawmesh to meshqueue for transfer to the GPU. Called asynchronously from cu_asyncRemeshChunk */
+
+	u64 chunkindex; /* Retrieve argument */
+	chunkindex = (* (u64 *) chunkindexptr);
+
+	i64 x, y, z; /* Get chunk position */
+#define _SIGNED21CAST64(_N) ((i64) ((_N) | (_N & (1 << 20) ? (u64) ~CHUNKCOORDMASK : 0)))
+	x = _SIGNED21CAST64(chunkindex >> 42);
+	y = _SIGNED21CAST64((chunkindex >> 21) & CHUNKCOORDMASK);
+	z = _SIGNED21CAST64(chunkindex & CHUNKCOORDMASK);
+#undef _SIGNED21CAST64
+
 	Chunkdata *chunk;
-	Blockdata block;
-
-	chunkindex = (* (uint64_t *) chunkindexptr);
-
-	/* Get chunk index */
-#define SIGNED21CAST64(N) ((N) | (N & (1 << 20) ? (uint64_t) ~CHUNKCOORDMASK : 0))
-	x = SIGNED21CAST64(chunkindex >> 42);
-	y = SIGNED21CAST64((chunkindex >> 21) & CHUNKCOORDMASK);
-	z = SIGNED21CAST64(chunkindex & CHUNKCOORDMASK);
-
-	if ((chunk = (Chunkdata *) usf_inthmget(chunkmap, chunkindex).p) == NULL) {
+	if ((chunk = (Chunkdata *) usf_inthmget(chunkmap_, chunkindex).p) == NULL) {
 		fprintf(stderr, "Chunk at %"PRId64" %"PRId64" %"PRId64" does not exist, aborting.\n", x, y, z);
 		exit(RSM_EXIT_NOCHUNK);
 	}
 
-	float culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* Face culling buffer and rotation information */
+	f32 culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* culled is misnomer since it holds not-culled faces */
 	static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
 	static const Rotation FROMWEST[7] = { WEST, WEST, NORTH, EAST, SOUTH, WEST, WEST };
 	static const Rotation FROMSOUTH[7] = { SOUTH, SOUTH, WEST, NORTH, EAST, UP, DOWN };
 	static const Rotation FROMEAST[7] = { EAST, EAST, SOUTH, WEST, NORTH, EAST, EAST };
 	static const Rotation FROMUP[7] = { UP, UP, UP, UP, UP, NORTH, SOUTH };
 	static const Rotation FROMDOWN[7] = { DOWN, DOWN, DOWN, DOWN, DOWN, SOUTH, NORTH };
-	uint32_t culltrans;
+	u32 culltrans;
 
 	/* Template blockmesh */
-	float ov_buf[RSM_MAX_BLOCKMESH_VERTICES], tv_buf[RSM_MAX_BLOCKMESH_VERTICES];
-	uint32_t oi_buf[RSM_MAX_BLOCKMESH_INDICES], ti_buf[RSM_MAX_BLOCKMESH_INDICES];
+	f32 ov_buf[RSM_MAX_BLOCKMESH_VERTICES], tv_buf[RSM_MAX_BLOCKMESH_VERTICES];
+	u32 oi_buf[RSM_MAX_BLOCKMESH_INDICES], ti_buf[RSM_MAX_BLOCKMESH_INDICES];
 	Blockmesh blockmesh = {
 		.opaqueVertices = ov_buf, .transVertices = tv_buf,
 		.opaqueIndices = oi_buf, .transIndices = ti_buf
 	};
 
 	/* Index offsets for each blockmesh added to the rawmesh */
-	uint32_t runningOpaqueIndexOffset, runningTransIndexOffset, i;
+	u32 runningOpaqueIndexOffset, runningTransIndexOffset, i;
 	runningOpaqueIndexOffset = runningTransIndexOffset = 0;
 
-	/* Scratchpad buffers for the entire mesh. Allocating maximum buffer size to avoid dynamic handling, as
-	 * although it is a large allocation, it is always the same size, avoiding fragmentation */
-	Rawmesh *rawmesh = malloc(sizeof(Rawmesh));
-	void *buffers = malloc(ov_bufsiz + tv_bufsiz + oi_bufsiz + ti_bufsiz);
+	/* Scratchpad buffers are alloc'd with maximum possible size. Cannot make static due to multithreading. */
+	Rawmesh *rawmesh;
+	rawmesh = malloc(sizeof(Rawmesh));
 	rawmesh->chunkindex = chunkindex;
-	float *ov_bufptr = rawmesh->opaqueVertexBuffer = (float *) buffers;
-	float *tv_bufptr = rawmesh->transVertexBuffer = (float *) (buffers += ov_bufsiz);
-	uint32_t *oi_bufptr = rawmesh->opaqueIndexBuffer = (uint32_t *) (buffers += tv_bufsiz);
-	uint32_t *ti_bufptr = rawmesh->transIndexBuffer = (uint32_t *) (buffers += oi_bufsiz);
 
-	/* This definitely isn't my best code, but it works. Not very expandable, though, that'll have to wait
-	 * for a remake of this program, with better practices. */
+	u8 *buffers; /* Single allocation */
+	buffers = malloc(OV_BUFSZ + TV_BUFSZ + OI_BUFSZ + TI_BUFSZ);
+	f32 *ov_bufptr, *tv_bufptr;
+	ov_bufptr = rawmesh->opaqueVertexBuffer = (f32 *) (buffers);
+	tv_bufptr = rawmesh->transVertexBuffer = (f32 *) (buffers += OV_BUFSZ);
+	u32 *oi_bufptr, *ti_bufptr;
+	oi_bufptr = rawmesh->opaqueIndexBuffer = (u32 *) (buffers += TV_BUFSZ);
+	ti_bufptr = rawmesh->transIndexBuffer = (u32 *) (buffers += OI_BUFSZ);
+
+	i64 a, b, c;
+	Blockdata block;
 	Blockdata *neighbor, *neighborup, *neighbordown, *neighbortop;
-	for (a = 0; a < CHUNKSIZE; a++) {
-		for (b = 0; b < CHUNKSIZE; b++) {
-			for (c = 0; c < CHUNKSIZE; c++) {
-				/* Get blockmesh for block at this location blockmeshes will regenerate their
-				 * vertex arrays to apply rotation and translation to place them correctly in the world.
-				 * Indices must be offset according to the running total for this opaque/trans mesh */
-				block = (*chunk)[a][b][c];
+	for (a = 0; a < CHUNKSIZE; a++)
+	for (b = 0; b < CHUNKSIZE; b++)
+	for (c = 0; c < CHUNKSIZE; c++) {
+		block = (*chunk)[a][b][c];
 
-				if (block.id == 0) continue; /* Air */
+		if (block.id == 0) continue; /* Air; do not remesh */
 
-				if (getBlockmesh(&blockmesh, block.id, block.variant, block.rotation,
-						x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c)) {
-					fprintf(stderr, "Warning: deleting illegal block ID %"PRIu16" variant %"PRIu8
-							" at coordinates %"PRIu64" %"PRIu64" %"PRIu64".\n",
-							block.id, block.variant, x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
-					memset(cu_coordsToBlock(VEC3(x * CHUNKSIZE + a, y*CHUNKSIZE + b, z * CHUNKSIZE + c), NULL),
-							0, sizeof(Blockdata));
-					continue;
-				}
+		if (getBlockmesh(&blockmesh, block.id, block.variant, block.rotation,
+				x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c)) {
+			fprintf(stderr, "Warning: deleting illegal block ID %"PRIu16" variant %"PRIu8
+					" at coordinates %"PRId64" %"PRId64" %"PRId64".\n",
+					block.id, block.variant, x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
+			memset(cu_posToBlock(x * CHUNKSIZE + a, y*CHUNKSIZE + b, z * CHUNKSIZE + c, NULL),
+					0, sizeof(Blockdata));
+			continue;
+		}
 
-				/* For fullblock (must be all opaque/trans) culling, meshdata must be four vertices per face and
-				 * respect the order : front, left, back, right, top, bottom */
-				cullbuf = NULL;
-				if (block.metadata & RSM_BIT_CULLFACES) {
-					if ((culltrans = !(block.metadata & RSM_BIT_CONDUCTOR))) cullbuf = blockmesh.transVertices;
-					else cullbuf = blockmesh.opaqueVertices;
+		/* For fullblock (must be all opaque/trans) culling, meshdata must be four vertices per face and
+		 * respect the order : front, left, back, right, top, bottom */
+		cullbuf = NULL;
+		if (block.metadata & RSM_BIT_CULLFACES) {
+			if ((culltrans = !(block.metadata & RSM_BIT_CONDUCTOR))) cullbuf = blockmesh.transVertices;
+			else cullbuf = blockmesh.opaqueVertices;
 
-					i = 0; /* Valid faces processed */
+			i = 0; /* Valid faces processed */
 
-					/* Checks the block at X, Y, Z, and cull vertices at index FACE if it CULLFACES too. */
-#define CHECKFACE(X, Y, Z, FACE) \
-					neighbor = cu_coordsToBlock(VEC3(X, Y, Z), NULL); \
-					if (!(neighbor->metadata & RSM_BIT_CULLFACES) \
-							|| (!(neighbor->metadata & RSM_BIT_CONDUCTOR)) != culltrans) { \
-						memcpy(culled + 4 * NMEMB_VERTEX * i, /* Next free spot */ \
-								cullbuf + 4 * NMEMB_VERTEX * (FACE-1), /* Culled face */ \
-								4 * NMEMB_VERTEX * sizeof(float)); /* Size of face */ \
-						i++; \
-					}
-
-					/* Note that the rotation is decremented by 1 in CHECKFACE to yield true face index */
+			/* Checks the block at X, Y, Z, and cull vertices at index FACE if it CULLFACES too. */
+#define _CHECKFACE(_X, _Y, _Z, _FACE) \
+			neighbor = cu_posToBlock(_X, _Y, _Z, NULL); \
+			if (!(neighbor->metadata & RSM_BIT_CULLFACES) \
+					|| (!(neighbor->metadata & RSM_BIT_CONDUCTOR)) != culltrans) { \
+				memcpy(culled + 4 * NMEMB_VERTEX * i, /* Next free spot */ \
+						cullbuf + 4 * NMEMB_VERTEX * (_FACE-1), /* Culled face */ \
+						4 * NMEMB_VERTEX * sizeof(f32)); /* Size of face */ \
+				i++; \
+			}
+			/* Rotation is decremented by 1 in CHECKFACE to yield true face index */
 #define xpos (x * CHUNKSIZE + a)
 #define ypos (y * CHUNKSIZE + b)
 #define zpos (z * CHUNKSIZE + c)
-					CHECKFACE(xpos, ypos, zpos + 1, FROMNORTH[block.rotation]);
-					CHECKFACE(xpos + 1, ypos, zpos, FROMWEST[block.rotation]);
-					CHECKFACE(xpos, ypos, zpos - 1, FROMSOUTH[block.rotation]);
-					CHECKFACE(xpos - 1, ypos, zpos, FROMEAST[block.rotation]);
-					CHECKFACE(xpos, ypos + 1, zpos, FROMUP[block.rotation]);
-					CHECKFACE(xpos, ypos - 1, zpos, FROMDOWN[block.rotation]);
-					memcpy(cullbuf, culled, 4 * NMEMB_VERTEX * i * sizeof(float));
-#undef CHECKFACE
+			_CHECKFACE(xpos, ypos, zpos + 1, FROMNORTH[block.rotation]);
+			_CHECKFACE(xpos + 1, ypos, zpos, FROMWEST[block.rotation]);
+			_CHECKFACE(xpos, ypos, zpos - 1, FROMSOUTH[block.rotation]);
+			_CHECKFACE(xpos - 1, ypos, zpos, FROMEAST[block.rotation]);
+			_CHECKFACE(xpos, ypos + 1, zpos, FROMUP[block.rotation]);
+			_CHECKFACE(xpos, ypos - 1, zpos, FROMDOWN[block.rotation]);
+			memcpy(cullbuf, culled, 4 * NMEMB_VERTEX * i * sizeof(f32));
+#undef _CHECKFACE
 
-					/* Adjust counts */
-					blockmesh.count[culltrans ? 3 : 2] = 6 * i;
-					blockmesh.count[culltrans ? 1 : 0] = NMEMB_VERTEX * 4 * i;
+			/* Adjust counts */
+			blockmesh.count[culltrans ? 3 : 2] = 6 * i;
+			blockmesh.count[culltrans ? 1 : 0] = NMEMB_VERTEX * 4 * i;
+		}
+
+		/* Special case for software-variants */
+		f32 *uadjust, u, v;
+		u32 j, k, digit[3];
+		switch (block.id) {
+			case RSM_BLOCK_RESISTOR:
+			case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
+			case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
+				if (cullbuf == NULL) {
+					fprintf(stderr, "Block ID %"PRIu16" at %"PRId64", %"PRId64", %"PRId64" has "
+							"no face culling (illegal state); Cannot display variant.\n",
+							block.id, xpos, ypos, zpos);
+					break;
 				}
 
-				/* Special case for software-variants */
-				float *uadjust, u, v;
-				uint32_t j, k, digit[3];
-				switch (block.id) {
-					case RSM_BLOCK_RESISTOR:
-					case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
-					case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
-						if (cullbuf == NULL) {
-							fprintf(stderr, "Block ID %"PRIu16" at %"PRIu64", %"PRIu64", %"PRIu64" has "
-									"no face culling (illegal state); Cannot display variant.\n",
-									block.id, xpos, ypos, zpos);
-							break;
-						}
+				/* I am a bit lazy, so all of these have the same type of numerical display */
+				blockmesh.count[culltrans ? 3 : 2] += 6 * 12; /* Re-use indices */
+				blockmesh.count[culltrans ? 1 : 0] += NMEMB_VERTEX * 4 * 12; /* Now vertices */
 
-						/* I am a bit lazy, so all of these have the same numerical display */
-						blockmesh.count[culltrans ? 3 : 2] += 6 * 12; /* Re-use indices */
-						blockmesh.count[culltrans ? 1 : 0] += NMEMB_VERTEX * 4 * 12; /* Now vertices */
+				memmove(cullbuf + 4 * NMEMB_VERTEX * i, /* After rendered faces */
+						cullbuf + 4 * NMEMB_VERTEX * 6, /* After all possible faces */
+						4 * NMEMB_VERTEX * 12 * sizeof(f32)); /* Get display triangles */
 
-						memmove(cullbuf + 4 * NMEMB_VERTEX * i, /* After rendered faces */
-								cullbuf + 4 * NMEMB_VERTEX * 6, /* After all possible faces */
-								4 * NMEMB_VERTEX * 12 * sizeof(float)); /* Get display triangles */
-
-						uadjust = cullbuf + 4 * NMEMB_VERTEX * i + 6;
-						digit[0] = (block.variant / 100) % 10;
-						digit[1] = (block.variant / 10) % 10;
-						digit[2] = (block.variant / 1) % 10;
-						for (j = 0; j < 4; j++) {
-#define ADJUSTU(OFFSET) \
-	*uadjust = (digit[k] + OFFSET) * (3.0f/RSM_BLOCK_TEXTURE_SIZE_PIXELS); \
+				uadjust = cullbuf + 4 * NMEMB_VERTEX * i + 6;
+				digit[0] = (block.variant / 100) % 10;
+				digit[1] = (block.variant / 10) % 10;
+				digit[2] = (block.variant / 1) % 10;
+				for (j = 0; j < 4; j++) {
+#define _ADJUSTU(OFFSET) \
+	*uadjust = (f32) (digit[k] + OFFSET) * (3.0f/RSM_BLOCK_TEXTURE_SIZE_PIXELS); \
 	uadjust += NMEMB_VERTEX;
-							for (k = 0; k < 3; k++) { ADJUSTU(0); ADJUSTU(1); ADJUSTU(1); ADJUSTU(0); }
-#undef ADJUSTU
-						}
-						break;
-					case RSM_BLOCK_WIRE:
-						/* 3 steps to render a wire
-						 * First: display signal strength
-						 * Second: Adjust wire color
-						 * Third: remove unnecessary indices */
+					for (k = 0; k < 3; k++) { _ADJUSTU(0); _ADJUSTU(1); _ADJUSTU(1); _ADJUSTU(0); }
+#undef _ADJUSTU
+				}
+				break;
+			case RSM_BLOCK_WIRE:
+				/* 3 steps to render a wire
+				 * First: display signal strength
+				 * Second: Adjust wire color
+				 * Third: remove unnecessary indices */
 
-						/* Display signal strength */
-						digit[0] = (block.variant / 100) % 10;
-						digit[1] = (block.variant / 10) % 10;
-						digit[2] = (block.variant / 1) % 10;
-						for (j = 0; j < 3; j++) {
-#define ADJUSTU(VERTEX, OFFSET) \
+				/* Display signal strength */
+				digit[0] = (block.variant / 100) % 10;
+				digit[1] = (block.variant / 10) % 10;
+				digit[2] = (block.variant / 1) % 10;
+				for (j = 0; j < 3; j++) {
+#define _ADJUSTU(VERTEX, OFFSET) \
 	blockmesh.transVertices[(j * 8 + VERTEX) * 8 + 6] = \
-		(digit[j] + OFFSET) * (3.0f/RSM_BLOCK_TEXTURE_SIZE_PIXELS);
-							/* Pattern here matches wire.mesh */
-							ADJUSTU(0, 0); ADJUSTU(1, 1); ADJUSTU(2, 0); ADJUSTU(3, 1);
-							ADJUSTU(4, 1); ADJUSTU(5, 0); ADJUSTU(6, 1); ADJUSTU(7, 0);
-#undef ADJUSTU
-						}
+			(f32) (digit[j] + OFFSET) * (3.0f/RSM_BLOCK_TEXTURE_SIZE_PIXELS);
+					/* Pattern here matches wire.mesh */
+					_ADJUSTU(0, 0); _ADJUSTU(1, 1); _ADJUSTU(2, 0); _ADJUSTU(3, 1);
+					_ADJUSTU(4, 1); _ADJUSTU(5, 0); _ADJUSTU(6, 1); _ADJUSTU(7, 0);
+#undef _ADJUSTU
+				}
 
-						/* Adjust wire color */
-						u = (block.variant % 32) * (1.0f/32.0f) + (0.5f/32.0f); /* UVs are offsets from (0,0) */
-						v = (block.variant / 32) * ((1.0f / RSM_BLOCK_TEXTURE_SIZE_PIXELS) / ntextures);
-						for (j = 0; j < 64; j++) { /* Can bunch together everything in 64 vertices */
-							blockmesh.opaqueVertices[j * 8 + 6] += u;
-							blockmesh.opaqueVertices[j * 8 + 7] += v;
-						}
+				/* Adjust wire color */
+				u = (block.variant % 32) * (1.0f/32.0f) + (0.5f/32.0f); /* UVs are offsets from (0,0) */
+				v = (block.variant / 32) * ((1.0f / RSM_BLOCK_TEXTURE_SIZE_PIXELS) / (f32) NBLOCKTEXTURES);
+				for (j = 0; j < 64; j++) { /* Can bunch together everything in 64 vertices */
+					blockmesh.opaqueVertices[j * 8 + 6] += u;
+					blockmesh.opaqueVertices[j * 8 + 7] += v;
+				}
 
-						/* Remove unnecessary indices */
-						j = 36; k = 240; /* Starting at index 36, 240 indices left */
-						int8_t connect[4] = {0, 0, 0, 0}; /* North West South West */
-						int8_t straighten[2] = {0, 0}; /* Defer */
+				/* Remove unnecessary indices */
+				j = 36; k = 240; /* Starting at index 36, 240 indices left */
+				u8 connect[4] = {0, 0, 0, 0}; /* North West South West */
+				u8 straighten[2] = {0, 0}; /* Defer */
 
 #define WIRECONNECT_ALL (neighbor->metadata & RSM_BIT_WIRECONNECT_ALL) /* ROT 1 = NS, ROT 0 = WE */
 #define WIRECONNECT_LINE(R) ((neighbor->metadata&RSM_BIT_WIRECONNECT_LINE) && ((neighbor->rotation&1)==((R)&1)))
-#define BLOCKAT(X, Y, Z) (cu_coordsToBlock(VEC3(X, Y, Z), NULL))
-						neighbortop = BLOCKAT(xpos, ypos + 1, zpos);
-#define NEIGHBORS(X, Y, Z) \
-	neighbor = BLOCKAT(X, Y, Z); \
-	neighborup = BLOCKAT(X, Y + 1, Z); \
-	neighbordown = BLOCKAT(X, Y - 1, Z);
+#define _BLOCKAT(_X, _Y, _Z) (cu_posToBlock(_X, _Y, _Z, NULL))
+				neighbortop = _BLOCKAT(xpos, ypos + 1, zpos);
+#define _NEIGHBORS(_X, _Y, _Z) \
+	neighbor = _BLOCKAT(_X, _Y, _Z); \
+	neighborup = _BLOCKAT(_X, _Y + 1, _Z); \
+	neighbordown = _BLOCKAT(_X, _Y - 1, _Z);
 #define CONNECT(I) \
 	connect[I] = (WIRECONNECT_ALL || WIRECONNECT_LINE(I + 1) \
-			|| (neighborup->id == RSM_BLOCK_WIRE && !(neighbortop->metadata & RSM_BIT_CONDUCTOR)) \
-			|| (neighbordown->id == RSM_BLOCK_WIRE && !(neighbor->metadata & RSM_BIT_CONDUCTOR)));
-						NEIGHBORS(xpos, ypos, zpos + 1); CONNECT(0); NEIGHBORS(xpos + 1, ypos, zpos); CONNECT(1);
-						NEIGHBORS(xpos, ypos, zpos - 1); CONNECT(2); NEIGHBORS(xpos - 1, ypos, zpos); CONNECT(3);
+		|| (neighborup->id == RSM_BLOCK_WIRE && !(neighbortop->metadata & RSM_BIT_CONDUCTOR)) \
+		|| (neighbordown->id == RSM_BLOCK_WIRE && !(neighbor->metadata & RSM_BIT_CONDUCTOR)));
+				_NEIGHBORS(xpos, ypos, zpos + 1); CONNECT(0); _NEIGHBORS(xpos + 1, ypos, zpos); CONNECT(1);
+				_NEIGHBORS(xpos, ypos, zpos - 1); CONNECT(2); _NEIGHBORS(xpos - 1, ypos, zpos); CONNECT(3);
 
-						/* Straighten wire if it doesn't turn */
-						if (!(connect[0] || connect[2])) straighten[0] = 1;
-						if (!(connect[1] || connect[3])) straighten[1] = 1;
-						if (straighten[0]) connect[1] = connect[3] = 1;
-						if (straighten[1]) connect[0] = connect[2] = 1;
+				/* Straighten wire if it doesn't turn */
+				if (!(connect[0] || connect[2])) straighten[0] = 1;
+				if (!(connect[1] || connect[3])) straighten[1] = 1;
+				if (straighten[0]) connect[1] = connect[3] = 1;
+				if (straighten[1]) connect[0] = connect[2] = 1;
 
-						/* Ground connections */
-						for (i = 0; i < 4; i++) {
-							if (!connect[i])
-								memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30,
-										(k -= 30) * sizeof(uint32_t));
-							else j += 30;
-						}
-#undef NEIGHBORS
-#define NEIGHBORS(X, Y, Z) neighbor = cu_coordsToBlock(VEC3(X, Y + 1, Z), NULL);
-#define CULLINDICES \
+				/* Ground connections */
+				for (i = 0; i < 4; i++) {
+					if (!connect[i])
+						memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30,
+								(k -= 30) * sizeof(u32));
+					else j += 30;
+				}
+#undef _NEIGHBORS
+#define _NEIGHBORS(_X, _Y, _Z) neighbor = cu_posToBlock(_X, _Y + 1, _Z, NULL);
+#define _CULLINDICES \
 	if (!(neighbor->id == RSM_BLOCK_WIRE) || (neighbortop->metadata & RSM_BIT_CONDUCTOR)) \
-		memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30, (k -= 30) * sizeof(uint32_t)); \
+		memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30, (k -= 30) * sizeof(u32)); \
 	else j += 30;
-						/* Upwards connections */
-						NEIGHBORS(xpos, ypos, zpos + 1); CULLINDICES; /* North */
-						NEIGHBORS(xpos + 1, ypos, zpos); CULLINDICES; /* West */
-						NEIGHBORS(xpos, ypos, zpos - 1); CULLINDICES; /* South */
-						NEIGHBORS(xpos - 1, ypos, zpos); CULLINDICES; /* East */
-#undef CULLINDICES
-#undef NEIGHBORS
+				/* Upwards connections */
+				_NEIGHBORS(xpos, ypos, zpos + 1); _CULLINDICES; /* North */
+				_NEIGHBORS(xpos + 1, ypos, zpos); _CULLINDICES; /* West */
+				_NEIGHBORS(xpos, ypos, zpos - 1); _CULLINDICES; /* South */
+				_NEIGHBORS(xpos - 1, ypos, zpos); _CULLINDICES; /* East */
+#undef _CULLINDICES
+#undef _NEIGHBORS
 #undef CONNECT
-#undef BLOCKAT
+#undef _BLOCKAT
 #undef WIRECONNECT_LINE
 #undef WIRECONNECT_ALL
-						blockmesh.count[2] = j; /* Adjust index count */
-						break;
-				}
-
-				/* Adjust indices with running total. All vertices assumed to be used at least once */
-				for (i = 0; i < blockmesh.count[2]; i++) blockmesh.opaqueIndices[i] += runningOpaqueIndexOffset;
-				for (i = 0; i < blockmesh.count[3]; i++) blockmesh.transIndices[i] += runningTransIndexOffset;
-				runningOpaqueIndexOffset += blockmesh.count[0] / NMEMB_VERTEX;
-				runningTransIndexOffset += blockmesh.count[1] / NMEMB_VERTEX;
-
-				/* Copy to rawmesh while updating pointers */
-				memcpy(ov_bufptr, blockmesh.opaqueVertices, blockmesh.count[0] * sizeof(float));
-				memcpy(tv_bufptr, blockmesh.transVertices, blockmesh.count[1] * sizeof(float));
-				memcpy(oi_bufptr, blockmesh.opaqueIndices, blockmesh.count[2] * sizeof(uint32_t));
-				memcpy(ti_bufptr, blockmesh.transIndices, blockmesh.count[3] * sizeof(uint32_t));
-
-				/* Offset pointers */
-				ov_bufptr += blockmesh.count[0]; tv_bufptr += blockmesh.count[1];
-				oi_bufptr += blockmesh.count[2]; ti_bufptr += blockmesh.count[3];
-			}
+				blockmesh.count[2] = j; /* Adjust index count */
+				break;
 		}
+
+		/* Adjust indices with running total. All vertices assumed to be used at least once */
+		for (i = 0; i < blockmesh.count[2]; i++) blockmesh.opaqueIndices[i] += runningOpaqueIndexOffset;
+		for (i = 0; i < blockmesh.count[3]; i++) blockmesh.transIndices[i] += runningTransIndexOffset;
+		runningOpaqueIndexOffset += (blockmesh.count[0] / NMEMB_VERTEX);
+		runningTransIndexOffset += (blockmesh.count[1] / NMEMB_VERTEX);
+
+		/* Copy to rawmesh while updating pointers */
+		memcpy(ov_bufptr, blockmesh.opaqueVertices, blockmesh.count[0] * sizeof(f32));
+		memcpy(tv_bufptr, blockmesh.transVertices, blockmesh.count[1] * sizeof(f32));
+		memcpy(oi_bufptr, blockmesh.opaqueIndices, blockmesh.count[2] * sizeof(u32));
+		memcpy(ti_bufptr, blockmesh.transIndices, blockmesh.count[3] * sizeof(u32));
+
+		/* Offset pointers */
+		ov_bufptr += blockmesh.count[0]; tv_bufptr += blockmesh.count[1];
+		oi_bufptr += blockmesh.count[2]; ti_bufptr += blockmesh.count[3];
 	}
 
 	/* Set member counts */
-	rawmesh->nOV = ov_bufptr - rawmesh->opaqueVertexBuffer;
-	rawmesh->nTV = tv_bufptr - rawmesh->transVertexBuffer;
-	rawmesh->nOI = oi_bufptr - rawmesh->opaqueIndexBuffer;
-	rawmesh->nTI = ti_bufptr - rawmesh->transIndexBuffer;
+	rawmesh->nOV = (ov_bufptr - rawmesh->opaqueVertexBuffer);
+	rawmesh->nTV = (tv_bufptr - rawmesh->transVertexBuffer);
+	rawmesh->nOI = (oi_bufptr - rawmesh->opaqueIndexBuffer);
+	rawmesh->nTI = (ti_bufptr - rawmesh->transIndexBuffer);
 
-	pthread_mutex_lock(&meshlock);
-	usf_enqueue(meshqueue, USFDATAP(rawmesh));
-	pthread_mutex_unlock(&meshlock);
+	usf_enqueue(meshqueue_, USFDATAP(rawmesh));
 
 	free(chunkindexptr); /* Cleanup argument; it was allocated to allow for thread detachment from callee */
 	return NULL;

@@ -1,29 +1,25 @@
 #include "command.h"
+char cmdbuffer_[RSM_MAX_COMMAND_LENGTH];
+char cmdlog_[RSM_MAX_COMMAND_LOG_LINES][RSM_MAX_COMMAND_LENGTH];
+char (*logptr_)[RSM_MAX_COMMAND_LENGTH] = cmdlog_;
+char *cmdptr_ = cmdbuffer_;
+usf_hashmap *cmdmap_;
+usf_hashmap *varmap_;
+usf_hashmap *aliasmap_;
 
-int64_t ret_selection[6] = {0, 0, 0, 1, 1, 1};
-int64_t ret_positions[6] = {0, 0, 0, 0, 0, 0};
-
-char cmdbuffer[RSM_MAX_COMMAND_LENGTH];
-char cmdlog[RSM_MAX_COMMAND_LOG_LINES][RSM_MAX_COMMAND_LENGTH];
-char (*logptr)[RSM_MAX_COMMAND_LENGTH] = cmdlog;
-char *cmdptr = cmdbuffer;
-usf_hashmap *cmdmap;
-usf_hashmap *varmap;
-usf_hashmap *aliasmap;
-
-void command_help(uint32_t args, char *argv[]);
-void command_config(uint32_t args, char *argv[]);
-void command_lookat(uint32_t args, char *argv[]);
-void command_set(uint32_t args, char *argv[]);
-void command_setraw(uint32_t args, char *argv[]);
-void command_selection(uint32_t args, char *argv[]);
-void command_sspower(uint32_t args, char *argv[]);
-void command_teleport(uint32_t args, char *argv[]);
+void command_help(u32 args, char *argv[]);
+void command_config(u32 args, char *argv[]);
+void command_lookat(u32 args, char *argv[]);
+void command_set(u32 args, char *argv[]);
+void command_setraw(u32 args, char *argv[]);
+void command_selection(u32 args, char *argv[]);
+void command_sspower(u32 args, char *argv[]);
+void command_teleport(u32 args, char *argv[]);
 
 void cmd_init(void) {
 	/* Initialize cmdmap and varmap for use in cmd execution */
-#define ALIAS(CMDNAME, CMDPTR) usf_strhmput(cmdmap, CMDNAME, USFDATAP(CMDPTR))
-	cmdmap = usf_newhm();
+#define ALIAS(CMDNAME, CMDPTR) usf_strhmput(cmdmap_, CMDNAME, USFDATAP(CMDPTR))
+	cmdmap_ = usf_newhm();
 	ALIAS("config", command_config);
 	ALIAS("lookat", command_lookat);
 	ALIAS("help", command_help);
@@ -34,8 +30,8 @@ void cmd_init(void) {
 	ALIAS("teleport", command_teleport);
 #undef ALIAS
 
-#define ALIAS(VARNAME, VAR) usf_strhmput(varmap, VARNAME, USFDATAP(&VAR))
-	varmap = usf_newhm();
+#define ALIAS(VARNAME, VAR) usf_strhmput(varmap_, VARNAME, USFDATAP(&VAR))
+	varmap_ = usf_newhm();
 	ALIAS("RSM_FLY_ACCELERATION", RSM_FLY_ACCELERATION);
 	ALIAS("RSM_FLY_X_ACCELERATION", RSM_FLY_X_ACCELERATION);
 	ALIAS("RSM_FLY_Y_ACCELERATION", RSM_FLY_Y_ACCELERATION);
@@ -55,8 +51,9 @@ void cmd_init(void) {
 	ALIAS("RSM_AIRPLACE", RSM_AIRPLACE);
 #undef ALIAS
 
-#define ALIAS(ALIASNAME, TRUENAME) usf_strhmput(aliasmap, ALIASNAME, USFDATAP(TRUENAME));
-	aliasmap = usf_newhm(); /* Important: always include true name in aliases for absolute referencing */
+#define ALIAS(ALIASNAME, TRUENAME) usf_strhmput(aliasmap_, ALIASNAME, USFDATAP(TRUENAME));
+	/* Important: always include true name in aliases for absolute referencing */
+	aliasmap_ = usf_newhm();
 	/* Commands */
 	ALIAS("help", "help");
 	ALIAS("config", "config");
@@ -143,33 +140,34 @@ void cmd_init(void) {
 
 void cmd_parseChar(char c) {
 	/* Process a typed character into cmdbuffer */
-	if ((unsigned char) c > 127) return;
+
+	if (c < 0) return; /* Illegal character */
 
 	if (c == '\b') {
-		if (cmdptr - cmdbuffer) cmdptr--; /* Decrement if not at beginning */
-		*cmdptr = '\0';
+		if (cmdptr_ - cmdbuffer_) cmdptr_--; /* Decrement if not at beginning */
+		*cmdptr_ = '\0';
 		return;
 	}
 
 	if (c == '\n') {
 		/* Execute if user entered a command */
-		if (usf_sstartswith(cmdbuffer, RSM_COMMAND_PREFIX)) cmd_xeq(cmdbuffer);
-		else cmd_log(cmdbuffer);
+		if (usf_sstartswith(cmdbuffer_, RSM_COMMAND_PREFIX)) cmd_xeq(cmdbuffer_);
+		else cmd_log(cmdbuffer_);
 
-		*(cmdptr = cmdbuffer) = '\0';
+		*(cmdptr_ = cmdbuffer_) = '\0';
 		return;
 	}
 
-	if (cmdptr - cmdbuffer + 1 >= RSM_MAX_COMMAND_LENGTH) return;
+	if (cmdptr_ - cmdbuffer_ + 1 >= RSM_MAX_COMMAND_LENGTH) return;
 
-	*cmdptr++ = c;
-	*cmdptr = '\0';
+	*cmdptr_++ = c;
+	*cmdptr_ = '\0';
 }
 
 void cmd_log(char *s) {
 	/* Logs a string and rolls the log array */
-	strcpy(*logptr, s);
-	logptr = cmdlog + (uint64_t) (logptr - cmdlog + 1) % RSM_MAX_COMMAND_LOG_LINES;
+	strcpy(*logptr_, s);
+	logptr_ = cmdlog_ + (u64) (logptr_ - cmdlog_ + 1) % RSM_MAX_COMMAND_LOG_LINES;
 }
 
 void cmd_logf(char *format, ...) {
@@ -188,25 +186,25 @@ void cmd_xeq(char *rawcmd) {
 	/* Executes a redsim command from string */
 	rawcmd += sizeof(RSM_COMMAND_PREFIX) - 1; /* Skip command prefix (don't include \0) */
 	char **argv;
-	uint64_t args;
+	u64 args;
 	argv = usf_scsplit(rawcmd, ' ', &args);
 
 	char *cmdname;
-	if ((cmdname = usf_strhmget(aliasmap, argv[0]).p) == NULL) {
+	if ((cmdname = usf_strhmget(aliasmap_, argv[0]).p) == NULL) {
 		cmd_logf("Unknown command %s. Type \"%shelp\" for help.\n", argv[0], RSM_COMMAND_PREFIX);
 		goto end;
 	}
 
-	void (*cmdfuncptr)(uint32_t args, char *argv[]);
-	if ((cmdfuncptr = usf_strhmget(cmdmap, cmdname).p) == NULL) {
+	void (*cmdfuncptr)(u32 args, char *argv[]);
+	if ((cmdfuncptr = usf_strhmget(cmdmap_, cmdname).p) == NULL) {
 		/* Implicit config command */
 		if (args < 2) {
 			cmd_logf("(Implicit) Syntax: %sconfig [var] [(float) value]\n", RSM_COMMAND_PREFIX);
 			goto end;
 		}
 
-		float *rsmvar, value;
-		rsmvar = usf_strhmget(varmap, cmdname).p;
+		f32 *rsmvar, value;
+		rsmvar = usf_strhmget(varmap_, cmdname).p;
 		value = strtof(argv[1], NULL);
 		*rsmvar = value;
 
@@ -221,7 +219,7 @@ end:
 }
 
 /* Command implementations */
-void command_help(uint32_t args, char *argv[]) {
+void command_help(u32 args, char *argv[]) {
 	/* Display helpful info */
 	if (args < 2) {
 		/* General help */
@@ -239,14 +237,14 @@ void command_help(uint32_t args, char *argv[]) {
 
 	/* Find pointer to command or variable and display help */
 	char *unaliasedname;
-	if ((unaliasedname = usf_strhmget(aliasmap, argv[1]).p) == NULL) {
+	if ((unaliasedname = usf_strhmget(aliasmap_, argv[1]).p) == NULL) {
 		cmd_logf("No help entry for %s.\n", argv[1]);
 		return;
 	}
 
 	void *unaliasedptr; /* If it is in the alias registry, it must exist */
-	if ((unaliasedptr = usf_strhmget(cmdmap, unaliasedname).p) == NULL)
-		unaliasedptr = usf_strhmget(varmap, unaliasedname).p;
+	if ((unaliasedptr = usf_strhmget(cmdmap_, unaliasedname).p) == NULL)
+		unaliasedptr = usf_strhmget(varmap_, unaliasedname).p;
 
 	/* Commands */
 	if (unaliasedptr == command_help) {
@@ -312,69 +310,70 @@ void command_help(uint32_t args, char *argv[]) {
 	}
 }
 
-void command_config(uint32_t args, char *argv[]) {
+void command_config(u32 args, char *argv[]) {
 	/* Configure some RSM layout values */
+
 	if (args < 3) {
 		cmd_logf("Syntax: %sconfig [var] [(float) value]\n", RSM_COMMAND_PREFIX);
 		return;
 	}
 
 	char *varname;
-	if ((varname = usf_strhmget(aliasmap, argv[1]).p) == NULL) {
+	if ((varname = usf_strhmget(aliasmap_, argv[1]).p) == NULL) {
 		cmd_logf("Unknown configuration variable %s.\n", argv[1]);
 		return;
 	}
 
-	float *rsmvar, value;
-	rsmvar = usf_strhmget(varmap, varname).p;
+	f32 *rsmvar, value;
+	rsmvar = usf_strhmget(varmap_, varname).p;
 	value = strtof(argv[2], NULL);
 	*rsmvar = value;
 
 	cmd_logf("Set %s to %f.\n", varname, value);
 }
 
-void command_lookat(uint32_t args, char *argv[]) {
+void command_lookat(u32 args, char *argv[]) {
 	/* Sets pitch and yaw in degrees */
 	if (args < 3) {
 		cmd_logf("Syntax: %slookat [pitch] [yaw]\n", RSM_COMMAND_PREFIX);
 		return;
 	}
 
-	pitch = strtof(argv[1], NULL);
-	yaw = strtof(argv[2], NULL);
+	pitch_ = strtof(argv[1], NULL);
+	yaw_ = strtof(argv[2], NULL);
 }
 
-void command_selection(uint32_t args, char *argv[]) {
+void command_selection(u32 args, char *argv[]) {
 	(void) args;
 	(void) argv;
 
 	/* Queries current selection position */
-	cmd_logf("Pos 1: %"PRIu64", %"PRIu64", %"PRIu64".\n", ret_positions[0], ret_positions[1], ret_positions[2]);
-	cmd_logf("Pos 2: %"PRIu64", %"PRIu64", %"PRIu64".\n", ret_positions[3], ret_positions[4], ret_positions[5]);
+	cmd_logf("Pos1: %"PRId64", %"PRId64", %"PRId64".", ret_positions_[0], ret_positions_[1], ret_positions_[2]);
+	cmd_logf("Pos2: %"PRId64", %"PRId64", %"PRId64".", ret_positions_[3], ret_positions_[4], ret_positions_[5]);
 }
 
-void command_set(uint32_t args, char *argv[]) {
+void command_set(u32 args, char *argv[]) {
 	/* Sets block with default metadata and no rotation */
 	if (args < 2) {
 		cmd_logf("Syntax: %sset [blockname]\n", RSM_COMMAND_PREFIX);
 		return;
 	}
 
-	uint64_t uid, id, variant, metadata;
-	uid = usf_strhmget(namemap, argv[1]).u;
+	u64 uid, id, variant, metadata;
+	uid = usf_strhmget(namemap_, argv[1]).u;
 	id = GETID(uid); variant = GETVARIANT(uid);
-	metadata = usf_inthmget(datamap, uid).u;
+	metadata = usf_inthmget(datamap_, uid).u;
 
 	usf_skiplist *toRemesh;
 	toRemesh = usf_newsk();
 
 	Blockdata *blockdata;
-	uint64_t chunkindex;
-	int64_t x, y, z, a = 0, b = 0, c = 0;
-	for (x = ret_selection[0], a = 0; a < ret_selection[3]; a++)
-	for (y = ret_selection[1], b = 0; b < ret_selection[4]; b++)
-	for (z = ret_selection[2], c = 0; c < ret_selection[5]; c++) {
-		blockdata = cu_coordsToBlock(VEC3(x+a, y+b, z+c), &chunkindex);
+	u64 chunkindex;
+	i64 x, y, z, a = 0, b = 0, c = 0;
+	for (x = ret_selection_[0], a = 0; a < ret_selection_[3]; a++)
+	for (y = ret_selection_[1], b = 0; b < ret_selection_[4]; b++)
+	for (z = ret_selection_[2], c = 0; c < ret_selection_[5]; c++) {
+		blockdata = cu_posToBlock(x+a, y+b, z+c, &chunkindex);
 
 		blockdata->id = id;
 		blockdata->variant = variant;
@@ -391,7 +390,7 @@ void command_set(uint32_t args, char *argv[]) {
 	cmd_logf("Affected %"PRIu64" blocks.\n", a*b*c);
 }
 
-void command_setraw(uint32_t args, char *argv[]) {
+void command_setraw(u32 args, char *argv[]) {
 	/* Sets blocks in selection to raw data. */
 	if (args < 5) {
 		cmd_logf("Syntax: %ssetraw [id] [variant] [rotation] [metadata]\n", RSM_COMMAND_PREFIX);
@@ -402,22 +401,22 @@ void command_setraw(uint32_t args, char *argv[]) {
 	toRemesh = usf_newsk();
 
 	Blockdata *blockdata;
-	uint64_t chunkindex;
-	int64_t x, y, z, a = 0, b = 0, c = 0;
-	for (x = ret_selection[0], a = 0; a < ret_selection[3]; a++)
-	for (y = ret_selection[1], b = 0; b < ret_selection[4]; b++)
-	for (z = ret_selection[2], c = 0; c < ret_selection[5]; c++) {
-		blockdata = cu_coordsToBlock(VEC3(x+a, y+b, z+c), &chunkindex);
+	u64 chunkindex;
+	i64 x, y, z, a = 0, b = 0, c = 0;
+	for (x = ret_selection_[0], a = 0; a < ret_selection_[3]; a++)
+	for (y = ret_selection_[1], b = 0; b < ret_selection_[4]; b++)
+	for (z = ret_selection_[2], c = 0; c < ret_selection_[5]; c++) {
+		blockdata = cu_posToBlock(x+a, y+b, z+c, &chunkindex);
 
-		blockdata->id = strtoul(argv[1], NULL, 10);
-		blockdata->variant = strtoul(argv[2], NULL, 10);
-		blockdata->rotation = strtoul(argv[3], NULL, 10);
-		blockdata->metadata = strtoul(argv[4], NULL, 10);
+		blockdata->id = strtou32(argv[1], NULL, 10);
+		blockdata->variant = strtou32(argv[2], NULL, 10);
+		blockdata->rotation = strtou32(argv[3], NULL, 10);
+		blockdata->metadata = strtou32(argv[4], NULL, 10);
 
 		usf_skset(toRemesh, chunkindex, USFTRUE);
 	}
 
-	uint64_t i;
+	u64 i;
 	usf_skipnode *node; /* Remesh */
 	for (node = toRemesh->base[0], i = 0; i < toRemesh->size; node = node->nextnodes[0], i++)
 		cu_asyncRemeshChunk(node->index);
@@ -427,25 +426,25 @@ void command_setraw(uint32_t args, char *argv[]) {
 	cmd_logf("Affected %"PRIu64" blocks.\n", a*b*c);
 }
 
-void command_sspower(uint32_t args, char *argv[]) {
+void command_sspower(u32 args, char *argv[]) {
 	/* Sets sspower for constant sources and resistors */
 	if (args < 2) {
 		cmd_logf("Syntax: %ssspower [power]\n", RSM_COMMAND_PREFIX);
 		return;
 	}
 
-	sspower = USF_CLAMP(strtoul(argv[1], NULL, 10), 1, 255);
-	cmd_logf("Set sspower to %"PRIu8".\n", sspower);
+	sspower_ = USF_CLAMP(strtou32(argv[1], NULL, 10), 1, 255);
+	cmd_logf("Set sspower to %"PRIu8".\n", sspower_);
 }
 
-void command_teleport(uint32_t args, char *argv[]) {
+void command_teleport(u32 args, char *argv[]) {
 	/* Teleports to position */
 	if (args < 4) {
 		cmd_logf("Syntax: %steleport [x] [y] [z]\n", RSM_COMMAND_PREFIX);
 		return;
 	}
 
-	position[0] = strtof(argv[1], NULL);
-	position[1] = strtof(argv[2], NULL);
-	position[2] = strtof(argv[3], NULL);
+	position_[0] = strtof(argv[1], NULL);
+	position_[1] = strtof(argv[2], NULL);
+	position_[2] = strtof(argv[3], NULL);
 }
