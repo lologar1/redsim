@@ -210,11 +210,15 @@ static void *pushRawmesh(void *chunkindexptr) {
 	z = _SIGNED21CAST64(chunkindex & CHUNKCOORDMASK);
 #undef _SIGNED21CAST64
 
-	Chunkdata *chunk;
-	if ((chunk = (Chunkdata *) usf_inthmget(chunkmap_, chunkindex).p) == NULL) {
+	Chunkdata chunk, *chunkptr;
+	if ((chunkptr = (Chunkdata *) usf_inthmget(chunkmap_, chunkindex).p) == NULL) {
 		fprintf(stderr, "Chunk at %"PRId64" %"PRId64" %"PRId64" does not exist, aborting.\n", x, y, z);
 		exit(RSM_EXIT_NOCHUNK);
 	}
+	/* Get local copy independent of chunkmap_ */
+	pthread_mutex_lock(chunkmap_->lock);
+	memcpy(&chunk, chunkptr, sizeof(Chunkdata)); /* Safe since chunks cannot be deleted */
+	pthread_mutex_unlock(chunkmap_->lock);
 
 	f32 culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* culled is misnomer since it holds not-culled faces */
 	static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
@@ -257,7 +261,7 @@ static void *pushRawmesh(void *chunkindexptr) {
 	for (a = 0; a < CHUNKSIZE; a++)
 	for (b = 0; b < CHUNKSIZE; b++)
 	for (c = 0; c < CHUNKSIZE; c++) {
-		block = (*chunk)[a][b][c];
+		block = chunk[a][b][c];
 
 		if (block.id == 0) continue; /* Air; do not remesh */
 
