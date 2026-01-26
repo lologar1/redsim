@@ -10,7 +10,7 @@ LIB_OBJ_DIR := $(LIB_DIR)/obj
 CC := gcc
 CFLAGS := -Wall -Wextra -Wunused-macros -Wcast-align -Wduplicated-branches \
 		  -Wduplicated-cond -Wformat-signedness -Wjump-misses-init -Wlogical-op \
-		  -O0 -g
+		  -O0 -g -Wsign-conversion
 LINKS := -lm -lGL -lglfw -lpthread -lfreetype
 INCLUDES := -I$(INC_DIR) -I$(LIB_INC_DIR)
 

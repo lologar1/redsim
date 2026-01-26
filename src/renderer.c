@@ -168,12 +168,12 @@ void renderer_render(GLFWwindow *window) {
 		glUniformMatrix4fv(opaqueProjLocation, 1, GL_FALSE, (f32 *) perspective);
 		for (i = 0; i < nmeshes_; i++) {
 			glBindVertexArray(meshes_[i][0]);
-			if (meshes_[i][2]) glDrawElements(GL_TRIANGLES, meshes_[i][2], GL_UNSIGNED_INT, 0);
+			if (meshes_[i][2]) glDrawElements(GL_TRIANGLES, (GLsizei) meshes_[i][2], GL_UNSIGNED_INT, 0);
 		}
 
 		/* Wireframe (highlighting) rendering */
 		glBindVertexArray(wiremesh_[0]);
-		glDrawElements(GL_LINES, wiremesh_[1], GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_LINES, (GLsizei) wiremesh_[1], GL_UNSIGNED_INT, 0);
 
 		/* Transparent rendering */
 		glDepthMask(GL_FALSE); glEnable(GL_DEPTH_TEST);
@@ -194,7 +194,7 @@ void renderer_render(GLFWwindow *window) {
 		glUniformMatrix4fv(transProjLocation, 1, GL_FALSE, (f32 *) perspective);
 		for (i = 0; i < nmeshes_; i++) {
 			glBindVertexArray(meshes_[i][1]);
-			if (meshes_[i][3]) glDrawElements(GL_TRIANGLES, meshes_[i][3], GL_UNSIGNED_INT, 0);
+			if (meshes_[i][3]) glDrawElements(GL_TRIANGLES, (GLsizei) meshes_[i][3], GL_UNSIGNED_INT, 0);
 		}
 
 		/* GUI rendering */
@@ -354,8 +354,9 @@ static void framebuffer_size_callback(GLFWwindow *window, i32 width, i32 height)
 
 	(void) window; /* Needed to fit prototype */
 
-	screenWidth_ = width;
-	screenHeight_ = height;
+	/* Need to accomodate width/height being signed from GLFW */
+	screenWidth_ = (u64) width;
+	screenHeight_ = (u64) height;
 
 	renderer_freeBuffers();
 	renderer_initBuffers();

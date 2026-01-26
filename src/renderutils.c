@@ -74,10 +74,10 @@ void ru_atlasAppend(char *meshname, u64 sizex, u64 sizey, u8 **atlasptr, GLsizei
 		exit(RSM_EXIT_BADTEXTURE);
 	}
 
-	u64 imagesz = sizex * sizey * 4;
-	*atlasptr = realloc(*atlasptr, *atlassz + imagesz);
+	u64 imagesz = sizex * sizey * 4; /* Need to accomodate GLsizei being unsigned for some reason... */
+	*atlasptr = realloc(*atlasptr, (u64) (*atlassz + (i64) imagesz));
 	memcpy(*atlasptr + *atlassz, imagedata, imagesz);
-	*atlassz += imagesz;
+	*atlassz += (i64) imagesz;
 
 	stbi_image_free(imagedata);
 }

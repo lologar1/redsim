@@ -201,7 +201,7 @@ static void renderCommand(void) {
 		iptr += nchars * 6;
 	}
 
-	gu_meshSet(mCommand, v, vptr - v, i, iptr - i);
+	gu_meshSet(mCommand, v, (u64) (vptr - v), i, (u64) (iptr - i));
 }
 
 static void renderItemSprite(u64 id, u64 variant, f32 x, f32 y, f32 w, f32 h) {

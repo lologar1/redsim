@@ -441,11 +441,11 @@ static void *pushRawmesh(void *chunkindexptr) {
 		oi_bufptr += blockmesh.count[2]; ti_bufptr += blockmesh.count[3];
 	}
 
-	/* Set member counts */
-	rawmesh->nOV = (ov_bufptr - rawmesh->opaqueVertexBuffer);
-	rawmesh->nTV = (tv_bufptr - rawmesh->transVertexBuffer);
-	rawmesh->nOI = (oi_bufptr - rawmesh->opaqueIndexBuffer);
-	rawmesh->nTI = (ti_bufptr - rawmesh->transIndexBuffer);
+	/* Set member counts; will always be positive */
+	rawmesh->nOV = (u64) (ov_bufptr - rawmesh->opaqueVertexBuffer);
+	rawmesh->nTV = (u64) (tv_bufptr - rawmesh->transVertexBuffer);
+	rawmesh->nOI = (u64) (oi_bufptr - rawmesh->opaqueIndexBuffer);
+	rawmesh->nTI = (u64) (ti_bufptr - rawmesh->transIndexBuffer);
 
 	usf_enqueue(meshqueue_, USFDATAP(rawmesh));
 

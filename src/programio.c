@@ -333,11 +333,11 @@ void pio_parseGUIdata(void) {
 		for (row = 0; row < glyph->bitmap.rows; row++)
 		for (col = 0; col < glyph->bitmap.width; col++) {
 #define XOFFSET ((RSM_CHARACTER_TEXTURE_SIZE_PIXELS \
-			- USF_MIN(RSM_CHARACTER_TEXTURE_SIZE_PIXELS, glyph->bitmap.width)) / 2)
+			- USF_MIN(glyph->bitmap.width, RSM_CHARACTER_TEXTURE_SIZE_PIXELS)) / 2)
 #define YOFFSET ((RSM_CHARACTER_TEXTURE_SIZE_PIXELS \
-			- USF_MIN(RSM_CHARACTER_TEXTURE_SIZE_PIXELS, glyph->bitmap.rows)) / 2)
+			- USF_MIN(glyph->bitmap.rows, RSM_CHARACTER_TEXTURE_SIZE_PIXELS)) / 2)
 			chartexture[nsubtexture][(row + YOFFSET) * RSM_CHARACTER_TEXTURE_SIZE_PIXELS + col + XOFFSET] =
-				glyph->bitmap.buffer[row * glyph->bitmap.pitch + col];
+				glyph->bitmap.buffer[row * (u64) USF_ABS(glyph->bitmap.pitch) + col];
 		}
 
 #define CHARS_PER_LINE (RSM_GUI_TEXTURE_SIZE_PIXELS / RSM_CHARACTER_TEXTURE_SIZE_PIXELS)
@@ -387,9 +387,9 @@ void pio_parseGUIdata(void) {
 	}
 
 	/* Copy char atlas to GUI atlas */
-	guiatlas = realloc(guiatlas, guiatlassz + sizeof(chartextureatlas));
+	guiatlas = realloc(guiatlas, (u64) guiatlassz + sizeof(chartextureatlas));
 	memcpy(guiatlas + guiatlassz, chartextureatlas, sizeof(chartextureatlas));
-	guiatlassz += sizeof(chartextureatlas);
+	guiatlassz += (i64) sizeof(chartextureatlas);
 
 	/* Free FreeType */
 	FT_Done_Face(typeface);
@@ -406,14 +406,14 @@ void pio_parseGUIdata(void) {
 	free(guiatlas); /* CPU-side buffer */
 }
 
-void pio_pathcat(char *destination, i32 n, ...) {
+void pio_pathcat(char *destination, u64 n, ...) {
 	/* Concatenates a path into a destination, checking against RSM_MAX_PATH_NAME_LENGTH */
 
 	va_list args;
 	va_start(args, n);
 
 	if (usf_vstrcat(destination, RSM_MAX_PATH_NAME_LENGTH, n, args)) {
-		fprintf(stderr, "Concatenation of %d paths exceeds max buffer length %"PRId32", aborting.\n",
+		fprintf(stderr, "Concatenation of %"PRIu64" paths exceeds max buffer length %"PRId32", aborting.\n",
 				n, RSM_MAX_PATH_NAME_LENGTH);
 		exit(RSM_EXIT_EXCBUF);
 	}

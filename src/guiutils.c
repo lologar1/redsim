@@ -38,9 +38,9 @@ void gu_meshSet(u64 meshid, f32 *v, u64 nvertices, u32 *i, u64 nindices) {
 	GLint VBO;
 	glBindVertexArray(guiVAOs_[meshid]);
 	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, nvertices * sizeof(f32), v, GL_DYNAMIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, nindices * sizeof(i32), i, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, (GLuint) VBO);
+	glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) (nvertices * sizeof(f32)), v, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr) (nindices * sizeof(i32)), i, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
@@ -75,7 +75,7 @@ u64 gu_drawText(char *str, f32 *vbuf, u32 *ibuf, u64 ioffset, f32 x, f32 y, f32 
 
 		f32 xpos, ypos, width, height;
 		xpos = x + xoffset + textchar->bearing[0] * scale;
-		ypos = y + yoffset - ((f32) textchar->size[1] - (f32) textchar->bearing[1]) * scale;
+		ypos = y + yoffset - (textchar->size[1] - textchar->bearing[1]) * scale;
 		width = textchar->size[0] * scale; height = textchar->size[1] * scale;
 
 		f32 v[5 * 4] = {

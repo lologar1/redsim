@@ -37,9 +37,9 @@ typedef enum GUIMeshID {
 
 typedef struct Textchar {
 	f32 uv[4]; /* Coords in guiAtlas */
-	u64 size[2]; /* Width/height in pixels */
-	u64 bearing[2]; /* x bearing/y bearing in pixels */
-	u64 advance; /* glyph advance in pixels */
+	i64 size[2]; /* Width/height in pixels */
+	i64 bearing[2]; /* x bearing/y bearing in pixels */
+	i64 advance; /* glyph advance in pixels */
 } Textchar;
 
 extern GLuint guiVAOs_[MAX_GUI_MESHID];

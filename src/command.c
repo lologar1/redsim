@@ -334,6 +334,7 @@ void command_config(u32 args, char *argv[]) {
 
 void command_lookat(u32 args, char *argv[]) {
 	/* Sets pitch and yaw in degrees */
+
 	if (args < 3) {
 		cmd_logf("Syntax: %slookat [pitch] [yaw]\n", RSM_COMMAND_PREFIX);
 		return;
@@ -354,6 +355,7 @@ void command_selection(u32 args, char *argv[]) {
 
 void command_set(u32 args, char *argv[]) {
 	/* Sets block with default metadata and no rotation */
+
 	if (args < 2) {
 		cmd_logf("Syntax: %sset [blockname]\n", RSM_COMMAND_PREFIX);
 		return;
@@ -364,34 +366,18 @@ void command_set(u32 args, char *argv[]) {
 	id = GETID(uid); variant = GETVARIANT(uid);
 	metadata = usf_inthmget(datamap_, uid).u;
 
-	usf_skiplist *toRemesh;
-	toRemesh = usf_newsk();
+	char setstring[RSM_MAX_COMMAND_LENGTH], **setargs;
+	snprintf(setstring, sizeof(setstring), ":setraw %"PRIu64" %"PRIu64" 0 %"PRIu64, id, variant, metadata);
+	setargs = usf_scsplit(setstring, ' ', NULL);
 
-	Blockdata *blockdata;
-	u64 chunkindex;
-	i64 x, y, z, a = 0, b = 0, c = 0;
-	for (x = ret_selection_[0], a = 0; a < ret_selection_[3]; a++)
-	for (y = ret_selection_[1], b = 0; b < ret_selection_[4]; b++)
-	for (z = ret_selection_[2], c = 0; c < ret_selection_[5]; c++) {
-		blockdata = cu_posToBlock(x+a, y+b, z+c, &chunkindex);
+	command_setraw(5, setargs);
 
-		blockdata->id = id;
-		blockdata->variant = variant;
-		blockdata->rotation = 0; /* NONE */
-		blockdata->metadata = metadata;
-
-		usf_skset(toRemesh, chunkindex, USFTRUE);
-	}
-
-	usf_skipnode *n; /* Remesh */
-	for (n = toRemesh->base[0]; n; n = n->nextnodes[0]) cu_asyncRemeshChunk(n->index);
-	usf_freesk(toRemesh);
-
-	cmd_logf("Affected %"PRIu64" blocks.\n", a*b*c);
+	usf_free(setargs); /* setstring array lives on stack */
 }
 
 void command_setraw(u32 args, char *argv[]) {
 	/* Sets blocks in selection to raw data. */
+
 	if (args < 5) {
 		cmd_logf("Syntax: %ssetraw [id] [variant] [rotation] [metadata]\n", RSM_COMMAND_PREFIX);
 		return;
@@ -420,7 +406,6 @@ void command_setraw(u32 args, char *argv[]) {
 	usf_skipnode *node; /* Remesh */
 	for (node = toRemesh->base[0], i = 0; i < toRemesh->size; node = node->nextnodes[0], i++)
 		cu_asyncRemeshChunk(node->index);
-
 	usf_freesk(toRemesh);
 
 	cmd_logf("Affected %"PRIu64" blocks.\n", a*b*c);

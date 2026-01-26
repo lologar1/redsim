@@ -31,6 +31,6 @@ extern GLuint guiTextureAtlas_;
 
 void pio_parseBlockdata(void);
 void pio_parseGUIdata(void);
-void pio_pathcat(char *destination, i32 n, ...);
+void pio_pathcat(char *destination, u64 n, ...);
 
 #endif

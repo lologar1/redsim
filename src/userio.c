@@ -200,6 +200,6 @@ void io_processMouseScroll(GLFWwindow *window, f64 xoffset, f64 yoffset) {
 	(void) window;
 	(void) xoffset;
 
-	hotslotIndex_ = (hotslotIndex_ + (yoffset < 0 ? 1 : -1) + RSM_HOTBAR_SLOTS) % RSM_HOTBAR_SLOTS;
+	hotslotIndex_ = (u64) ((i64) hotslotIndex_ + (yoffset < 0 ? 1 : -1) + RSM_HOTBAR_SLOTS) % RSM_HOTBAR_SLOTS;
 	gui_updateGUI();
 }

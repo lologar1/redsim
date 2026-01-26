@@ -201,7 +201,7 @@ void rsm_updateWiremesh(void) {
 	GLint buf;
 	glBindVertexArray(wiremesh_[0]);
 	glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buf);
-	glBindBuffer(GL_ARRAY_BUFFER, buf);
+	glBindBuffer(GL_ARRAY_BUFFER, (GLuint) buf);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_DYNAMIC_DRAW);
 	glBindVertexArray(0);
@@ -435,15 +435,19 @@ void rsm_checkMeshes(void) {
 
 		glBindVertexArray(mesh[0]); /* Opaque */
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO); /* Query VBO */
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, rawmesh->nOV*sizeof(f32), rawmesh->opaqueVertexBuffer, GL_DYNAMIC_DRAW);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, rawmesh->nOI * sizeof(u32), rawmesh->opaqueIndexBuffer, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, (GLuint) VBO);
+		glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) (rawmesh->nOV * sizeof(f32)),
+				rawmesh->opaqueVertexBuffer, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr) (rawmesh->nOI * sizeof(u32)),
+				rawmesh->opaqueIndexBuffer, GL_DYNAMIC_DRAW);
 
 		glBindVertexArray(mesh[1]); /* Trans */
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO);
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, rawmesh->nTV * sizeof(f32), rawmesh->transVertexBuffer, GL_DYNAMIC_DRAW);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, rawmesh->nTI * sizeof(u32), rawmesh->transIndexBuffer, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, (GLuint) VBO);
+		glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) (rawmesh->nTV * sizeof(f32)),
+				rawmesh->transVertexBuffer, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr) (rawmesh->nTI * sizeof(u32)),
+				rawmesh->transIndexBuffer, GL_DYNAMIC_DRAW);
 		glBindVertexArray(0); /* Unbind */
 
 		/* Set mesh element counts */
