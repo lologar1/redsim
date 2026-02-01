@@ -19,10 +19,10 @@ static f32 compositionQuad[] = {
 
 static void framebuffer_size_callback(GLFWwindow *window, i32 width, i32 height);
 
-/* Shader programs; not static since client_terminate imports them */
-GLuint vertexShader_, opaqueFragmentShader_, transFragmentShader_, compositionVertexShader_,
-	   compositionFragmentShader_, guiVertexShader_, guiFragmentShader_, opaqueShader_,
-	   transShader_, compositionShader_, guiShader_;
+/* Shader programs */
+static GLuint vertexShader_, opaqueFragmentShader_, transFragmentShader_, compositionVertexShader_,
+			  compositionFragmentShader_, guiVertexShader_, guiFragmentShader_, opaqueShader_,
+			  transShader_, compositionShader_, guiShader_;
 
 /* Framebuffer stuff */
 static GLuint FBO, GUIFBO;

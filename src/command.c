@@ -7,14 +7,14 @@ usf_hashmap *cmdmap_;
 usf_hashmap *varmap_;
 usf_hashmap *aliasmap_;
 
-void command_help(u32 args, char *argv[]);
-void command_config(u32 args, char *argv[]);
-void command_lookat(u32 args, char *argv[]);
-void command_set(u32 args, char *argv[]);
-void command_setraw(u32 args, char *argv[]);
-void command_selection(u32 args, char *argv[]);
-void command_sspower(u32 args, char *argv[]);
-void command_teleport(u32 args, char *argv[]);
+static void command_help(u32 args, char *argv[]);
+static void command_config(u32 args, char *argv[]);
+static void command_lookat(u32 args, char *argv[]);
+static void command_set(u32 args, char *argv[]);
+static void command_setraw(u32 args, char *argv[]);
+static void command_selection(u32 args, char *argv[]);
+static void command_sspower(u32 args, char *argv[]);
+static void command_teleport(u32 args, char *argv[]);
 
 void cmd_init(void) {
 	/* Initialize cmdmap and varmap for use in cmd execution */
@@ -219,7 +219,7 @@ end:
 }
 
 /* Command implementations */
-void command_help(u32 args, char *argv[]) {
+static void command_help(u32 args, char *argv[]) {
 	/* Display helpful info */
 	if (args < 2) {
 		/* General help */
@@ -310,7 +310,7 @@ void command_help(u32 args, char *argv[]) {
 	}
 }
 
-void command_config(u32 args, char *argv[]) {
+static void command_config(u32 args, char *argv[]) {
 	/* Configure some RSM layout values */
 
 	if (args < 3) {
@@ -332,7 +332,7 @@ void command_config(u32 args, char *argv[]) {
 	cmd_logf("Set %s to %f.\n", varname, value);
 }
 
-void command_lookat(u32 args, char *argv[]) {
+static void command_lookat(u32 args, char *argv[]) {
 	/* Sets pitch and yaw in degrees */
 
 	if (args < 3) {
@@ -344,7 +344,7 @@ void command_lookat(u32 args, char *argv[]) {
 	yaw_ = strtof(argv[2], NULL);
 }
 
-void command_selection(u32 args, char *argv[]) {
+static void command_selection(u32 args, char *argv[]) {
 	(void) args;
 	(void) argv;
 
@@ -353,7 +353,7 @@ void command_selection(u32 args, char *argv[]) {
 	cmd_logf("Pos2: %"PRId64", %"PRId64", %"PRId64".", ret_positions_[3], ret_positions_[4], ret_positions_[5]);
 }
 
-void command_set(u32 args, char *argv[]) {
+static void command_set(u32 args, char *argv[]) {
 	/* Sets block with default metadata and no rotation */
 
 	if (args < 2) {
@@ -375,7 +375,7 @@ void command_set(u32 args, char *argv[]) {
 	usf_free(setargs); /* setstring array lives on stack */
 }
 
-void command_setraw(u32 args, char *argv[]) {
+static void command_setraw(u32 args, char *argv[]) {
 	/* Sets blocks in selection to raw data. */
 
 	if (args < 5) {
@@ -411,7 +411,7 @@ void command_setraw(u32 args, char *argv[]) {
 	cmd_logf("Affected %"PRIu64" blocks.\n", a*b*c);
 }
 
-void command_sspower(u32 args, char *argv[]) {
+static void command_sspower(u32 args, char *argv[]) {
 	/* Sets sspower for constant sources and resistors */
 	if (args < 2) {
 		cmd_logf("Syntax: %ssspower [power]\n", RSM_COMMAND_PREFIX);
@@ -422,7 +422,7 @@ void command_sspower(u32 args, char *argv[]) {
 	cmd_logf("Set sspower to %"PRIu8".\n", sspower_);
 }
 
-void command_teleport(u32 args, char *argv[]) {
+static void command_teleport(u32 args, char *argv[]) {
 	/* Teleports to position */
 	if (args < 4) {
 		cmd_logf("Syntax: %steleport [x] [y] [z]\n", RSM_COMMAND_PREFIX);
