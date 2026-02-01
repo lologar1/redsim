@@ -151,7 +151,7 @@ void io_processMouseInput(GLFWwindow *window, i32 button, i32 action, i32 mods) 
 	(void) window;
 	(void) mods;
 
-	uint64_t uid;
+	u64 uid;
 	switch (gamestate_) {
 		case NORMAL:
 			switch (button) {

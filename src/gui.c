@@ -14,7 +14,7 @@ static void renderCrosshair(void);
 static void renderHotbar(void);
 static void renderInventory(void);
 static void renderCommand(void);
-static void renderItemSprite(uint64_t id, uint64_t variant, float x, float y, float w, float h);
+static void renderItemSprite(u64 id, u64 variant, float x, float y, float w, float h);
 
 void gui_updateGUI(void) { gui_scheduleUpdate_ = 1; }
 

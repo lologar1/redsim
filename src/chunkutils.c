@@ -54,7 +54,7 @@ void cu_generateMeshlist(void) {
 
 	u64 chunkvolume;
 	chunkvolume = (u64) pow(RSM_LOADING_DISTANCE * 2 + 1, 3);
-    meshes_ = malloc(chunkvolume * sizeof(GLuint *));
+	meshes_ = malloc(chunkvolume * sizeof(GLuint *));
 	nmeshes_ = 0;
 
 	cu_updateMeshlist();

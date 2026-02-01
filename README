@@ -2,15 +2,6 @@
 
 Redsim (RSM) is a 3D circuit simulator written in C and OpenGL.
 
-DOCUMENTATION
-	Documentation for most of RSM can be found in the documentation/ folder (.docs text files).
-
-	Most of the documentation is qualitative (no in-depth input-output specifications for functions...) as
-	functionality can be derived by looking at the source code in conjunction with the documentation.
-
-	Keep in mind this documentation mostly refers to RSM's implementation and not its usage. For help, see
-	below or refer to the in-game help command for more details.
-
 BUILDING RSM
 	Currently, RSM uses the following libraries, some of which must be installed your system:
 		GLFW (dependency)
@@ -24,12 +15,34 @@ BUILDING RSM
 	Then, simply run `make` to produce the executable.
 
 INFORMATION
+	RSM allows you to build complex circuits in 3D space, which can then be evaluated in-game at high speeds.
+
+	RSM configuration options, such as keybinds or flyspeed, can be adjusted either through the in-game
+	config command, the src/rsmlayout.c file (default states), or the include/rsmlayout.c file.
+
 	For more details, refer to the in-game help command.
 
-	RSM allows you to build complex circuits in 3D space, which can then be simulated on-the-fly (interactive
-	mode) or compiled and optimized for fast evaluation (compiled mode).
+DEFAULT LAYOUT
+	ESC to toggle mouse capture, or switch back to NORMAL mode
+	CTRL+Q to save and exit
 
-	Every RSM configuration option, such as movement keys, hotbar and slot counts, etc. can be modified in
-	the src/rsmlayout.c (these options are subject to change at runtime) or src/rsmlayout.h.
+	WASD to move
 
-	(TODO)
+	Left click to destroy
+	Right click to place or interact
+	Middle click to pipette
+	'f' to force-place (hold)
+
+	't' to open command prompt
+	':' as command prefix
+	CTRL+R to clear command log, or prompt if open
+
+	Scroll wheel to change hotbar slots
+	'0' to '9' to choose hotbar slot ('1' first, '0' last)
+	'x' and 'z' to change hotbars (scroll forwards or backwards)
+
+	'e' to open inventory
+	Left click to interact with inventory
+
+For a list of configuration options, such as sensitivity, flight speed, or render distance, consult
+either src/rsmlayout.c, or src/command.c for their aliases.

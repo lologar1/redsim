@@ -9,7 +9,7 @@ GLuint ru_createShader(GLenum shaderType, char *shaderSource) {
 	GLuint shaderID;
 	shaderID = glCreateShader(shaderType); /* Create gl shader of proper type */
 	src = usf_ftos(shaderSource, NULL); /* Read shader source file as a single string */
-	glShaderSource(shaderID, 1, (const char **) &src, NULL); /* Set source to file */
+	glShaderSource(shaderID, 1, (const char * const*) &src, NULL); /* Set source to file */
 	glCompileShader(shaderID); /* Compile */
 
 	i32 success;
