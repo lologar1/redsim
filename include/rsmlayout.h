@@ -74,6 +74,7 @@ extern float RSM_COMMAND_POS_Y_PIXELS;
 extern float RSM_COMMAND_TEXT_SIZE;
 
 extern float RSM_AIRPLACE;
+extern float RSM_VISUALSIM;
 
 #define PLAYER_BOUNDINGBOX_RELATIVE_CORNER ((vec3) {-0.3f, -1.6f, -0.3f})
 #define PLAYER_BOUNDINGBOX_DIMENSIONS ((vec3) {0.6f, 1.8f, 0.6f})

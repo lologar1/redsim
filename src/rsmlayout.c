@@ -25,3 +25,4 @@ float RSM_COMMAND_POS_Y_PIXELS = 16.0f;
 float RSM_COMMAND_TEXT_SIZE = 0.75f;
 
 float RSM_AIRPLACE = 0.0f; /* If true, allow air placement */
+float RSM_VISUALSIM = 1.0f; /* If true, update blocks with the simulation */

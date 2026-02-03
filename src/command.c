@@ -49,6 +49,7 @@ void cmd_init(void) {
 	ALIAS("RSM_COMMAND_POS_Y_PIXELS", RSM_COMMAND_POS_Y_PIXELS);
 	ALIAS("RSM_COMMAND_TEXT_SIZE", RSM_COMMAND_TEXT_SIZE);
 	ALIAS("RSM_AIRPLACE", RSM_AIRPLACE);
+	ALIAS("RSM_VISUALSIM", RSM_VISUALSIM);
 #undef ALIAS
 
 #define ALIAS(ALIASNAME, TRUENAME) usf_strhmput(aliasmap_, ALIASNAME, USFDATAP(TRUENAME));
@@ -135,6 +136,11 @@ void cmd_init(void) {
 	ALIAS("RSM_AIRPLACE", "RSM_AIRPLACE");
 	ALIAS("airplace", "RSM_AIRPLACE");
 	ALIAS("ap", "RSM_AIRPLACE");
+
+	ALIAS("RSM_VISUALSIM", "RSM_VISUALSIM");
+	ALIAS("visualsim", "RSM_VISUALSIM");
+	ALIAS("visual", "RSM_VISUALSIM");
+	ALIAS("vs", "RSM_VISUALSIM");
 #undef ALIAS
 }
 
@@ -288,7 +294,7 @@ static void command_help(u32 args, char *argv[]) {
 	} else if (unaliasedptr == &RSM_MOUSE_SENSITIVITY) {
 		cmd_logf("Mouse sensitivity multiplier expressed as degrees/pixels.\n");
 	} else if (unaliasedptr == &RSM_REACH) {
-		cmd_logf("Reach in blocks as a ray cast from camera position.\n");
+		cmd_logf("Reach, in blocks, as a ray cast from camera position.\n");
 	} else if (unaliasedptr == &RSM_FOV) {
 		cmd_logf("Field of view in degrees.\n");
 	} else if (unaliasedptr == &RSM_LOADING_DISTANCE) {
@@ -307,6 +313,8 @@ static void command_help(u32 args, char *argv[]) {
 		cmd_logf("Command prompt text scaling factor.\n");
 	} else if (unaliasedptr == &RSM_AIRPLACE) {
 		cmd_logf("Toggle block placement in air.\n");
+	} else if (unaliasedptr == &RSM_VISUALSIM) {
+		cmd_logf("Toggle whether the simulation updates blocks.\n");
 	}
 }
 

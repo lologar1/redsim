@@ -2,7 +2,6 @@
 #define CLIENT_H
 
 #include <glad/glad.h>
-#include <pthread.h>
 #include <math.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>

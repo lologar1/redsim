@@ -1,7 +1,7 @@
 #include "chunkutils.h"
 
 static i32 getBlockmesh(Blockmesh *blockmesh, u64 id, u64 variant, Rotation rotation, i64 x, i64 y, i64 z);
-static void *pushRawmesh(void *chunkindexptr);
+static usf_compatibility_int pushRawmesh(void *chunkindexptr);
 
 void cu_asyncRemeshChunk(u64 chunkindex) {
 	/* Asynchronously pushes a new rawmesh to be sent to the GPU */
@@ -10,15 +10,14 @@ void cu_asyncRemeshChunk(u64 chunkindex) {
 	arg = malloc(sizeof(u64)); /* Allow thread to operate separately; it cleans up its argument after */
 	*arg = chunkindex;
 
-	i32 rc;
-	pthread_t id;
-	if ((rc = pthread_create(&id, NULL, pushRawmesh, arg))) {
-		fprintf(stderr, "Error creating thread (async remesh): error code %"PRId32", aborting.\n", rc);
+	usf_thread id;
+	if ((usf_thrdcreate(&id, pushRawmesh, arg)) == THRD_ERROR) {
+		fprintf(stderr, "Error creating thread (async remesh), aborting.\n");
 		exit(RSM_EXIT_THREADFAIL);
 	}
 
-	if ((rc = pthread_detach(id))) { /* Since thread is detached, cleanup is automatic */
-		fprintf(stderr, "Error detaching thread (async remesh): error code %"PRId32", aborting.\n", rc);
+	if (usf_thrddetach(id) == THRD_ERROR) {
+		fprintf(stderr, "Error detaching thread (async remesh), aborting.\n");
 		exit(RSM_EXIT_THREADFAIL);
 	}
 }
@@ -197,7 +196,7 @@ static i32 getBlockmesh(Blockmesh *blockmesh, u64 id, u64 variant, Rotation rota
 	return 0;
 }
 
-static void *pushRawmesh(void *chunkindexptr) {
+static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	/* Push a new rawmesh to meshqueue for transfer to the GPU. Called asynchronously from cu_asyncRemeshChunk */
 
 	u64 chunkindex; /* Retrieve argument */
@@ -216,9 +215,9 @@ static void *pushRawmesh(void *chunkindexptr) {
 		exit(RSM_EXIT_NOCHUNK);
 	}
 	/* Get local copy independent of chunkmap_ */
-	pthread_mutex_lock(chunkmap_->lock);
+	usf_mtxlock(chunkmap_->lock);
 	memcpy(&chunk, chunkptr, sizeof(Chunkdata)); /* Safe since chunks cannot be deleted */
-	pthread_mutex_unlock(chunkmap_->lock);
+	usf_mtxunlock(chunkmap_->lock);
 
 	f32 culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* culled is misnomer since it holds not-culled faces */
 	static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
@@ -454,5 +453,5 @@ static void *pushRawmesh(void *chunkindexptr) {
 	usf_enqueue(meshqueue_, USFDATAP(rawmesh));
 
 	free(chunkindexptr); /* Cleanup argument; it was allocated to allow for thread detachment from callee */
-	return NULL;
+	return 0;
 }

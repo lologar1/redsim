@@ -105,11 +105,11 @@ void client_init(void) {
 		}
 
 		/* Remesh after loading */
-		pthread_mutex_lock(chunkmap_->lock); /* Lock (working with inthmnext) */
+		usf_mtxlock(chunkmap_->lock); /* Lock (working with inthmnext) */
 		usf_data *entry;
 		i = 0;
 		while ((entry = usf_inthmnext(chunkmap_, &i))) cu_asyncRemeshChunk(entry[0].u);
-		pthread_mutex_unlock(chunkmap_->lock); /* Unlock */
+		usf_mtxunlock(chunkmap_->lock); /* Unlock */
 
 		free(save);
 	} else fprintf(stderr, "No save file loaded!\n");
@@ -126,7 +126,7 @@ void client_savedata(void) {
 	Chunkdata *chunkdata;
 	Blockdata blockdata;
 
-	pthread_mutex_lock(chunkmap_->lock); /* Lock (working with inthmnext) */
+	usf_mtxlock(chunkmap_->lock); /* Lock (working with inthmnext) */
 
 /* Enough space for all chunks and their chunkindex */
 #define SAVESIZE (chunkmap_->size * SAVESTRIDE)
@@ -153,7 +153,7 @@ void client_savedata(void) {
 		memcpy(s, savedata, sizeof(savedata)); s += sizeof(savedata); /* Chunk data */
 		n++; /* Saved chunk */
 	}
-	pthread_mutex_unlock(chunkmap_->lock); /* Unlock */
+	usf_mtxunlock(chunkmap_->lock); /* Unlock */
 
 	usf_btof(SAVEFILE, save, n * SAVESTRIDE); /* Only write chunks which exist */
 	free(save);

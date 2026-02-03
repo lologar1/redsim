@@ -1,7 +1,6 @@
 #ifndef CHUNKUTILS_H
 #define CHUNKUTILS_H
 
-#include <pthread.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
