@@ -34,6 +34,7 @@ void client_init(void) {
 
 	gu_initGUI(); /* Build GUI GL buffers */
 	cmd_init(); /* Build alias table */
+	sim_init(); /* Build simulation structures & start sim process */
 
 	/* Build wiremesh GL buffer */
 	GLuint wiremeshVBO, wiremeshEBO;

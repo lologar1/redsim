@@ -371,22 +371,14 @@ place:
 			else lookingAdjacent->rotation = SOUTH;
 		} /* Rotation NONE (zero) by default */
 
-remesh:
-		usf_skiplist *toRemesh;
-		toRemesh = usf_newsk();
+remesh:	/* 3x3 area */
+		usf_skiplist *toremesh;
+		toremesh = usf_newsk();
 
-		/* Remesh all chunks in a 3x3 grid to account for other blocks' meshes changing from the new block */
-		i32 a, b, c;
-		u64 chunkindex;
-		for (a = -1; a < 2; a++) for (b = -1; b < 2; b++) for (c = -1; c < 2; c++) {
-			cu_posToBlock(lookingBlockCoords_[0] + a, lookingBlockCoords_[1] + b, lookingBlockCoords_[2] + c,
-					&chunkindex);
-			usf_skset(toRemesh, chunkindex, USFTRUE);
-		}
+		cu_deferArea(toremesh, lookingBlockCoords_[0], lookingBlockCoords_[1], lookingBlockCoords_[2]);
+		cu_doRemesh(toremesh);
 
-		usf_skipnode *n;
-		for (n = toRemesh->base[0]; n; n = n->nextnodes[0]) cu_asyncRemeshChunk(n->index);
-		usf_freesk(toRemesh);
+		usf_freesk(toremesh);
 	}
 }
 

@@ -10,6 +10,7 @@
 #include "userio.h"
 #include "renderutils.h"
 #include "guiutils.h"
+#include "sim.h"
 #include "gui.h"
 #include "usfhashmap.h"
 #include "usfqueue.h"

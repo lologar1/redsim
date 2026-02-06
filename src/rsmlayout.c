@@ -26,3 +26,5 @@ float RSM_COMMAND_TEXT_SIZE = 0.75f;
 
 float RSM_AIRPLACE = 0.0f; /* If true, allow air placement */
 float RSM_VISUALSIM = 1.0f; /* If true, update blocks with the simulation */
+float RSM_ENABLESIM = 0.0f; /* If true, execute simulation */
+float RSM_TICKRATE = 20.0f; /* Number of ticks to be executed per second */

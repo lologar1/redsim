@@ -50,6 +50,8 @@ void cmd_init(void) {
 	ALIAS("RSM_COMMAND_TEXT_SIZE", RSM_COMMAND_TEXT_SIZE);
 	ALIAS("RSM_AIRPLACE", RSM_AIRPLACE);
 	ALIAS("RSM_VISUALSIM", RSM_VISUALSIM);
+	ALIAS("RSM_ENABLESIM", RSM_ENABLESIM);
+	ALIAS("RSM_TICKRATE", RSM_TICKRATE);
 #undef ALIAS
 
 #define ALIAS(ALIASNAME, TRUENAME) usf_strhmput(aliasmap_, ALIASNAME, USFDATAP(TRUENAME));
@@ -141,6 +143,14 @@ void cmd_init(void) {
 	ALIAS("visualsim", "RSM_VISUALSIM");
 	ALIAS("visual", "RSM_VISUALSIM");
 	ALIAS("vs", "RSM_VISUALSIM");
+
+	ALIAS("RSM_ENABLESIM", "RSM_ENABLESIM");
+	ALIAS("enablesim", "RSM_ENABLESIM");
+	ALIAS("es", "RSM_ENABLESIM");
+
+	ALIAS("RSM_TICKRATE", "RSM_TICKRATE");
+	ALIAS("tickrate", "RSM_TICKRATE");
+	ALIAS("tr", "RSM_TICKRATE");
 #undef ALIAS
 }
 
@@ -252,70 +262,76 @@ static void command_help(u32 args, char *argv[]) {
 	if ((unaliasedptr = usf_strhmget(cmdmap_, unaliasedname).p) == NULL)
 		unaliasedptr = usf_strhmget(varmap_, unaliasedname).p;
 
+#define _CASE(_UNALIASEDPTR)(unaliasedptr == &_UNALIASEDPTR)
 	/* Commands */
-	if (unaliasedptr == command_help) {
+	if _CASE(command_help) {
 		cmd_logf("Syntax: help ?[command | variable]\n");
 		cmd_logf("Displays the general help menu, or help on the argument.\n");
-	} else if (unaliasedptr == command_config) {
+	} else if _CASE(command_config) {
 		cmd_logf("Syntax: (config, conf) [variable] [value]\n");
 		cmd_logf("Set RSM runtime variables. Refer to documentation for a list.\n");
-	} else if (unaliasedptr == command_lookat) {
+	} else if _CASE(command_lookat) {
 		cmd_logf("Syntax: lookat [pitch] [yaw]\n");
 		cmd_logf("Set pitch and yaw in degrees.\n");
-	} else if (unaliasedptr == command_selection) {
+	} else if _CASE(command_selection) {
 		cmd_logf("Syntax: selection\n");
 		cmd_logf("Queries current selection positions.\n");
-	} else if (unaliasedptr == command_set) {
+	} else if _CASE(command_set) {
 		cmd_logf("Syntax: set [blockname]\n");
 		cmd_logf("Set selection to default blockdata matching blockname.\n");
-	} else if (unaliasedptr == command_setraw) {
+	} else if _CASE(command_setraw) {
 		cmd_logf("Syntax: %ssetraw [id] [variant] [rotation] [metadata]\n");
 		cmd_logf("Set selection to exact blockdata.");
-	} else if (unaliasedptr == command_sspower) {
+	} else if _CASE(command_sspower) {
 		cmd_logf("Syntax: sspower [power]\n");
 		cmd_logf("Sets power for placed constant sources and resistors. (Max 255)\n");
-	} else if (unaliasedptr == command_teleport) {
+	} else if _CASE(command_teleport) {
 		cmd_logf("Syntax: teleport [x] [y] [z]\n");
 		cmd_logf("Teleports to the specified absolute coordinates.\n");
 	}
 	/* Variables */
-	else if (unaliasedptr == &RSM_FLY_ACCELERATION) {
+	else if _CASE(RSM_FLY_ACCELERATION) {
 		cmd_logf("Fly acceleration in blocks/second in all directions.\n");
-	} else if (unaliasedptr == &RSM_FLY_X_ACCELERATION) {
+	} else if _CASE(RSM_FLY_X_ACCELERATION) {
 		cmd_logf("Fly acceleration bonus in the X direction in blocks/second.\n");
-	} else if (unaliasedptr == &RSM_FLY_Y_ACCELERATION) {
+	} else if _CASE(RSM_FLY_Y_ACCELERATION) {
 		cmd_logf("Fly acceleration bonus in the Y direction in blocks/second.\n");
-	} else if (unaliasedptr == &RSM_FLY_Z_ACCELERATION) {
+	} else if _CASE(RSM_FLY_Z_ACCELERATION) {
 		cmd_logf("Fly acceleration bonus in the Z direction in blocks/second.\n");
-	} else if (unaliasedptr == &RSM_FLY_FRICTION) {
+	} else if _CASE(RSM_FLY_FRICTION) {
 		cmd_logf("Natural fly deceleration expressed as %% of speed left/second.\n");
-	} else if (unaliasedptr == &RSM_FLY_SPEED_CAP) {
+	} else if _CASE(RSM_FLY_SPEED_CAP) {
 		cmd_logf("Maximum fly speed in blocks/second.\n");
-	} else if (unaliasedptr == &RSM_MOUSE_SENSITIVITY) {
+	} else if _CASE(RSM_MOUSE_SENSITIVITY) {
 		cmd_logf("Mouse sensitivity multiplier expressed as degrees/pixels.\n");
-	} else if (unaliasedptr == &RSM_REACH) {
+	} else if _CASE(RSM_REACH) {
 		cmd_logf("Reach, in blocks, as a ray cast from camera position.\n");
-	} else if (unaliasedptr == &RSM_FOV) {
+	} else if _CASE(RSM_FOV) {
 		cmd_logf("Field of view in degrees.\n");
-	} else if (unaliasedptr == &RSM_LOADING_DISTANCE) {
+	} else if _CASE(RSM_LOADING_DISTANCE) {
 		cmd_logf("Chunk loading distance in chunks.\n");
-	} else if (unaliasedptr == &RSM_RENDER_DISTANCE) {
+	} else if _CASE(RSM_RENDER_DISTANCE) {
 		cmd_logf("Render distance in chunks.\n");
-	} else if (unaliasedptr == &RSM_NEARPLANE) {
+	} else if _CASE(RSM_NEARPLANE) {
 		cmd_logf("Rendering near plane in blocks.\n");
-	} else if (unaliasedptr == &RSM_DEFAULT_GUI_SCALING_FACTOR) {
+	} else if _CASE(RSM_DEFAULT_GUI_SCALING_FACTOR) {
 		cmd_logf("GUI scaling factor when screen dimensions match default dimensions.\n");
-	} else if (unaliasedptr == &RSM_COMMAND_POS_X_PIXELS) {
+	} else if _CASE(RSM_COMMAND_POS_X_PIXELS) {
 		cmd_logf("Command prompt x offset in pixels.\n");
-	} else if (unaliasedptr == &RSM_COMMAND_POS_Y_PIXELS) {
+	} else if _CASE(RSM_COMMAND_POS_Y_PIXELS) {
 		cmd_logf("Command prompt y offset in pixels.\n");
-	} else if (unaliasedptr == &RSM_COMMAND_TEXT_SIZE) {
+	} else if _CASE(RSM_COMMAND_TEXT_SIZE) {
 		cmd_logf("Command prompt text scaling factor.\n");
-	} else if (unaliasedptr == &RSM_AIRPLACE) {
+	} else if _CASE(RSM_AIRPLACE) {
 		cmd_logf("Toggle block placement in air.\n");
-	} else if (unaliasedptr == &RSM_VISUALSIM) {
+	} else if _CASE(RSM_VISUALSIM) {
 		cmd_logf("Toggle whether the simulation updates blocks.\n");
+	} else if _CASE(RSM_ENABLESIM) {
+		cmd_logf("Toggle whether the simulation should execute.\n");
+	} else if _CASE(RSM_TICKRATE) {
+		cmd_logf("Number of simulation ticks per second.\n");
 	}
+#undef _CASE
 }
 
 static void command_config(u32 args, char *argv[]) {
@@ -391,30 +407,26 @@ static void command_setraw(u32 args, char *argv[]) {
 		return;
 	}
 
-	usf_skiplist *toRemesh;
-	toRemesh = usf_newsk();
+	usf_skiplist *toremesh;
+	toremesh = usf_newsk();
 
 	Blockdata *blockdata;
-	u64 chunkindex;
 	i64 x, y, z, a = 0, b = 0, c = 0;
 	for (x = ret_selection_[0], a = 0; a < ret_selection_[3]; a++)
 	for (y = ret_selection_[1], b = 0; b < ret_selection_[4]; b++)
 	for (z = ret_selection_[2], c = 0; c < ret_selection_[5]; c++) {
-		blockdata = cu_posToBlock(x+a, y+b, z+c, &chunkindex);
+		blockdata = cu_posToBlock(x+a, y+b, z+c, NULL);
 
 		blockdata->id = strtou32(argv[1], NULL, 10);
 		blockdata->variant = strtou32(argv[2], NULL, 10);
 		blockdata->rotation = strtou32(argv[3], NULL, 10);
 		blockdata->metadata = strtou32(argv[4], NULL, 10);
 
-		usf_skset(toRemesh, chunkindex, USFTRUE);
+		cu_deferArea(toremesh, x+a, y+b, z+c);
 	}
 
-	u64 i;
-	usf_skipnode *node; /* Remesh */
-	for (node = toRemesh->base[0], i = 0; i < toRemesh->size; node = node->nextnodes[0], i++)
-		cu_asyncRemeshChunk(node->index);
-	usf_freesk(toRemesh);
+	cu_doRemesh(toremesh);
+	usf_freesk(toremesh);
 
 	cmd_logf("Affected %"PRIu64" blocks.\n", a*b*c);
 }

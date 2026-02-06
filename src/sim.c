@@ -25,3 +25,44 @@ static Component *primed_; /* Parallel read-only */
 static u64 nprimed_; /* Parallel read-only */
 static usf_hashmap *next_; /* Parallel write (thread-safe) */
 static thread_local usf_listptr *candidates_; /* Sequential access (thread_local) */
+
+void sim_init(void) {
+	/* Initialize simulation structures and start sim process */
+
+	usf_mtxinit(&graphlock_, MTXINIT_PLAIN);
+	graphchanged_ = 1;
+
+	primed_ = malloc(8192 * sizeof(Component)); /* Default size */
+	nprimed_ = 0;
+	next_ = usf_newhm_ts(); /* Thread-safe */
+}
+
+void sim_registerCoords(vec3 coords) {
+	/* Integrates the block at these coordinates into the simulation graph.
+	 * The simulation will update all components next tick as a side-effect.
+	 * If the block at these coordinates is not a component, this function has no effect.
+	 *
+	 * Component inputs and outputs are currently hard-coded in this function, as
+	 * there is no need of making a modular system as RSM only features a handful of
+	 * primitives. */
+
+}
+
+void sim_registerPos(i64 x, i64 y, i64 z) {
+	/* Position (integer) wrapper for sim_registerCoords */
+
+	vec3 coords = {(f32) x, (f32) y, (f32) z};
+	sim_registerCoords(coords);
+}
+
+void sim_removeCoords(vec3 coords) {
+	/* Removes the block at these coordinates from the simulation graph.
+	 * The block will also be removed from the world (set to 0) as a side-effect. */
+}
+
+void sim_removePos(i64 x, i64 y, i64 z) {
+	/* Position (integer) wrapper for sim_removeCoords */
+
+	vec3 coords = {(f32) x, (f32) y, (f32) z};
+	sim_removeCoords(coords);
+}

@@ -75,6 +75,8 @@ extern float RSM_COMMAND_TEXT_SIZE;
 
 extern float RSM_AIRPLACE;
 extern float RSM_VISUALSIM;
+extern float RSM_ENABLESIM;
+extern float RSM_TICKRATE;
 
 #define PLAYER_BOUNDINGBOX_RELATIVE_CORNER ((vec3) {-0.3f, -1.6f, -0.3f})
 #define PLAYER_BOUNDINGBOX_DIMENSIONS ((vec3) {0.6f, 1.8f, 0.6f})
@@ -117,6 +119,7 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_SAVE_METADATASHIFT 0
 #define RSM_SAVE_METADATAMASK 0xFFFFFFFF
 
+/* Block flags */
 #define RSM_BIT_COLLISION (1UL << 0) /* Collidable */
 #define RSM_BIT_ROTATION (1UL << 1) /* Rotatable */
 #define RSM_BIT_CULLFACES (1UL << 2) /* Cull triangles if neighbors hide faces (needs to match fullblock mesh) */
@@ -125,6 +128,9 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_BIT_SIDESUPPORTED (1UL << 5) /* Needs support from the sides */
 #define RSM_BIT_WIRECONNECT_ALL (1UL << 6) /* Connects to wires from all directions */
 #define RSM_BIT_WIRECONNECT_LINE (1UL << 7) /* Connects to wires only from front and back */
+
+/* Simulation flags */
+#define RSM_FLAG_FORCEVISUAL (1UL << 0) /* Force simulation to update this block */
 
 #define TYPEFACE_PATH "typefaces/"
 #define RESOURCE_BASE_PATH "textures/"

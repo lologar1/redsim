@@ -136,7 +136,7 @@ Blockdata *cu_coordsToBlock(vec3 coords, u64 *chunkindex) {
 Blockdata *cu_posToBlock(i64 x, i64 y, i64 z, u64 *chunkindex) {
 	/* Position (integer) wrapper for cu_coordsToBlock */
 
-	vec3 coords = { (f32) x, (f32) y, (f32) z };
+	vec3 coords = {(f32) x, (f32) y, (f32) z};
 	return cu_coordsToBlock(coords, chunkindex);
 }
 
@@ -156,6 +156,34 @@ i32 cu_AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2) {
 #undef _AXISCOMPARE
 
 	return 1;
+}
+
+void cu_deferRemesh(usf_skiplist *toremesh, u64 chunkindex) {
+	/* Add a chunk index to the list, deferring its remeshing call to when all
+	 * chunks are known (avoids duplicates). The skiplist must exist. */
+
+	usf_skset(toremesh, chunkindex, USFTRUE);
+}
+
+void cu_deferArea(usf_skiplist *toremesh, i64 x, i64 y, i64 z) {
+	/* Defers a 3x3 box around the specified coordinates for remeshing.
+	 * The skiplist must exist. */
+
+	i32 a, b, c;
+	u64 chunkindex;
+	for (a = -1; a < 2; a++) for (b = -1; b < 2; b++) for (c = -1; c < 2; c++) {
+		cu_posToBlock(x + a, y + b, z + c, &chunkindex);
+		cu_deferRemesh(toremesh, chunkindex);
+	}
+}
+
+void cu_doRemesh(usf_skiplist *toremesh) {
+	/* Remeshes all unique chunk indices in the deferred list. The list is not free'd. */
+
+	u64 i;
+	usf_skipnode *node;
+	for (node = toremesh->base[0], i = 0; i < toremesh->size; node = node->nextnodes[0], i++)
+		cu_asyncRemeshChunk(node->index);
 }
 
 static i32 getBlockmesh(Blockmesh *blockmesh, u64 id, u64 variant, Rotation rotation, i64 x, i64 y, i64 z) {
