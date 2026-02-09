@@ -20,6 +20,8 @@ GLuint **meshes_; /* Stores current meshmap pointers for rendering */
 u64 nmeshes_; /* How many meshes to render */
 GLuint wiremesh_[2]; /* Block highlight and selection (equivalent to one member of meshes_) */
 
+static usf_thread simthread_; /* Thread ID for the simulation coroutine */
+
 void client_init(void) {
 	fprintf(stderr, "Initializing client...\n");
 
@@ -116,6 +118,11 @@ void client_init(void) {
 	} else fprintf(stderr, "No save file loaded!\n");
 
 	gui_updateGUI(); /* Subsequently called only on GUI modification (from user input) */
+
+	if (usf_thrdcreate(&simthread_, &sim_run, NULL) == THRD_ERROR) {
+		fprintf(stderr, "Couldn't start simulation thread!\n");
+		exit(RSM_EXIT_THREADFAIL);
+	}
 }
 
 void client_savedata(void) {
@@ -195,7 +202,13 @@ void client_frameEvent(GLFWwindow *window) {
 }
 
 void client_terminate(void) {
-	/* Destroy all non-GL RSM allocations */
+	/* Destroy all non-GL RSM allocations and processes */
+
+	/* Stop simulation */
+	i32 simreturn;
+	atomic_store_explicit(&simstop_, 1, MEMORDER_RELAXED);
+	usf_thrdjoin(simthread_, &simreturn);
+	if (simreturn) fprintf(stderr, "Simulation returned with abnormal exit code %"PRId32".\n", simreturn);
 
 	/* Write world to disk */
 	client_savedata();

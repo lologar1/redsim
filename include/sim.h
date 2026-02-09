@@ -5,6 +5,7 @@
 #include "usfstd.h"
 #include "usflist.h"
 #include "usfthread.h"
+#include "blocks.h"
 #include "chunkutils.h"
 
 typedef struct Visualdata {
@@ -29,13 +30,16 @@ typedef struct Connection {
 	u8 ssoffset; /* Signal strength decay */
 } Connection;
 
-extern usf_mutex graphlock_;
+extern usf_mutex *graphlock_;
+extern usf_hashmap *graphmap_;
 extern i32 graphchanged_;
+extern atomic_i32 simstop_;
 
 void sim_init(void);
 void sim_registerCoords(vec3 coords);
 void sim_registerPos(i64 x, i64 y, i64 z);
 void sim_removeCoords(vec3 coords);
 void sim_removePos(i64 x, i64 y, i64 z);
+usf_compatibility_int sim_run(void *);
 
 #endif
