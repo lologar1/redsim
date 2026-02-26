@@ -231,11 +231,9 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	chunkindex = (* (u64 *) chunkindexptr);
 
 	i64 x, y, z; /* Get chunk position */
-#define _SIGNED21CAST64(_N) ((i64) ((_N) | (_N & (1 << 20) ? (u64) ~CHUNKCOORDMASK : 0)))
-	x = _SIGNED21CAST64(chunkindex >> 42);
-	y = _SIGNED21CAST64((chunkindex >> 21) & CHUNKCOORDMASK);
-	z = _SIGNED21CAST64(chunkindex & CHUNKCOORDMASK);
-#undef _SIGNED21CAST64
+	x = SIGNED21CAST64(chunkindex >> 42);
+	y = SIGNED21CAST64((chunkindex >> 21) & LOW21MASK);
+	z = SIGNED21CAST64(chunkindex & LOW21MASK);
 
 	Chunkdata chunk, *chunkptr;
 	if ((chunkptr = (Chunkdata *) usf_inthmget(chunkmap_, chunkindex).p) == NULL) {

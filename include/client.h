@@ -14,6 +14,7 @@
 #include "gui.h"
 #include "usfhashmap.h"
 #include "usfqueue.h"
+#include "usfatomic.h"
 
 extern vec3 *PLAYERBBOFFSETS;
 extern u64 NPLAYERBBOFFSETS;

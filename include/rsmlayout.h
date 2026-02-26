@@ -3,18 +3,18 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <stdint.h>
+#include "usfstd.h"
 
 #define DEFAULT_SCREEN_WIDTH 1920
 #define DEFAULT_SCREEN_HEIGHT 1080
 #define RSM_NAME "Redsim V0.8"
 
-extern float RSM_FLY_ACCELERATION;
-extern float RSM_FLY_X_ACCELERATION;
-extern float RSM_FLY_Y_ACCELERATION;
-extern float RSM_FLY_Z_ACCELERATION;
-extern float RSM_FLY_FRICTION;
-extern float RSM_FLY_SPEED_CAP;
+extern f32 RSM_FLY_ACCELERATION;
+extern f32 RSM_FLY_X_ACCELERATION;
+extern f32 RSM_FLY_Y_ACCELERATION;
+extern f32 RSM_FLY_Z_ACCELERATION;
+extern f32 RSM_FLY_FRICTION;
+extern f32 RSM_FLY_SPEED_CAP;
 
 /* KEYBINDS */
 #define RSM_KEY_CTRL_EXIT GLFW_KEY_Q
@@ -49,7 +49,7 @@ extern float RSM_FLY_SPEED_CAP;
 #define RSM_KEY_HOTSLOT8 GLFW_KEY_9
 #define RSM_KEY_HOTSLOT9 GLFW_KEY_0
 
-extern float RSM_MOUSE_SENSITIVITY;
+extern f32 RSM_MOUSE_SENSITIVITY;
 
 #define RSM_HOTBAR_SLOTS 10
 #define RSM_HOTBAR_COUNT 2
@@ -63,20 +63,20 @@ extern float RSM_MOUSE_SENSITIVITY;
 #define VSYNC true
 
 #define CHUNKSIZE 32
-extern float RSM_REACH;
-extern float RSM_FOV;
-extern float RSM_LOADING_DISTANCE;
-extern float RSM_RENDER_DISTANCE;
-extern float RSM_NEARPLANE;
+extern f32 RSM_REACH;
+extern f32 RSM_FOV;
+extern f32 RSM_LOADING_DISTANCE;
+extern f32 RSM_RENDER_DISTANCE;
+extern f32 RSM_NEARPLANE;
 
-extern float RSM_COMMAND_POS_X_PIXELS;
-extern float RSM_COMMAND_POS_Y_PIXELS;
-extern float RSM_COMMAND_TEXT_SIZE;
+extern f32 RSM_COMMAND_POS_X_PIXELS;
+extern f32 RSM_COMMAND_POS_Y_PIXELS;
+extern f32 RSM_COMMAND_TEXT_SIZE;
 
-extern float RSM_AIRPLACE;
-extern float RSM_VISUALSIM;
-extern float RSM_ENABLESIM;
-extern float RSM_TICKRATE;
+extern f32 RSM_AIRPLACE;
+extern f32 RSM_VISUALSIM;
+extern f32 RSM_ENABLESIM;
+extern f32 RSM_TICKRATE;
 
 #define PLAYER_BOUNDINGBOX_RELATIVE_CORNER ((vec3) {-0.3f, -1.6f, -0.3f})
 #define PLAYER_BOUNDINGBOX_DIMENSIONS ((vec3) {0.6f, 1.8f, 0.6f})
@@ -87,9 +87,9 @@ extern float RSM_TICKRATE;
 #define RSM_SPRITE_TEXTURE_SIZE_PIXELS 16
 #define RSM_CHARACTER_TEXTURE_SIZE_PIXELS 32
 
-extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
+extern f32 RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_GUI_SCALING_FACTOR (RSM_DEFAULT_GUI_SCALING_FACTOR \
-	* (((float)screenWidth_/DEFAULT_SCREEN_WIDTH + (float) screenHeight_/DEFAULT_SCREEN_HEIGHT)/2.0f))
+	* (((f32)screenWidth_/DEFAULT_SCREEN_WIDTH + (f32) screenHeight_/DEFAULT_SCREEN_HEIGHT)/2.0f))
 #define RSM_CROSSHAIR_SIZE_PIXELS (RSM_GUI_SCALING_FACTOR * 32)
 #define RSM_HOTBAR_SLOT_SIZE_PIXELS (RSM_GUI_SCALING_FACTOR * 64)
 #define RSM_INVENTORY_SLOT_SIZE_PIXELS (RSM_GUI_SCALING_FACTOR * 64)
@@ -129,8 +129,15 @@ extern float RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_BIT_WIRECONNECT_ALL (1UL << 6) /* Connects to wires from all directions */
 #define RSM_BIT_WIRECONNECT_LINE (1UL << 7) /* Connects to wires only from front and back */
 
-/* Simulation flags */
+/* Simulation */
+#define RSM_NATURAL_DECAY 1
+#define RSM_SIMSLEEP_TIMESPEC (&(struct timespec) { .tv_sec = 1 })
 #define RSM_FLAG_FORCEVISUAL (1UL << 0) /* Force simulation to update this block */
+
+/* Floodfill flags */
+#define RSM_FLOODFILL_COMPONENT_READ (1UL << 0)
+#define RSM_FLOODFILL_COMPONENT_WRITE_PRIMARY (1UL << 1)
+#define RSM_FLOODFILL_COMPONENT_WRITE_SECONDARY (1UL << 2)
 
 #define TYPEFACE_PATH "typefaces/"
 #define RESOURCE_BASE_PATH "textures/"

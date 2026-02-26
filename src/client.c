@@ -82,6 +82,9 @@ void client_init(void) {
 	if ((save = usf_ftob(SAVEFILE, &savesize))) {
 		fprintf(stderr, "Loading save file %s (%"PRIu64" bytes)\n", SAVEFILE, savesize);
 
+		usf_listi64 *toregister;
+		toregister = usf_newlisti64();
+
 #define SAVESTRIDE (CHUNKSIZE*CHUNKSIZE*CHUNKSIZE * sizeof(u64) + sizeof(u64))
 		Chunkdata *chunkdata;
 		u64 i, chunkindex, (*savedata)[CHUNKSIZE][CHUNKSIZE];
@@ -91,7 +94,8 @@ void client_init(void) {
 			chunkdata = malloc(sizeof(Chunkdata)); /* Alloc chunk to be loaded */
 
 			Blockdata blockdata;
-			u64 x, y, z, saveblock;
+			i64 x, y, z;
+			u64 saveblock;
 			for (x = 0; x < CHUNKSIZE; x++)
 			for (y = 0; y < CHUNKSIZE; y++)
 			for (z = 0; z < CHUNKSIZE; z++) {
@@ -103,6 +107,13 @@ void client_init(void) {
 				blockdata.metadata = saveblock >> RSM_SAVE_METADATASHIFT & RSM_SAVE_METADATAMASK;
 
 				(*chunkdata)[x][y][z] = blockdata;
+
+				if (blockdata.id == RSM_BLOCK_AIR) continue; /* Don't bother registering air */
+
+				/* Get world coordinates to add to component graph */
+				usf_listi64add(toregister, SIGNED21CAST64(chunkindex >> 42) * CHUNKSIZE);
+				usf_listi64add(toregister, SIGNED21CAST64((chunkindex >> 21) & LOW21MASK) * CHUNKSIZE);
+				usf_listi64add(toregister, SIGNED21CAST64(chunkindex & LOW21MASK) * CHUNKSIZE);
 			}
 			usf_inthmput(chunkmap_, chunkindex, USFDATAP(chunkdata));
 		}
@@ -114,10 +125,24 @@ void client_init(void) {
 		while ((entry = usf_inthmnext(chunkmap_, &i))) cu_asyncRemeshChunk(entry[0].u);
 		usf_mtxunlock(chunkmap_->lock); /* Unlock */
 
+		/* Register graph from loaded world */
+		f64 timestart;
+		fprintf(stderr, "Building component graph... ");
+		timestart = glfwGetTime();
+
+		for (i = 0; i < toregister->size; i += 3)
+			sim_registerPos(toregister->array[i], toregister->array[i+1], toregister->array[i+2]);
+		usf_freelisti64(toregister);
+
+		fprintf(stderr, "Done! Took %f seconds.\n", glfwGetTime() - timestart);
+
 		free(save);
 	} else fprintf(stderr, "No save file loaded!\n");
 
 	gui_updateGUI(); /* Subsequently called only on GUI modification (from user input) */
+
+	usf_atmflagtry(&simstop_, MEMORDER_RELAXED); /* Flag is set */
+	usf_thrdfence(MEMORDER_SEQ_CST); /* Ensure updated value in sim thread */
 
 	if (usf_thrdcreate(&simthread_, &sim_run, NULL) == THRD_ERROR) {
 		fprintf(stderr, "Couldn't start simulation thread!\n");
@@ -206,7 +231,7 @@ void client_terminate(void) {
 
 	/* Stop simulation */
 	i32 simreturn;
-	atomic_store_explicit(&simstop_, 1, MEMORDER_RELAXED);
+	usf_atmflagclr(&simstop_, MEMORDER_RELAXED);
 	usf_thrdjoin(simthread_, &simreturn);
 	if (simreturn) fprintf(stderr, "Simulation returned with abnormal exit code %"PRId32".\n", simreturn);
 

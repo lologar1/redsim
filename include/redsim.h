@@ -25,24 +25,6 @@ typedef enum Gamestate {
 	COMMAND
 } Gamestate;
 
-typedef enum Blocktype {
-	RSM_BLOCK_AIR,
-	RSM_BLOCK_SILICON,
-	RSM_BLOCK_GLASS,
-	RSM_BLOCK_DIODE,
-	RSM_BLOCK_TARGET,
-	RSM_BLOCK_TRANSISTOR_ANALOG,
-	RSM_BLOCK_TRANSISTOR_DIGITAL,
-	RSM_BLOCK_LATCH,
-	RSM_BLOCK_INVERTER,
-	RSM_BLOCK_BUFFER,
-	RSM_BLOCK_RESISTOR,
-	RSM_BLOCK_CONSTANT_SOURCE_OPAQUE,
-	RSM_BLOCK_CONSTANT_SOURCE_TRANS,
-	RSM_BLOCK_LIGHT_DIGITAL,
-	RSM_BLOCK_WIRE
-} Blocktype;
-
 typedef enum SpecialVariant {
 	RSM_SPECIAL_ID,
 	RSM_SPECIAL_SUBMENUSELECT,
@@ -58,5 +40,6 @@ void rsm_move(vec3 position);
 void rsm_updateWiremesh(void);
 void rsm_interact(void);
 void rsm_checkMeshes(void);
+i32 rsm_isComponent(Blocktype block);
 
 #endif

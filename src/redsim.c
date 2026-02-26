@@ -263,22 +263,26 @@ void rsm_interact(void) {
 			return;
 	}
 
-	if (rsm_leftclick_) { /* Normal block breaking */
+	if (rsm_leftclick_) { /* Block breaking */
 		rsm_leftclick_ = 0; /* Consume */
 
 		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
+		sim_registerCoords(lookingBlockCoords_); /* Sim sync */
 
 		Blockdata *dblock;
 		u64 dindex;
-#define TESTBLOCK(X, Y, Z, FLAG, ROT) \
-	dblock = cu_posToBlock(lookingBlockCoords_[0]+X,lookingBlockCoords_[1]+Y,lookingBlockCoords_[2]+Z,&dindex); \
-	if ((dblock->metadata & FLAG) && dblock->rotation == ROT) memset(dblock, 0, sizeof(Blockdata)); /* Destroy */
-		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE);
-		TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, SOUTH);
-		TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, NORTH);
-		TESTBLOCK(1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);
-		TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, WEST);
-#undef TESTBLOCK
+#define _TESTBLOCK(_DX, _DY, _DZ, _FLAG, _ROT) \
+	dblock = cu_posToBlock(lookingBlockCoords_[0] + _DX, lookingBlockCoords_[1] + _DY, \
+			lookingBlockCoords_[2] + _DZ, &dindex); \
+	if ((dblock->metadata & _FLAG) && (dblock->rotation == _ROT || _ROT == NONE)) \
+		memset(dblock, 0, sizeof(Blockdata)); /* Destroy */
+		_TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE); /* None means ALL */
+
+		_TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, SOUTH);
+		_TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, NORTH);
+		_TESTBLOCK(1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);
+		_TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, WEST);
+#undef _TESTBLOCK
 		goto remesh;
 	}
 
@@ -303,6 +307,7 @@ void rsm_interact(void) {
 		switch (lookingAt->id) { /* Block interaction */
 			case RSM_BLOCK_BUFFER:
 				lookingAt->variant = (lookingAt->variant + 2) % 8; /* Change delay (leave powered state alone) */
+				sim_registerCoords(lookingBlockCoords_);
 				goto remesh;
 			case RSM_BLOCK_AIR: /* Air placement */
 				if (RSM_AIRPLACE) {
@@ -331,13 +336,13 @@ place:
 
 				switch (lookingAxis_) { /* Manual rotation since it is determined by looking block face */
 					case 0:
-						lookingAdjacent->rotation = stepAxis_ > 0 ? WEST : EAST;
+						lookingAdjacent->rotation = stepAxis_ > 0 ? EAST : WEST;
 						break;
 					case 2:
-						lookingAdjacent->rotation = stepAxis_ > 0 ? NORTH : SOUTH;
+						lookingAdjacent->rotation = stepAxis_ > 0 ? SOUTH : NORTH;
 						break;
 					default:
-						lookingAdjacent->rotation = NONE;
+						lookingAdjacent->rotation = UP;
 						break;
 				}
 				break;
@@ -370,6 +375,8 @@ place:
 			else if (rot < 270.0f) lookingAdjacent->rotation = EAST;
 			else lookingAdjacent->rotation = SOUTH;
 		} /* Rotation NONE (zero) by default */
+
+		sim_registerCoords(adjacentBlockCoords_); /* Sim sync */
 
 remesh:	/* 3x3 area */
 		usf_skiplist *toremesh;
@@ -450,5 +457,22 @@ void rsm_checkMeshes(void) {
 		free(rawmesh);
 
 		cu_updateMeshlist(); /* Include just created mesh in view */
+	}
+}
+
+int rsm_isComponent(Blocktype block) {
+	/* Returns 1 if the block is a component, else 0 */
+
+	switch (block) {
+		case RSM_BLOCK_TRANSISTOR_ANALOG:
+		case RSM_BLOCK_TRANSISTOR_DIGITAL:
+		case RSM_BLOCK_LATCH:
+		case RSM_BLOCK_INVERTER:
+		case RSM_BLOCK_BUFFER:
+		case RSM_BLOCK_LIGHT_DIGITAL:
+			return 1;
+
+		default:
+			return 0;
 	}
 }

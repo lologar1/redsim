@@ -5,7 +5,7 @@
 *target:77
 *transistor_analog_off$3:83 transistor_analog_on$3:83
 *transistor_digital_off$3:83 transistor_digital_on$3:83
-*latch_off$3:147 latch_on$3:147
+*latch_off$3:211 latch_on$3:211
 *inverter_top_off:80 inverter_top_on:80 inverter_side_off:96 inverter_side_on:96
 *buffer_1_off$3:147 buffer_1_on$3:147 *buffer_2_off$3:147 buffer_2_on$3:147 *buffer_4_off$3:147 buffer_4_on$3:147 *buffer_8_off$3:147 buffer_8_on$3:147
 *resistor$3:13

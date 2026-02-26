@@ -422,6 +422,7 @@ static void command_setraw(u32 args, char *argv[]) {
 		blockdata->rotation = strtou32(argv[3], NULL, 10);
 		blockdata->metadata = strtou32(argv[4], NULL, 10);
 
+		sim_registerPos(x+a, y+b, z+c); /* Sim sync */
 		cu_deferArea(toremesh, x+a, y+b, z+c);
 	}
 
