@@ -1,5 +1,6 @@
 #include "client.h"
 
+char SAVEFILE[RSM_MAX_PATH_NAME_LENGTH];
 u64 NPLAYERBBOFFSETS;
 vec3 *PLAYERBBOFFSETS;
 
@@ -76,7 +77,6 @@ void client_init(void) {
 	}
 
 	/* Retrieve data from disk */
-#define SAVEFILE SAVES_PATH WORLD_PATH
 	void *save;
 	u64 savesize;
 	if ((save = usf_ftob(SAVEFILE, &savesize))) {
@@ -111,9 +111,9 @@ void client_init(void) {
 				if (blockdata.id == RSM_BLOCK_AIR) continue; /* Don't bother registering air */
 
 				/* Get world coordinates to add to component graph */
-				usf_listi64add(toregister, SIGNED21CAST64(chunkindex >> 42) * CHUNKSIZE);
-				usf_listi64add(toregister, SIGNED21CAST64((chunkindex >> 21) & LOW21MASK) * CHUNKSIZE);
-				usf_listi64add(toregister, SIGNED21CAST64(chunkindex & LOW21MASK) * CHUNKSIZE);
+				usf_listi64add(toregister, SIGNED21CAST64(chunkindex >> 42) * CHUNKSIZE + x);
+				usf_listi64add(toregister, SIGNED21CAST64((chunkindex >> 21) & LOW21MASK) * CHUNKSIZE + y);
+				usf_listi64add(toregister, SIGNED21CAST64(chunkindex & LOW21MASK) * CHUNKSIZE + z);
 			}
 			usf_inthmput(chunkmap_, chunkindex, USFDATAP(chunkdata));
 		}

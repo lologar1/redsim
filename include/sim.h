@@ -1,8 +1,6 @@
 #ifndef SIM_H
 #define SIM_H
 
-#define _POSIX_C_SOURCE 200809L
-#include <time.h>
 #include <cglm/cglm.h>
 #include "usfstd.h"
 #include "usfatomic.h"

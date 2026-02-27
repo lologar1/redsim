@@ -16,6 +16,7 @@
 #include "usfqueue.h"
 #include "usfatomic.h"
 
+extern char SAVEFILE[RSM_MAX_PATH_NAME_LENGTH];
 extern vec3 *PLAYERBBOFFSETS;
 extern u64 NPLAYERBBOFFSETS;
 

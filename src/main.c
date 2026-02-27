@@ -3,7 +3,16 @@
 #include "client.h"
 #include "rsmlayout.h"
 
-i32 main(void) {
+usf_compatibility_int main(i32 args, char *argv[] ) {
+	if (args > 1) {
+		if (sizeof(SAVES_PATH) + strlen(argv[1]) > RSM_MAX_PATH_NAME_LENGTH) {
+			fprintf(stderr, "File name exceeds maximum length %d, aborting.\n", RSM_MAX_PATH_NAME_LENGTH);
+			exit(RSM_EXIT_EXCBUF);
+		}
+
+		pio_pathcat(SAVEFILE, 2, SAVES_PATH, argv[1]);
+	} else memcpy(SAVEFILE, SAVES_PATH DEFAULT_SAVE_NAME, sizeof(SAVES_PATH DEFAULT_SAVE_NAME));
+
 	/* Make OpenGL context */
 	glfwInit();
 

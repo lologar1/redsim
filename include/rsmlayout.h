@@ -144,7 +144,7 @@ extern f32 RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define TEXTURE_BLOCK_PATH "blocks/"
 #define TEXTURE_GUI_PATH "gui/"
 #define SAVES_PATH "saves/"
-#define WORLD_PATH "world"
+#define DEFAULT_SAVE_NAME "world"
 #define FONT_PATH "liberation-mono/LiberationMono-Regular.ttf"
 #define BLOCKMAP_PATH "blockmap.txt"
 #define GUIMAP_PATH "guimap.txt"

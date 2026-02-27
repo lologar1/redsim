@@ -28,14 +28,6 @@
 	_ROT = NORTH; _DX = 0; _DY = 0; _DZ = 1; _BODY; \
 	_ROT = SOUTH; _DX = 0; _DY = 0; _DZ = -1; _BODY; \
 
-#define FORCUBE(_BODY) \
-	i32 _DX, _DY, _DZ; \
-	for (_DX = -1; _DX < 3; _DX++) \
-	for (_DY = -1; _DY < 3; _DY++) \
-	for (_DZ = -1; _DZ < 3; _DZ++) { \
-		_BODY; \
-	}
-
 usf_mutex *graphlock_; /* Avoid concurrent read/write to the component graph */
 usf_hashmap *graphmap_; /* Maps XYZ (21 bits) to corresponding Component */
 i32 graphchanged_; /* Set when the component graph is modified (will re-prime everything) */
@@ -94,17 +86,24 @@ void sim_registerCoords(vec3 coords) {
 
 	vec3 adjacent;
 #define _COMPONENTCONNECT \
+	(void) _ROT; \
 	glm_vec3_copy(coords, adjacent); \
 	adjacent[0] += _DX; adjacent[1] += _DY; adjacent[2] += _DZ; \
 	componentconnect(adjacent, affected, NONE, NULL); /* In case of powering, look at all neighbors. */
-	FORCUBE(_COMPONENTCONNECT);
+	FORORTHO(_COMPONENTCONNECT);
 #undef _COMPONENTCONNECT
+
+	/* Register own component first to allow for connections */
+	u64 blockindex;
+	if (rsm_isComponent(block->id)) registercomponent(blockindex = TOBLOCKINDEX(coords));
 
 	/* Iterate over affected and re-register them to account for any possible changes */
 	u64 i;
 	usf_data *entry;
-	for (i = 0; (entry = usf_inthmnext(affected, &i));)
+	for (i = 0; (entry = usf_inthmnext(affected, &i));) {
+		if (entry[0].u == blockindex) continue; /* Don't register self twice */
 		registercomponent(entry[0].u);
+	}
 
 	graphchanged_ = 1; /* Prime all next tick */
 	usf_freeinthm(affected); /* Delete temporary hashmap */
@@ -206,9 +205,7 @@ static void registercomponent(u64 blockindex) {
 	glm_vec3_copy(coords, entrypoint);
 	if (block->id == RSM_BLOCK_INVERTER) {
 		entrypoint[1]++; /* Hard powers up */
-		printf("Inverter\n");
 		componentconnect(entrypoint, affected, UP, wires);
-		printf("Done visit hardpower \n");
 
 		Blockdata *neighbor; /* Soft powering */
 #define _CONNECT \
@@ -262,16 +259,13 @@ static void registercomponent(u64 blockindex) {
 
 		vec3 blockcoords = UNPACK21CAST64(entry[0].u);
 
+		Component *target; /* Target component not registered yet (will re-trigger this one on registering) */
+		if ((target = usf_inthmget(graphmap_, entry[0].u).p) == NULL) continue;
+
 		Connection *connection;
 		connection = malloc(sizeof(Connection));
 
-		if ((connection->component = usf_inthmget(graphmap_, entry[0].u).p) == NULL) {
-			fprintf(stderr, "Illegal connection to nonexistent component for ID %"PRIu16" at block positions"
-					"%f, %f, %f.\n", block->id, blockcoords[0], blockcoords[1], blockcoords[2]);
-			free(connection);
-			break;
-		}
-
+		connection->component = target;
 		connection->flags = floodflags;
 		connection->pdecay = pdecay;
 		connection->sdecay = sdecay;
@@ -444,7 +438,9 @@ static void wirefill(vec3 coords, usf_hashmap *restrict affected, usf_hashmap *r
 		/* End condition: found a soft-powered block (ortho to write to adjacent components) */
 		Rotation direction;
 		for (direction = NORTH; direction < COMPLEX; direction++) { /* Iterate 6 faces */
-			if (!rsm_isComponent(neighbors[direction]->id)) continue; /* Only transfer softpower to components */
+			if (!rsm_isComponent(neighbors[direction]->id) /* Only transfer softpower to components */
+					|| neighbors[direction]->rotation != from) /* Only power primary inputs through softpower */
+				continue;
 			wirefill(adjacent[direction], affected, seen, direction, decay, wires);
 		}
 		return;
@@ -464,7 +460,7 @@ static void wirefill(vec3 coords, usf_hashmap *restrict affected, usf_hashmap *r
 		wirefill(adjacent[DOWN], affected, seen, DOWN, decay + resistance, wires);
 
 	/* Wire-adjacent connections (up and down) */
-#define _ISTRANS(_ROT) (neighbors[_ROT]->metadata & RSM_BIT_CONDUCTOR)
+#define _ISTRANS(_ROT) (!(neighbors[_ROT]->metadata & RSM_BIT_CONDUCTOR))
 	vec3 tempadj; /* Adjacent blocks only checked once */
 	Blockdata *tempneigh;
 #define _CONNECTWIRE(_ROT, _DY) \
