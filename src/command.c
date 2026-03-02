@@ -410,6 +410,9 @@ static void command_setraw(u32 args, char *argv[]) {
 	usf_skiplist *toremesh;
 	toremesh = usf_newsk();
 
+	usf_listptr *toregister;
+	toregister = usf_newlistptr();
+
 	Blockdata *blockdata;
 	i64 x, y, z, a = 0, b = 0, c = 0;
 	for (x = ret_selection_[0], a = 0; a < ret_selection_[3]; a++)
@@ -422,10 +425,27 @@ static void command_setraw(u32 args, char *argv[]) {
 		blockdata->rotation = strtou32(argv[3], NULL, 10);
 		blockdata->metadata = strtou32(argv[4], NULL, 10);
 
-		sim_registerPos(x+a, y+b, z+c); /* Sim sync */
-		cu_deferArea(toremesh, x+a, y+b, z+c);
-	}
+		cu_deferArea(toremesh, x+a, y+b, z+c); /* Shunt chunk indices to set for later remeshing */
 
+		vec3 *coords; /* Shunt coords for batched component registering */
+		coords = malloc(sizeof(vec3));
+		(*coords)[0] = x+a; (*coords)[1] = y+b; (*coords)[2] = z+c;
+		usf_listptradd(toregister, coords);
+	}
+	
+	/* Batch register to graph */
+	u64 i;
+	Fillcontext *afcontext;
+	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
+	for (i = 0; i < toregister->size; i++) {
+		wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
+		free(toregister->array[i]); /* Free coords */
+	}
+	wf_registercontext(afcontext);
+	wf_freecontext(afcontext);
+	usf_freelistptr(toregister);
+
+	/* Batch remesh chunks */
 	cu_doRemesh(toremesh);
 	usf_freesk(toremesh);
 

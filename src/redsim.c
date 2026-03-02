@@ -233,15 +233,15 @@ void rsm_interact(void) {
 	uid = ASUID(id, variant);
 	switch (uid) { /* Tools */
 		case ASUID(RSM_SPECIAL_ID, RSM_SPECIAL_SELECTIONTOOL): /* Selection tool */
-#define _VTOI(_TO, _FROM) (_TO)[0] = (i64) (_FROM)[0]; (_TO)[1] = (i64) (_FROM)[1]; (_TO)[2] = (i64) (_FROM)[2];
+#define VTOI(_TO, _FROM) (_TO)[0] = (i64) (_FROM)[0]; (_TO)[1] = (i64) (_FROM)[1]; (_TO)[2] = (i64) (_FROM)[2];
 			if (rsm_leftclick_) {
 				rsm_leftclick_ = 0;
-				_VTOI(ret_positions_, lookingBlockCoords_);
+				VTOI(ret_positions_, lookingBlockCoords_);
 			} else if (rsm_rightclick_) {
 				rsm_rightclick_ = 0;
-				_VTOI(ret_positions_ + 3, lookingBlockCoords_);
+				VTOI(ret_positions_ + 3, lookingBlockCoords_);
 			}
-#undef _VTOI
+#undef VTOI
 
 			i64 i, minpos, maxpos;
 			for (i = 0; i < 3; i++) { /* Create selection */
@@ -267,22 +267,27 @@ void rsm_interact(void) {
 		rsm_leftclick_ = 0; /* Consume */
 
 		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
-		sim_registerCoords(lookingBlockCoords_); /* Sim sync */
+		wf_registercoords(lookingBlockCoords_); /* Sim sync */
 
+		/* Break dependent blocks */
+		vec3 dcoords;
 		Blockdata *dblock;
-		u64 dindex;
-#define _TESTBLOCK(_DX, _DY, _DZ, _FLAG, _ROT) \
-	dblock = cu_posToBlock(lookingBlockCoords_[0] + _DX, lookingBlockCoords_[1] + _DY, \
-			lookingBlockCoords_[2] + _DZ, &dindex); \
-	if ((dblock->metadata & _FLAG) && (dblock->rotation == _ROT || _ROT == NONE)) \
-		memset(dblock, 0, sizeof(Blockdata)); /* Destroy */
-		_TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE); /* None means ALL */
+#define TESTBLOCK(_DX, _DY, _DZ, _FLAG, _ROT) \
+	dcoords[0] = lookingBlockCoords_[0] + _DX; \
+	dcoords[1] = lookingBlockCoords_[1] + _DY; \
+	dcoords[2] = lookingBlockCoords_[2] + _DZ; \
+	dblock = cu_coordsToBlock(dcoords, NULL); \
+	if ((dblock->metadata & _FLAG) && (dblock->rotation == _ROT || _ROT == NONE)) { \
+		memset(dblock, 0, sizeof(Blockdata)); /* Destroy */ \
+		wf_registercoords(dcoords); /* Sim sync */ \
+	}
+		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE); /* None means ALL */
 
-		_TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, SOUTH);
-		_TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, NORTH);
-		_TESTBLOCK(1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);
-		_TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, WEST);
-#undef _TESTBLOCK
+		TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, SOUTH);
+		TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, NORTH);
+		TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);
+		TESTBLOCK(1, 0, 0, RSM_BIT_SIDESUPPORTED, WEST);
+#undef TESTBLOCK
 		goto remesh;
 	}
 
@@ -307,7 +312,7 @@ void rsm_interact(void) {
 		switch (lookingAt->id) { /* Block interaction */
 			case RSM_BLOCK_BUFFER:
 				lookingAt->variant = (lookingAt->variant + 2) % 8; /* Change delay (leave powered state alone) */
-				sim_registerCoords(lookingBlockCoords_);
+				wf_registercoords(lookingBlockCoords_);
 				goto remesh;
 			case RSM_BLOCK_AIR: /* Air placement */
 				if (RSM_AIRPLACE) {
@@ -376,7 +381,7 @@ place:
 			else lookingAdjacent->rotation = SOUTH;
 		} /* Rotation NONE (zero) by default */
 
-		sim_registerCoords(adjacentBlockCoords_); /* Sim sync */
+		wf_registercoords(adjacentBlockCoords_); /* Sim sync */
 
 remesh:	/* 3x3 area */
 		usf_skiplist *toremesh;
@@ -386,6 +391,8 @@ remesh:	/* 3x3 area */
 		cu_doRemesh(toremesh);
 
 		usf_freesk(toremesh);
+
+		/* DEBUG TODO DEBUG */ gui_updateGUI();
 	}
 }
 
@@ -457,22 +464,5 @@ void rsm_checkMeshes(void) {
 		free(rawmesh);
 
 		cu_updateMeshlist(); /* Include just created mesh in view */
-	}
-}
-
-int rsm_isComponent(Blocktype block) {
-	/* Returns 1 if the block is a component, else 0 */
-
-	switch (block) {
-		case RSM_BLOCK_TRANSISTOR_ANALOG:
-		case RSM_BLOCK_TRANSISTOR_DIGITAL:
-		case RSM_BLOCK_LATCH:
-		case RSM_BLOCK_INVERTER:
-		case RSM_BLOCK_BUFFER:
-		case RSM_BLOCK_LIGHT_DIGITAL:
-			return 1;
-
-		default:
-			return 0;
 	}
 }

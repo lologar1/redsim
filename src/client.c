@@ -82,8 +82,8 @@ void client_init(void) {
 	if ((save = usf_ftob(SAVEFILE, &savesize))) {
 		fprintf(stderr, "Loading save file %s (%"PRIu64" bytes)\n", SAVEFILE, savesize);
 
-		usf_listi64 *toregister;
-		toregister = usf_newlisti64();
+		usf_listptr *toregister;
+		toregister = usf_newlistptr();
 
 #define SAVESTRIDE (CHUNKSIZE*CHUNKSIZE*CHUNKSIZE * sizeof(u64) + sizeof(u64))
 		Chunkdata *chunkdata;
@@ -111,9 +111,12 @@ void client_init(void) {
 				if (blockdata.id == RSM_BLOCK_AIR) continue; /* Don't bother registering air */
 
 				/* Get world coordinates to add to component graph */
-				usf_listi64add(toregister, SIGNED21CAST64(chunkindex >> 42) * CHUNKSIZE + x);
-				usf_listi64add(toregister, SIGNED21CAST64((chunkindex >> 21) & LOW21MASK) * CHUNKSIZE + y);
-				usf_listi64add(toregister, SIGNED21CAST64(chunkindex & LOW21MASK) * CHUNKSIZE + z);
+				vec3 *coords;
+				coords = malloc(sizeof(vec3));
+				(*coords)[0] = SIGNED21CAST64(chunkindex >> 42) * CHUNKSIZE + x;
+				(*coords)[1] = SIGNED21CAST64((chunkindex >> 21) & LOW21MASK) * CHUNKSIZE + y;
+				(*coords)[2] = SIGNED21CAST64(chunkindex & LOW21MASK) * CHUNKSIZE + z;
+				usf_listptradd(toregister, coords);
 			}
 			usf_inthmput(chunkmap_, chunkindex, USFDATAP(chunkdata));
 		}
@@ -130,9 +133,16 @@ void client_init(void) {
 		fprintf(stderr, "Building component graph... ");
 		timestart = glfwGetTime();
 
-		for (i = 0; i < toregister->size; i += 3)
-			sim_registerPos(toregister->array[i], toregister->array[i+1], toregister->array[i+2]);
-		usf_freelisti64(toregister);
+		Fillcontext *afcontext;
+		afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
+
+		/* Batched registering */
+		for (i = 0; i < toregister->size; i++)
+			wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
+		wf_registercontext(afcontext);
+
+		wf_freecontext(afcontext);
+		usf_freelistptrfunc(toregister, free);
 
 		fprintf(stderr, "Done! Took %f seconds.\n", glfwGetTime() - timestart);
 
@@ -268,12 +278,12 @@ void client_terminate(void) {
 	free(meshes_); /* Meshlist components free'd in hashmap deallocation */
 
 	/* Free structures */
-	usf_freeinthmptr(chunkmap_);
-	usf_freeinthmptr(meshmap_);
+	usf_freeinthmfunc(chunkmap_, free);
+	usf_freeinthmfunc(meshmap_, free);
 	usf_freeinthm(datamap_);
 	usf_freestrhm(namemap_);
 	usf_freestrhm(cmdmap_); /* Don't dealloc func pointers */
 	usf_freestrhm(varmap_); /* Idem rsmlayout pointers */
 	usf_freestrhm(aliasmap_); /* Idem string literals */
-	usf_freequeueptr(meshqueue_);
+	usf_freequeuefunc(meshqueue_, free);
 }

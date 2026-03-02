@@ -120,24 +120,25 @@ extern f32 RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_SAVE_METADATAMASK 0xFFFFFFFF
 
 /* Block flags */
-#define RSM_BIT_COLLISION (1UL << 0) /* Collidable */
-#define RSM_BIT_ROTATION (1UL << 1) /* Rotatable */
-#define RSM_BIT_CULLFACES (1UL << 2) /* Cull triangles if neighbors hide faces (needs to match fullblock mesh) */
-#define RSM_BIT_CONDUCTOR (1UL << 3) /* Can be hard-powered */
-#define RSM_BIT_TOPSUPPORTED (1UL << 4) /* Needs support underneath */
-#define RSM_BIT_SIDESUPPORTED (1UL << 5) /* Needs support from the sides */
-#define RSM_BIT_WIRECONNECT_ALL (1UL << 6) /* Connects to wires from all directions */
-#define RSM_BIT_WIRECONNECT_LINE (1UL << 7) /* Connects to wires only from front and back */
+#define RSM_BIT_COLLISION (U64(1) << 0) /* Collidable */
+#define RSM_BIT_ROTATION (U64(1) << 1) /* Rotatable */
+#define RSM_BIT_CULLFACES (U64(1) << 2) /* Cull triangles if neighbors occlude (needs to match fullblock mesh) */
+#define RSM_BIT_CONDUCTOR (U64(1) << 3) /* Can be hard-powered */
+#define RSM_BIT_TOPSUPPORTED (U64(1) << 4) /* Needs support underneath */
+#define RSM_BIT_SIDESUPPORTED (U64(1) << 5) /* Needs support from the sides */
+#define RSM_BIT_WIRECONNECT_ALL (U64(1) << 6) /* Connects to wires from all directions */
+#define RSM_BIT_WIRECONNECT_LINE (U64(1) << 7) /* Connects to wires only from front and back */
 
 /* Simulation */
 #define RSM_NATURAL_DECAY 1
 #define RSM_SIMSLEEP_TIMESPEC (&(struct timespec) { .tv_sec = 1 })
-#define RSM_FLAG_FORCEVISUAL (1UL << 0) /* Force simulation to update this block */
+#define RSM_WIREFILL_READONLY 1
+#define RSM_FLAG_FORCEVISUAL (U16(1) << 0) /* Force simulation to update this block */
 
 /* Floodfill flags */
-#define RSM_FLOODFILL_COMPONENT_READ (1UL << 0)
-#define RSM_FLOODFILL_COMPONENT_WRITE_PRIMARY (1UL << 1)
-#define RSM_FLOODFILL_COMPONENT_WRITE_SECONDARY (1UL << 2)
+#define RSM_LINKFLAG_READ (U8(1) << 0)
+#define RSM_LINKFLAG_WRITE_PRIMARY (U8(1) << 1)
+#define RSM_LINKFLAG_WRITE_SECONDARY (U8(1) << 2)
 
 #define TYPEFACE_PATH "typefaces/"
 #define RESOURCE_BASE_PATH "textures/"

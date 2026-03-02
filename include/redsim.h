@@ -40,6 +40,5 @@ void rsm_move(vec3 position);
 void rsm_updateWiremesh(void);
 void rsm_interact(void);
 void rsm_checkMeshes(void);
-i32 rsm_isComponent(Blocktype block);
 
 #endif

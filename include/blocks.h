@@ -3,6 +3,8 @@
 
 #include "rsmlayout.h"
 
+#define VEC3(_X, _Y, _Z) ((vec3) {(_X), (_Y), (_Z)})
+
 #define CHUNKVOLUME (CHUNKSIZE * CHUNKSIZE * CHUNKSIZE)
 #define MESHCENTER ((vec3) {0.5f, 0.5f, 0.5f})
 #define LOW16MASK 0xFFFF
@@ -11,12 +13,7 @@
 #define TOCHUNKINDEX(_X, _Y, _Z) (((u64) (_X) & LOW21MASK) << 42 \
 		| ((u64) (_Y) & LOW21MASK) << 21 \
 		| ((u64) (_Z) & LOW21MASK))
-#define TOBLOCKINDEX(_POS) TOCHUNKINDEX(_POS[0], _POS[1], _POS[2]) /* Same cast */
 #define SIGNED21CAST64(_N) ((i64) ((_N) | ((_N) & (1 << 20) ? (u64) ~LOW21MASK : 0)))
-#define UNPACK21CAST64(_INDEX) { \
-		SIGNED21CAST64((_INDEX) >> 42), \
-		SIGNED21CAST64(((_INDEX) >> 21) & LOW21MASK), \
-		SIGNED21CAST64((_INDEX) & LOW21MASK)}
 
 typedef enum Blocktype {
 	RSM_BLOCK_AIR,
