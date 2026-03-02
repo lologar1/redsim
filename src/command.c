@@ -262,76 +262,76 @@ static void command_help(u32 args, char *argv[]) {
 	if ((unaliasedptr = usf_strhmget(cmdmap_, unaliasedname).p) == NULL)
 		unaliasedptr = usf_strhmget(varmap_, unaliasedname).p;
 
-#define _CASE(_UNALIASEDPTR)(unaliasedptr == &_UNALIASEDPTR)
+#define CASE(_UNALIASEDPTR)(unaliasedptr == &_UNALIASEDPTR)
 	/* Commands */
-	if _CASE(command_help) {
+	if CASE(command_help) {
 		cmd_logf("Syntax: help ?[command | variable]\n");
 		cmd_logf("Displays the general help menu, or help on the argument.\n");
-	} else if _CASE(command_config) {
+	} else if CASE(command_config) {
 		cmd_logf("Syntax: (config, conf) [variable] [value]\n");
 		cmd_logf("Set RSM runtime variables. Refer to documentation for a list.\n");
-	} else if _CASE(command_lookat) {
+	} else if CASE(command_lookat) {
 		cmd_logf("Syntax: lookat [pitch] [yaw]\n");
 		cmd_logf("Set pitch and yaw in degrees.\n");
-	} else if _CASE(command_selection) {
+	} else if CASE(command_selection) {
 		cmd_logf("Syntax: selection\n");
 		cmd_logf("Queries current selection positions.\n");
-	} else if _CASE(command_set) {
+	} else if CASE(command_set) {
 		cmd_logf("Syntax: set [blockname]\n");
 		cmd_logf("Set selection to default blockdata matching blockname.\n");
-	} else if _CASE(command_setraw) {
+	} else if CASE(command_setraw) {
 		cmd_logf("Syntax: %ssetraw [id] [variant] [rotation] [metadata]\n");
 		cmd_logf("Set selection to exact blockdata.");
-	} else if _CASE(command_sspower) {
+	} else if CASE(command_sspower) {
 		cmd_logf("Syntax: sspower [power]\n");
 		cmd_logf("Sets power for placed constant sources and resistors. (Max 255)\n");
-	} else if _CASE(command_teleport) {
+	} else if CASE(command_teleport) {
 		cmd_logf("Syntax: teleport [x] [y] [z]\n");
 		cmd_logf("Teleports to the specified absolute coordinates.\n");
 	}
 	/* Variables */
-	else if _CASE(RSM_FLY_ACCELERATION) {
+	else if CASE(RSM_FLY_ACCELERATION) {
 		cmd_logf("Fly acceleration in blocks/second in all directions.\n");
-	} else if _CASE(RSM_FLY_X_ACCELERATION) {
+	} else if CASE(RSM_FLY_X_ACCELERATION) {
 		cmd_logf("Fly acceleration bonus in the X direction in blocks/second.\n");
-	} else if _CASE(RSM_FLY_Y_ACCELERATION) {
+	} else if CASE(RSM_FLY_Y_ACCELERATION) {
 		cmd_logf("Fly acceleration bonus in the Y direction in blocks/second.\n");
-	} else if _CASE(RSM_FLY_Z_ACCELERATION) {
+	} else if CASE(RSM_FLY_Z_ACCELERATION) {
 		cmd_logf("Fly acceleration bonus in the Z direction in blocks/second.\n");
-	} else if _CASE(RSM_FLY_FRICTION) {
+	} else if CASE(RSM_FLY_FRICTION) {
 		cmd_logf("Natural fly deceleration expressed as %% of speed left/second.\n");
-	} else if _CASE(RSM_FLY_SPEED_CAP) {
+	} else if CASE(RSM_FLY_SPEED_CAP) {
 		cmd_logf("Maximum fly speed in blocks/second.\n");
-	} else if _CASE(RSM_MOUSE_SENSITIVITY) {
+	} else if CASE(RSM_MOUSE_SENSITIVITY) {
 		cmd_logf("Mouse sensitivity multiplier expressed as degrees/pixels.\n");
-	} else if _CASE(RSM_REACH) {
+	} else if CASE(RSM_REACH) {
 		cmd_logf("Reach, in blocks, as a ray cast from camera position.\n");
-	} else if _CASE(RSM_FOV) {
+	} else if CASE(RSM_FOV) {
 		cmd_logf("Field of view in degrees.\n");
-	} else if _CASE(RSM_LOADING_DISTANCE) {
+	} else if CASE(RSM_LOADING_DISTANCE) {
 		cmd_logf("Chunk loading distance in chunks.\n");
-	} else if _CASE(RSM_RENDER_DISTANCE) {
+	} else if CASE(RSM_RENDER_DISTANCE) {
 		cmd_logf("Render distance in chunks.\n");
-	} else if _CASE(RSM_NEARPLANE) {
+	} else if CASE(RSM_NEARPLANE) {
 		cmd_logf("Rendering near plane in blocks.\n");
-	} else if _CASE(RSM_DEFAULT_GUI_SCALING_FACTOR) {
+	} else if CASE(RSM_DEFAULT_GUI_SCALING_FACTOR) {
 		cmd_logf("GUI scaling factor when screen dimensions match default dimensions.\n");
-	} else if _CASE(RSM_COMMAND_POS_X_PIXELS) {
+	} else if CASE(RSM_COMMAND_POS_X_PIXELS) {
 		cmd_logf("Command prompt x offset in pixels.\n");
-	} else if _CASE(RSM_COMMAND_POS_Y_PIXELS) {
+	} else if CASE(RSM_COMMAND_POS_Y_PIXELS) {
 		cmd_logf("Command prompt y offset in pixels.\n");
-	} else if _CASE(RSM_COMMAND_TEXT_SIZE) {
+	} else if CASE(RSM_COMMAND_TEXT_SIZE) {
 		cmd_logf("Command prompt text scaling factor.\n");
-	} else if _CASE(RSM_AIRPLACE) {
+	} else if CASE(RSM_AIRPLACE) {
 		cmd_logf("Toggle block placement in air.\n");
-	} else if _CASE(RSM_VISUALSIM) {
+	} else if CASE(RSM_VISUALSIM) {
 		cmd_logf("Toggle whether the simulation updates blocks.\n");
-	} else if _CASE(RSM_ENABLESIM) {
+	} else if CASE(RSM_ENABLESIM) {
 		cmd_logf("Toggle whether the simulation should execute.\n");
-	} else if _CASE(RSM_TICKRATE) {
+	} else if CASE(RSM_TICKRATE) {
 		cmd_logf("Number of simulation ticks per second.\n");
 	}
-#undef _CASE
+#undef CASE
 }
 
 static void command_config(u32 args, char *argv[]) {

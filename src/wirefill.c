@@ -458,7 +458,6 @@ void wf_registercomponent(vec3 coords) {
 	u64 i, j;
 	usf_data *entry;
 
-	cmd_logf("=== REGISTER %d %d ===\n", block->id, block->variant);
 	usf_listptr *reassert; /* To prime if any target is modified */
 	reassert = component->reassert = usf_newlistptr();
 	for (i = 0; (entry = usf_inthmnext(linkcontext->affected, &i));) { /* Filter affected */
@@ -467,7 +466,6 @@ void wf_registercomponent(vec3 coords) {
 			Blockdata *handle; /* Delete from affected and retrieve Blockdata * handle */
 			handle = ((Linkinfo *) usf_inthmdel(linkcontext->affected, entry[0].u).p)->block;
 
-			cmd_logf("rst CMP %d\n", handle->id);
 			usf_listptradd(reassert, getcomponent(handle));
 
 			free(link); /* Free Linkinfo * as no longer free'd by freecontext */
@@ -490,7 +488,6 @@ void wf_registercomponent(vec3 coords) {
 	for (i = j = 0; (entry = usf_inthmnext(linkcontext->wires, &i)); j++) { /* Copy wire data */
 		visualdata->wires[j] = entry[0].p;
 		visualdata->wiredecays[j] = (u8) entry[1].u;
-		cmd_logf("wr dcy %lu\n", entry[1].u);
 	}
 
 	for (i = j = 0; (entry = usf_inthmnext(linkcontext->affected, &i)); j++) { /* Perform handshakes */
@@ -505,8 +502,6 @@ void wf_registercomponent(vec3 coords) {
 
 		usf_listptradd(connections, connection); /* Connection established */
 		visualdata->components[j] = link->block; /* For graphical update */
-
-		cmd_logf("con w/%d %d dcy %"PRIu8"/%"PRIu8"\n", link->block->id, link->block->variant, link->decay[0], link->decay[1]);
 	}
 
 	wf_freecontext(linkcontext);

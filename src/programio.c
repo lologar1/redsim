@@ -62,7 +62,7 @@ void pio_parseBlockdata(void) {
 		blockspecs = usf_scsplit(blockmap[id], ' ', &nvariants); /* Read all variants */
 		MAX_BLOCK_VARIANT[id] = nvariants;
 
-		BOUNDINGBOXES[id] = calloc(nvariants, sizeof(float [6]));
+		BOUNDINGBOXES[id] = calloc(nvariants, sizeof(f32 [6]));
 		BLOCKMESHES[id] = calloc(nvariants, sizeof(Blockmesh));
 		SPRITEIDS[id] = calloc(nvariants, sizeof(u64));
 
@@ -137,10 +137,10 @@ void pio_parseBlockdata(void) {
 				meshspec = meshdata[i];
 				switch (meshspec[0]) { /* First char determines type (vertex, index, opaque, trans) */
 					f32 v[NMEMB_VERTEX], *y;
-#define _ADJUSTY(_Y) /* Adjust in-texture coordinate to in-atlas value */ \
+#define ADJUSTY(_Y) /* Adjust in-texture coordinate to in-atlas value */ \
 	((RSM_BLOCK_TEXTURE_SIZE_PIXELS * texid) + ((_Y) * RSM_BLOCK_TEXTURE_SIZE_PIXELS)) \
 	/ (NBLOCKTEXTURES * RSM_BLOCK_TEXTURE_SIZE_PIXELS)
-#define _VERTEXADJUST(_COUNT, _VERTEX) \
+#define VERTEXADJUST(_COUNT, _VERTEX) \
 	if (sscanf(meshspec+1, "%f %f %f %f %f %f %f %f", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6],&v[7])==EOF) { \
 		fprintf(stderr, "Error parsing vertex data for line %s, aborting.\n", meshspec); \
 		exit(RSM_EXIT_BADVERTEXDATA); \
@@ -148,19 +148,19 @@ void pio_parseBlockdata(void) {
 	template._VERTEX = realloc(template._VERTEX, (template.count[_COUNT] + NMEMB_VERTEX) * sizeof(f32)); \
 	memcpy(template._VERTEX + template.count[_COUNT], v, sizeof(v)); \
 	y = template._VERTEX + (template.count[_COUNT] += NMEMB_VERTEX) - 1; /* Add to count, save to adjust */ \
-	*y = _ADJUSTY(USF_CLAMP(*y, RSM_TEXTURE_PADDING, 1 - RSM_TEXTURE_PADDING) + textureoffset); /* Pad, offset */
+	*y = ADJUSTY(USF_CLAMP(*y, RSM_TEXTURE_PADDING, 1 - RSM_TEXTURE_PADDING) + textureoffset); /* Pad, offset */
 					case 'o':
-						_VERTEXADJUST(0, opaqueVertices);
+						VERTEXADJUST(0, opaqueVertices);
 						break;
 					case 't':
-						_VERTEXADJUST(1, transVertices);
+						VERTEXADJUST(1, transVertices);
 						break;
-#undef _ADJUSTY
-#undef _VERTEXADJUST
+#undef ADJUSTY
+#undef VERTEXADJUST
 
 					char **indices;
 					u64 nindices, n;
-#define _INDEXADJUST(_COUNT, _INDEX) \
+#define INDEXADJUST(_COUNT, _INDEX) \
 	indices = usf_scsplit(meshspec + 1, ' ', &nindices); \
 	template._INDEX = realloc(template._INDEX, (template.count[_COUNT] + nindices) * sizeof(u32)); \
 	for (n = 0; n < nindices; n++) /* Write all indices to proper index buffer */ \
@@ -168,12 +168,12 @@ void pio_parseBlockdata(void) {
 	template.count[_COUNT] += nindices; \
 	usf_free(indices); /* Alloc'd using usf_scsplit */
 					case 'i':
-						_INDEXADJUST(2, opaqueIndices);
+						INDEXADJUST(2, opaqueIndices);
 						break;
 					case 'e':
-						_INDEXADJUST(3, transIndices);
+						INDEXADJUST(3, transIndices);
 						break;
-#undef _INDEXADJUST
+#undef INDEXADJUST
 					case '$':
 						textureoffset = strtou64(meshspec + 1, NULL, 10);
 						break;

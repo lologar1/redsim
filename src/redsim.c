@@ -127,20 +127,20 @@ void rsm_updateWiremesh(void) {
 	glm_vec3_floor(pos, gridpos);
 	glm_vec3_sub(looking, pos, direction);
 
-#define _STEP(_I) direction[_I] > 0 ? 1.0f : -1.0f
-	vec3 step = { _STEP(0), _STEP(1), _STEP(2) };
-#undef _STEP
+#define STEP(_I) direction[_I] > 0 ? 1.0f : -1.0f
+	vec3 step = { STEP(0), STEP(1), STEP(2) };
+#undef STEP
 
 	/* tDelta is the step size (in tspace) per unit moved in realspace */
-#define _TDELTA(_I) direction[_I] == 0 ? 0.0f : fabsf(1.0f / direction[_I]) /* 0.0f changed to max tMax below */
-	vec3 tDelta = { _TDELTA(0), _TDELTA(1), _TDELTA(2) };
-#undef _TDELTA
+#define TDELTA(_I) direction[_I] == 0 ? 0.0f : fabsf(1.0f / direction[_I]) /* 0.0f changed to max tMax below */
+	vec3 tDelta = { TDELTA(0), TDELTA(1), TDELTA(2) };
+#undef TDELTA
 
 	/* tMax is the current progress (from 0.0f to 1.0f) until we reach looking in tspace */
-#define _TMAX(_I) tDelta[_I] ? \
+#define TMAX(_I) tDelta[_I] ? \
 	(tDelta[_I] * ((step[_I] > 0 ? (gridpos[_I]+1) - pos[_I] : pos[_I] - gridpos[_I]))) : 1.0f
-	vec3 tMax = { _TMAX(0), _TMAX(1), _TMAX(2) };
-#undef _TMAX
+	vec3 tMax = { TMAX(0), TMAX(1), TMAX(2) };
+#undef TMAX
 
 	Blockdata *lookingAt;
 	static i64 axis = 0; /* Use old axis if inside block */
@@ -227,11 +227,14 @@ void rsm_interact(void) {
 		return;
 	}
 
+	/* Held item */
 	u64 id, variant, uid;
 	id = hotbar_[hotbarIndex_][hotslotIndex_][0];
 	variant = hotbar_[hotbarIndex_][hotslotIndex_][1];
 	uid = ASUID(id, variant);
-	switch (uid) { /* Tools */
+
+	/* Tools */
+	switch (uid) {
 		case ASUID(RSM_SPECIAL_ID, RSM_SPECIAL_SELECTIONTOOL): /* Selection tool */
 #define VTOI(_TO, _FROM) (_TO)[0] = (i64) (_FROM)[0]; (_TO)[1] = (i64) (_FROM)[1]; (_TO)[2] = (i64) (_FROM)[2];
 			if (rsm_leftclick_) {
@@ -264,7 +267,7 @@ void rsm_interact(void) {
 	}
 
 	if (rsm_leftclick_) { /* Block breaking */
-		rsm_leftclick_ = 0; /* Consume */
+		rsm_leftclick_ = 0;
 
 		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
 		wf_registercoords(lookingBlockCoords_); /* Sim sync */
@@ -277,12 +280,11 @@ void rsm_interact(void) {
 	dcoords[1] = lookingBlockCoords_[1] + _DY; \
 	dcoords[2] = lookingBlockCoords_[2] + _DZ; \
 	dblock = cu_coordsToBlock(dcoords, NULL); \
-	if ((dblock->metadata & _FLAG) && (dblock->rotation == _ROT || _ROT == NONE)) { \
+	if ((dblock->metadata & _FLAG) && (dblock->rotation == _ROT)) { \
 		memset(dblock, 0, sizeof(Blockdata)); /* Destroy */ \
 		wf_registercoords(dcoords); /* Sim sync */ \
 	}
-		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE); /* None means ALL */
-
+		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, UP);
 		TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, SOUTH);
 		TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, NORTH);
 		TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);
@@ -292,8 +294,8 @@ void rsm_interact(void) {
 	}
 
 	/* Block placement & interaction */
-	u64 metadata;
-	switch (id) { /* Special software-determined variants don't fit the usual mold */
+	u64 metadata; /* Metadata of block to place */
+	switch (id) { /* Special software-determined variants don't have all possible uids registered */
 		case RSM_BLOCK_RESISTOR:
 		case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
 		case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
@@ -311,7 +313,7 @@ void rsm_interact(void) {
 
 		switch (lookingAt->id) { /* Block interaction */
 			case RSM_BLOCK_BUFFER:
-				lookingAt->variant = (lookingAt->variant + 2) % 8; /* Change delay (leave powered state alone) */
+				lookingAt->variant = (lookingAt->variant + 2) % 8; /* Change delay (keep powered state) */
 				wf_registercoords(lookingBlockCoords_);
 				goto remesh;
 			case RSM_BLOCK_AIR: /* Air placement */
@@ -323,7 +325,7 @@ void rsm_interact(void) {
 
 place:
 		if (lookingAdjacent == NULL) return; /* May happen right after init if spawned in a block */
-		if (id == 0) return; /* Shouldn't place air or items */
+		if (id == 0) return; /* Shouldn't place air or tools */
 
 		switch (id) { /* Handle software-defined variants */
 			case RSM_BLOCK_RESISTOR:
@@ -362,7 +364,7 @@ place:
 					return;
 				[[fallthrough]];
 			default:
-				lookingAdjacent->variant = GETVARIANT(uid);
+				lookingAdjacent->variant = variant;
 				break;
 		}
 
@@ -391,8 +393,6 @@ remesh:	/* 3x3 area */
 		cu_doRemesh(toremesh);
 
 		usf_freesk(toremesh);
-
-		/* DEBUG TODO DEBUG */ gui_updateGUI();
 	}
 }
 

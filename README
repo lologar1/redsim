@@ -73,7 +73,7 @@ REDSIM RULES
 	Below is a table of all RSM blocks and their usage.
 	Entries begin with the internal name, followed by the pretty name (see blockmap for more details).
 	=============================================================================================================
-	RSM_BLOCK_AIR (air): Is an insulator. Cannot support blocks.
+	RSM_BLOCK_AIR (air): Is an insulator. Cannot support components.
 
 	RSM_BLOCK_SILICON (silicon_[type]): Is a conductor. May support components.
 

@@ -144,16 +144,16 @@ i32 cu_AABBIntersect(vec3 corner1, vec3 dim1, vec3 corner2, vec3 dim2) {
 	/* Returns whether or not two 3D boxes intersect on all 3 axes */
 
 	/* First normalize dimensions and corner */
-#define _NORMALIZEDIM(_DIM, _CORNER, _I) \
+#define NORMALIZEDIM(_DIM, _CORNER, _I) \
 	if (_DIM[_I] < 0.0f) { _DIM[_I] = fabsf(_DIM[_I]); _CORNER[_I] -= _DIM[_I]; }
-	_NORMALIZEDIM(dim1, corner1, 0); _NORMALIZEDIM(dim1, corner1, 1); _NORMALIZEDIM(dim1, corner1, 2);
-	_NORMALIZEDIM(dim2, corner2, 0); _NORMALIZEDIM(dim2, corner2, 1); _NORMALIZEDIM(dim2, corner2, 2);
-#undef _NORMALIZED
+	NORMALIZEDIM(dim1, corner1, 0); NORMALIZEDIM(dim1, corner1, 1); NORMALIZEDIM(dim1, corner1, 2);
+	NORMALIZEDIM(dim2, corner2, 0); NORMALIZEDIM(dim2, corner2, 1); NORMALIZEDIM(dim2, corner2, 2);
+#undef NORMALIZEDIM
 
-#define _AXISCOMPARE(_I) \
+#define AXISCOMPARE(_I) \
 	if ((corner1[_I]) + (dim1[_I]) < (corner2[_I]) || (corner1[_I]) > (corner2[_I]) + (dim2[_I])) return 0;
-	_AXISCOMPARE(0); _AXISCOMPARE(1); _AXISCOMPARE(2);
-#undef _AXISCOMPARE
+	AXISCOMPARE(0); AXISCOMPARE(1); AXISCOMPARE(2);
+#undef AXISCOMPARE
 
 	return 1;
 }
@@ -211,15 +211,15 @@ static i32 getBlockmesh(Blockmesh *blockmesh, u64 id, u64 variant, Rotation rota
 	/* Rotate, translate and adjust vertex coords and normals */
 	u64 i;
 	f32 *vertex;
-#define _TRANSLOCATE(_COUNT, _VERTEX) \
+#define TRANSLOCATE(_COUNT, _VERTEX) \
 	for (i = 0; i < template->count[_COUNT] / NMEMB_VERTEX; i++) { \
 		vertex = blockmesh->_VERTEX + i * NMEMB_VERTEX; \
 		glm_mat4_mulv3(adjust, vertex, 1.0f, vertex); \
 		glm_mat4_mulv3(rotAdjust, vertex + 3, 1.0f, vertex + 3); /* Rotate normals */ \
 	}
-	_TRANSLOCATE(0, opaqueVertices);
-	_TRANSLOCATE(1, transVertices);
-#undef _TRANSLOCATE
+	TRANSLOCATE(0, opaqueVertices);
+	TRANSLOCATE(1, transVertices);
+#undef TRANSLOCATE
 
 	return 0;
 }
@@ -310,7 +310,7 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 			i = 0; /* Valid faces processed */
 
 			/* Checks the block at X, Y, Z, and cull vertices at index FACE if it CULLFACES too. */
-#define _CHECKFACE(_X, _Y, _Z, _FACE) \
+#define CHECKFACE(_X, _Y, _Z, _FACE) \
 			neighbor = cu_posToBlock(_X, _Y, _Z, NULL); \
 			if (!(neighbor->metadata & RSM_BIT_CULLFACES) \
 					|| (!(neighbor->metadata & RSM_BIT_CONDUCTOR)) != culltrans) { \
@@ -323,14 +323,14 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 #define xpos (x * CHUNKSIZE + a)
 #define ypos (y * CHUNKSIZE + b)
 #define zpos (z * CHUNKSIZE + c)
-			_CHECKFACE(xpos, ypos, zpos + 1, FROMNORTH[block.rotation]);
-			_CHECKFACE(xpos + 1, ypos, zpos, FROMWEST[block.rotation]);
-			_CHECKFACE(xpos, ypos, zpos - 1, FROMSOUTH[block.rotation]);
-			_CHECKFACE(xpos - 1, ypos, zpos, FROMEAST[block.rotation]);
-			_CHECKFACE(xpos, ypos + 1, zpos, FROMUP[block.rotation]);
-			_CHECKFACE(xpos, ypos - 1, zpos, FROMDOWN[block.rotation]);
+			CHECKFACE(xpos, ypos, zpos + 1, FROMNORTH[block.rotation]);
+			CHECKFACE(xpos + 1, ypos, zpos, FROMWEST[block.rotation]);
+			CHECKFACE(xpos, ypos, zpos - 1, FROMSOUTH[block.rotation]);
+			CHECKFACE(xpos - 1, ypos, zpos, FROMEAST[block.rotation]);
+			CHECKFACE(xpos, ypos + 1, zpos, FROMUP[block.rotation]);
+			CHECKFACE(xpos, ypos - 1, zpos, FROMDOWN[block.rotation]);
 			memcpy(cullbuf, culled, 4 * NMEMB_VERTEX * i * sizeof(f32));
-#undef _CHECKFACE
+#undef CHECKFACE
 
 			/* Adjust counts */
 			blockmesh.count[culltrans ? 3 : 2] = 6 * i;
@@ -364,11 +364,11 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 				digit[1] = (block.variant / 10) % 10;
 				digit[2] = (block.variant / 1) % 10;
 				for (j = 0; j < 4; j++) {
-#define _ADJUSTU(OFFSET) \
+#define ADJUSTU(OFFSET) \
 	*uadjust = (f32) (digit[k] + OFFSET) * (3.0f/RSM_BLOCK_TEXTURE_SIZE_PIXELS); \
 	uadjust += NMEMB_VERTEX;
-					for (k = 0; k < 3; k++) { _ADJUSTU(0); _ADJUSTU(1); _ADJUSTU(1); _ADJUSTU(0); }
-#undef _ADJUSTU
+					for (k = 0; k < 3; k++) { ADJUSTU(0); ADJUSTU(1); ADJUSTU(1); ADJUSTU(0); }
+#undef ADJUSTU
 				}
 				break;
 			case RSM_BLOCK_WIRE:
@@ -382,13 +382,13 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 				digit[1] = (block.variant / 10) % 10;
 				digit[2] = (block.variant / 1) % 10;
 				for (j = 0; j < 3; j++) {
-#define _ADJUSTU(VERTEX, OFFSET) \
+#define ADJUSTU(VERTEX, OFFSET) \
 	blockmesh.transVertices[(j * 8 + VERTEX) * 8 + 6] = \
 			(f32) (digit[j] + OFFSET) * (3.0f/RSM_BLOCK_TEXTURE_SIZE_PIXELS);
 					/* Pattern here matches wire.mesh */
-					_ADJUSTU(0, 0); _ADJUSTU(1, 1); _ADJUSTU(2, 0); _ADJUSTU(3, 1);
-					_ADJUSTU(4, 1); _ADJUSTU(5, 0); _ADJUSTU(6, 1); _ADJUSTU(7, 0);
-#undef _ADJUSTU
+					ADJUSTU(0, 0); ADJUSTU(1, 1); ADJUSTU(2, 0); ADJUSTU(3, 1);
+					ADJUSTU(4, 1); ADJUSTU(5, 0); ADJUSTU(6, 1); ADJUSTU(7, 0);
+#undef ADJUSTU
 				}
 
 				/* Adjust wire color */
@@ -406,18 +406,18 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 
 #define WIRECONNECT_ALL (neighbor->metadata & RSM_BIT_WIRECONNECT_ALL) /* ROT 1 = NS, ROT 0 = WE */
 #define WIRECONNECT_LINE(R) ((neighbor->metadata&RSM_BIT_WIRECONNECT_LINE) && ((neighbor->rotation&1)==((R)&1)))
-#define _BLOCKAT(_X, _Y, _Z) (cu_posToBlock(_X, _Y, _Z, NULL))
-				neighbortop = _BLOCKAT(xpos, ypos + 1, zpos);
-#define _NEIGHBORS(_X, _Y, _Z) \
-	neighbor = _BLOCKAT(_X, _Y, _Z); \
-	neighborup = _BLOCKAT(_X, _Y + 1, _Z); \
-	neighbordown = _BLOCKAT(_X, _Y - 1, _Z);
+#define BLOCKAT(_X, _Y, _Z) (cu_posToBlock(_X, _Y, _Z, NULL))
+				neighbortop = BLOCKAT(xpos, ypos + 1, zpos);
+#define NEIGHBORS(_X, _Y, _Z) \
+	neighbor = BLOCKAT(_X, _Y, _Z); \
+	neighborup = BLOCKAT(_X, _Y + 1, _Z); \
+	neighbordown = BLOCKAT(_X, _Y - 1, _Z);
 #define CONNECT(I) \
 	connect[I] = (WIRECONNECT_ALL || WIRECONNECT_LINE(I + 1) \
 		|| (neighborup->id == RSM_BLOCK_WIRE && !(neighbortop->metadata & RSM_BIT_CONDUCTOR)) \
 		|| (neighbordown->id == RSM_BLOCK_WIRE && !(neighbor->metadata & RSM_BIT_CONDUCTOR)));
-				_NEIGHBORS(xpos, ypos, zpos + 1); CONNECT(0); _NEIGHBORS(xpos + 1, ypos, zpos); CONNECT(1);
-				_NEIGHBORS(xpos, ypos, zpos - 1); CONNECT(2); _NEIGHBORS(xpos - 1, ypos, zpos); CONNECT(3);
+				NEIGHBORS(xpos, ypos, zpos + 1); CONNECT(0); NEIGHBORS(xpos + 1, ypos, zpos); CONNECT(1);
+				NEIGHBORS(xpos, ypos, zpos - 1); CONNECT(2); NEIGHBORS(xpos - 1, ypos, zpos); CONNECT(3);
 
 				/* Straighten wire if it doesn't turn */
 				if (!(connect[0] || connect[2])) straighten[0] = 1;
@@ -432,21 +432,21 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 								(k -= 30) * sizeof(u32));
 					else j += 30;
 				}
-#undef _NEIGHBORS
-#define _NEIGHBORS(_X, _Y, _Z) neighbor = cu_posToBlock(_X, _Y + 1, _Z, NULL);
-#define _CULLINDICES \
+#undef NEIGHBORS
+#define NEIGHBORS(_X, _Y, _Z) neighbor = cu_posToBlock(_X, _Y + 1, _Z, NULL);
+#define CULLINDICES \
 	if (!(neighbor->id == RSM_BLOCK_WIRE) || (neighbortop->metadata & RSM_BIT_CONDUCTOR)) \
 		memmove(blockmesh.opaqueIndices + j, blockmesh.opaqueIndices + j + 30, (k -= 30) * sizeof(u32)); \
 	else j += 30;
 				/* Upwards connections */
-				_NEIGHBORS(xpos, ypos, zpos + 1); _CULLINDICES; /* North */
-				_NEIGHBORS(xpos + 1, ypos, zpos); _CULLINDICES; /* West */
-				_NEIGHBORS(xpos, ypos, zpos - 1); _CULLINDICES; /* South */
-				_NEIGHBORS(xpos - 1, ypos, zpos); _CULLINDICES; /* East */
-#undef _CULLINDICES
-#undef _NEIGHBORS
+				NEIGHBORS(xpos, ypos, zpos + 1); CULLINDICES; /* North */
+				NEIGHBORS(xpos + 1, ypos, zpos); CULLINDICES; /* West */
+				NEIGHBORS(xpos, ypos, zpos - 1); CULLINDICES; /* South */
+				NEIGHBORS(xpos - 1, ypos, zpos); CULLINDICES; /* East */
+#undef CULLINDICES
+#undef NEIGHBORS
 #undef CONNECT
-#undef _BLOCKAT
+#undef BLOCKAT
 #undef WIRECONNECT_LINE
 #undef WIRECONNECT_ALL
 				blockmesh.count[2] = j; /* Adjust index count */
