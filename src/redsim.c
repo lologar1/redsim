@@ -43,7 +43,7 @@ void rsm_move(vec3 position) {
 	 * clearance to move which depends on the framerate, but this value should be small at normal FPS and
 	 * the normal player BB size isn't a multiple of 1 so it's fine */
 	i32 axis;
-	for (axis = 0; axis < 3; axis++) {
+	if (!RSM_NOCLIP) for (axis = 0; axis < 3; axis++) {
 		vec3 newPosition, playerCornerNew; /* Future position of the player */
 		glm_vec3_copy(position, newPosition);
 		newPosition[axis] += speed[axis];

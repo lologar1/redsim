@@ -48,6 +48,7 @@ void cmd_init(void) {
 	ALIAS("RSM_COMMAND_POS_X_PIXELS", RSM_COMMAND_POS_X_PIXELS);
 	ALIAS("RSM_COMMAND_POS_Y_PIXELS", RSM_COMMAND_POS_Y_PIXELS);
 	ALIAS("RSM_COMMAND_TEXT_SIZE", RSM_COMMAND_TEXT_SIZE);
+	ALIAS("RSM_NOCLIP", RSM_NOCLIP);
 	ALIAS("RSM_AIRPLACE", RSM_AIRPLACE);
 	ALIAS("RSM_VISUALSIM", RSM_VISUALSIM);
 	ALIAS("RSM_ENABLESIM", RSM_ENABLESIM);
@@ -134,6 +135,10 @@ void cmd_init(void) {
 	ALIAS("RSM_COMMAND_TEXT_SIZE", "RSM_COMMAND_TEXT_SIZE");
 	ALIAS("textsize", "RSM_COMMAND_TEXT_SIZE");
 	ALIAS("textscale", "RSM_COMMAND_TEXT_SIZE");
+
+	ALIAS("RSM_NOCLIP", "RSM_NOCLIP");
+	ALIAS("noclip", "RSM_NOCLIP");
+	ALIAS("nc", "RSM_NOCLIP");
 
 	ALIAS("RSM_AIRPLACE", "RSM_AIRPLACE");
 	ALIAS("airplace", "RSM_AIRPLACE");
@@ -434,6 +439,8 @@ static void command_setraw(u32 args, char *argv[]) {
 	}
 	
 	/* Batch register to graph */
+	usf_mtxlock(graphlock_); /* Thread-safe lock */
+
 	u64 i;
 	Fillcontext *afcontext;
 	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
@@ -442,6 +449,9 @@ static void command_setraw(u32 args, char *argv[]) {
 		free(toregister->array[i]); /* Free coords */
 	}
 	wf_registercontext(afcontext);
+
+	usf_mtxunlock(graphlock_); /* Thread-safe unlock */
+
 	wf_freecontext(afcontext);
 	usf_freelistptr(toregister);
 

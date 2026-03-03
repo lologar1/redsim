@@ -24,6 +24,7 @@ f32 RSM_COMMAND_POS_X_PIXELS = 16.0f;
 f32 RSM_COMMAND_POS_Y_PIXELS = 16.0f;
 f32 RSM_COMMAND_TEXT_SIZE = 0.75f;
 
+f32 RSM_NOCLIP = 0.0f; /* If true, disable collision */
 f32 RSM_AIRPLACE = 0.0f; /* If true, allow air placement */
 f32 RSM_VISUALSIM = 1.0f; /* If true, update blocks with the simulation */
 f32 RSM_ENABLESIM = 1.0f; /* If true, execute simulation */

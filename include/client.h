@@ -16,6 +16,7 @@
 #include "usfqueue.h"
 #include "usfatomic.h"
 
+extern u64 NPROCS;
 extern char SAVEFILE[RSM_MAX_PATH_NAME_LENGTH];
 extern vec3 *PLAYERBBOFFSETS;
 extern u64 NPLAYERBBOFFSETS;
@@ -38,6 +39,7 @@ extern u64 nmeshes_;
 extern GLuint wiremesh_[2];
 
 void client_init(void);
+void client_loaddata(void);
 void client_savedata(void);
 void client_frameEvent(GLFWwindow *window);
 void client_terminate(void);

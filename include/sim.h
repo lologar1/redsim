@@ -20,25 +20,25 @@ typedef struct Visualdata {
 } Visualdata;
 
 typedef struct Component {
-	u16 id; /* Underlying block ID */
-	u16 metadata; /* Flags (e.g. force visual for lamps, etc.) */
+	u16 id; /* Underlying block ID (cast from u16 as all components < 255) */
+	u16 metadata; /* Simulation flags */
 	u32 runtime; /* Runtime information, profiling */
-	atomic_u8 buffer[8]; /* Temporary state inbetween exec and write stages */
-	u8 state[8]; /* Stored SS power; for buffer 8s, max. is 8 bytes */
+	u8 state[8]; /* Internal state; for buffer 8, max. is 8 bytes */
+	u32 ninputs[2]; /* Number of buffer inputs (primary, secondary) */
+	usf_listu8 *buffer[2]; /* Primary and secondary inputs */
 	usf_listptr *connections; /* List of Connection */
-	usf_listptr *reassert; /* To prime if any target is modified */
 	Visualdata *visualdata; /* Visual updating */
 } Component;
-static_assert(sizeof(Component) == 48, "RSM: Component alignment/struct packing is not tight!");
 
 typedef struct Connection {
 	Component *component;
-	u8 decay[2];
+	u32 index[2]; /* Buffer index (primary, secondary) */
+	u8 decay[2]; /* Primary, secondary */
 	u8 linkflags;
 } Connection;
 
-extern usf_mutex *graphlock_;
-extern usf_hashmap *graphmap_;
+extern usf_mutex *graphlock_; /* graphmap_ mutex */
+extern usf_hashmap *graphmap_; /* Blockdata * -> Component * */
 extern i32 graphchanged_;
 extern atomic_flag simstop_;
 

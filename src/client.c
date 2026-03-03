@@ -1,5 +1,6 @@
 #include "client.h"
 
+u64 NPROCS;
 char SAVEFILE[RSM_MAX_PATH_NAME_LENGTH];
 u64 NPLAYERBBOFFSETS;
 vec3 *PLAYERBBOFFSETS;
@@ -77,82 +78,15 @@ void client_init(void) {
 	}
 
 	/* Retrieve data from disk */
-	void *save;
-	u64 savesize;
-	if ((save = usf_ftob(SAVEFILE, &savesize))) {
-		fprintf(stderr, "Loading save file %s (%"PRIu64" bytes)\n", SAVEFILE, savesize);
+	if (usf_fexists(SAVEFILE)) client_loaddata();
+	else fprintf(stderr, "No save file loaded!\n");
 
-		usf_listptr *toregister;
-		toregister = usf_newlistptr();
+	gui_updateGUI(); /* Rescale and properly show GUI */
 
-#define SAVESTRIDE (CHUNKSIZE*CHUNKSIZE*CHUNKSIZE * sizeof(u64) + sizeof(u64))
-		Chunkdata *chunkdata;
-		u64 i, chunkindex, (*savedata)[CHUNKSIZE][CHUNKSIZE];
-		for (i = 0; i < savesize; i += SAVESTRIDE) {
-			chunkindex = *((u64 *) (save + i)); /* Get chunkindex header */
-			savedata = (u64 (*)[CHUNKSIZE][CHUNKSIZE]) (save + i + sizeof(u64)); /* Skip chunkindex header */
-			chunkdata = malloc(sizeof(Chunkdata)); /* Alloc chunk to be loaded */
-
-			Blockdata blockdata;
-			i64 x, y, z;
-			u64 saveblock;
-			for (x = 0; x < CHUNKSIZE; x++)
-			for (y = 0; y < CHUNKSIZE; y++)
-			for (z = 0; z < CHUNKSIZE; z++) {
-				saveblock = savedata[x][y][z];
-
-				blockdata.id = saveblock >> RSM_SAVE_IDSHIFT & RSM_SAVE_IDMASK;
-				blockdata.variant = saveblock >> RSM_SAVE_VARIANTSHIFT & RSM_SAVE_VARIANTMASK;
-				blockdata.rotation = saveblock >> RSM_SAVE_ROTATIONSHIFT & RSM_SAVE_ROTATIONMASK;
-				blockdata.metadata = saveblock >> RSM_SAVE_METADATASHIFT & RSM_SAVE_METADATAMASK;
-
-				(*chunkdata)[x][y][z] = blockdata;
-
-				if (blockdata.id == RSM_BLOCK_AIR) continue; /* Don't bother registering air */
-
-				/* Get world coordinates to add to component graph */
-				vec3 *coords;
-				coords = malloc(sizeof(vec3));
-				(*coords)[0] = SIGNED21CAST64(chunkindex >> 42) * CHUNKSIZE + x;
-				(*coords)[1] = SIGNED21CAST64((chunkindex >> 21) & LOW21MASK) * CHUNKSIZE + y;
-				(*coords)[2] = SIGNED21CAST64(chunkindex & LOW21MASK) * CHUNKSIZE + z;
-				usf_listptradd(toregister, coords);
-			}
-			usf_inthmput(chunkmap_, chunkindex, USFDATAP(chunkdata));
-		}
-
-		/* Remesh after loading */
-		usf_mtxlock(chunkmap_->lock); /* Lock (working with inthmnext) */
-		usf_data *entry;
-		i = 0;
-		while ((entry = usf_inthmnext(chunkmap_, &i))) cu_asyncRemeshChunk(entry[0].u);
-		usf_mtxunlock(chunkmap_->lock); /* Unlock */
-
-		/* Register graph from loaded world */
-		f64 timestart;
-		fprintf(stderr, "Building component graph... ");
-		timestart = glfwGetTime();
-
-		Fillcontext *afcontext;
-		afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
-
-		/* Batched registering */
-		for (i = 0; i < toregister->size; i++)
-			wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
-		wf_registercontext(afcontext);
-
-		wf_freecontext(afcontext);
-		usf_freelistptrfunc(toregister, free);
-
-		fprintf(stderr, "Done! Took %f seconds.\n", glfwGetTime() - timestart);
-
-		free(save);
-	} else fprintf(stderr, "No save file loaded!\n");
-
-	gui_updateGUI(); /* Subsequently called only on GUI modification (from user input) */
+	NPROCS = USF_MIN(usf_nprocsonln(), RSM_MAX_PROCESSORS); /* Number of logical cores */
+	fprintf(stderr, "Concurrency: using %"PRIu64" threads for simulation.\n", NPROCS);
 
 	usf_atmflagtry(&simstop_, MEMORDER_RELAXED); /* Flag is set */
-	usf_thrdfence(MEMORDER_SEQ_CST); /* Ensure updated value in sim thread */
 
 	if (usf_thrdcreate(&simthread_, &sim_run, NULL) == THRD_ERROR) {
 		fprintf(stderr, "Couldn't start simulation thread!\n");
@@ -160,46 +94,131 @@ void client_init(void) {
 	}
 }
 
+void client_loaddata(void) {
+	/* Load world from disk, then remesh and register it */
+
+	u8 *save;
+	u64 savesize;
+	save = usf_ftob(SAVEFILE, &savesize);
+	fprintf(stderr, "Loading save file %s (%"PRIu64" bytes)\n", SAVEFILE, savesize);
+
+	/* Read header */
+	memcpy(position_, save, sizeof(vec3));
+	memcpy(hotbar_, save + sizeof(vec3), sizeof(hotbar_));
+
+	usf_listptr *toregister; /* Pending component graph registration */
+	toregister = usf_newlistptr();
+
+	u64 i;
+	for (i = RSM_SAVE_HEADERSZ; i < savesize; i += RSM_SAVE_CHUNKSTRIDE) {
+		u64 chunkindex;
+		chunkindex = *((u64 *) (save + i)); /* Get chunkindex header */
+
+		u32 (*savedata)[CHUNKSIZE][CHUNKSIZE]; /* From disk */
+		savedata = (typeof(savedata)) (save + i + sizeof(u64)); /* Skip chunkindex header */
+
+		Chunkdata *chunkdata;
+		chunkdata = malloc(sizeof(Chunkdata)); /* Alloc chunk to be loaded */
+
+		/* Copy data to chunk and defer registration */
+		i64 x, y, z;
+		for (x = 0; x < CHUNKSIZE; x++)
+		for (y = 0; y < CHUNKSIZE; y++)
+		for (z = 0; z < CHUNKSIZE; z++) {
+			u64 saveblock;
+			saveblock = savedata[x][y][z];
+
+			Blockdata blockdata;
+			blockdata.id = saveblock >> RSM_SAVE_IDSHIFT & RSM_SAVE_IDMASK;
+			blockdata.variant = saveblock >> RSM_SAVE_VARIANTSHIFT & RSM_SAVE_VARIANTMASK;
+			blockdata.rotation = saveblock >> RSM_SAVE_ROTATIONSHIFT & RSM_SAVE_ROTATIONMASK;
+			blockdata.metadata = saveblock >> RSM_SAVE_METADATASHIFT & RSM_SAVE_METADATAMASK;
+			(*chunkdata)[x][y][z] = blockdata; /* Set */
+
+			if (blockdata.id == RSM_BLOCK_AIR) continue; /* Don't bother registering air */
+
+			/* Get world coordinates to add to component graph */
+			vec3 *coords;
+			coords = malloc(sizeof(vec3));
+			(*coords)[0] = SIGNED21CAST64(chunkindex >> 42) * CHUNKSIZE + x;
+			(*coords)[1] = SIGNED21CAST64((chunkindex >> 21) & LOW21MASK) * CHUNKSIZE + y;
+			(*coords)[2] = SIGNED21CAST64(chunkindex & LOW21MASK) * CHUNKSIZE + z;
+			usf_listptradd(toregister, coords); /* Defer registration */
+		}
+		free(usf_inthmget(chunkmap_, chunkindex).p); /* Free if present (NULL free if not, OK) */
+		usf_inthmput(chunkmap_, chunkindex, USFDATAP(chunkdata));
+	}
+	free(save); /* Free disk data buffer */
+
+	/* Remesh after loading (batched access to chunkmap_, so manually acquire) */
+	usf_mtxlock(chunkmap_->lock); /* Thread-safe lock */
+	usf_data *entry; /* Jobs will need to wait until all are queued */
+	for (i = 0; (entry = usf_inthmnext(chunkmap_, &i));) cu_asyncRemeshChunk(entry[0].u);
+	usf_mtxunlock(chunkmap_->lock); /* Thread-safe unlock */
+
+	/* Register graph from loaded world */
+	f64 timestart;
+	fprintf(stderr, "Building component graph... ");
+	timestart = glfwGetTime();
+
+	Fillcontext *afcontext;
+	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
+
+	/* Batched registering */
+	usf_mtxlock(graphlock_); /* Thread-safe lock */
+	for (i = 0; i < toregister->size; i++) wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
+	wf_registercontext(afcontext);
+	usf_mtxunlock(graphlock_); /* Thread-safe unlock */
+
+	usf_freelistptrfunc(toregister, free); /* Free pending coordinates */
+	wf_freecontext(afcontext); /* Free batch context */
+	fprintf(stderr, "Done! Took %f seconds.\n", glfwGetTime() - timestart);
+}
+
 void client_savedata(void) {
 	/* Save world to disk */
 
-	u64 x, y, z, i, n;
+	usf_mtxlock(chunkmap_->lock); /* Thread-safe lock */
+
+	u8 *save, *s;
+	s = save = malloc(RSM_SAVE_HEADERSZ + chunkmap_->size * RSM_SAVE_CHUNKSTRIDE);
+
+	/* Save header */
+	memcpy(s, position_, sizeof(vec3)); s += sizeof(vec3);
+	memcpy(s, hotbar_, sizeof(hotbar_)); s += sizeof(hotbar_);
+
+	/* Save chunks */
+	u64 i, n;
 	usf_data *entry;
-	u64 savedata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE]; /* Blockdata is 64 bits */
-	Chunkdata *chunkdata;
-	Blockdata blockdata;
-
-	usf_mtxlock(chunkmap_->lock); /* Lock (working with inthmnext) */
-
-/* Enough space for all chunks and their chunkindex */
-#define SAVESIZE (chunkmap_->size * SAVESTRIDE)
-	void *save, *s;
-	s = save = malloc(SAVESIZE);
-
-	GLuint *chunkmesh; /* To check emptiness */
-	n = i = 0;
-	while ((entry = usf_inthmnext(chunkmap_, &i))) { /* Normalize and save chunks */
+	for (i = n = 0; (entry = usf_inthmnext(chunkmap_, &i));) {
+		GLuint *chunkmesh;
 		if ((chunkmesh = usf_inthmget(meshmap_, entry[0].u).p) == NULL || chunkmesh[2] + chunkmesh[3] == 0)
-			continue; /* Either no mesh or mesh is empty : chunk is empty */
+			continue; /* Empty or uninitialized mesh (no blocks in chunk) */
 
+		Chunkdata *chunkdata;
 		chunkdata = entry[1].p;
-		for (x = 0; x < CHUNKSIZE; x++) for (y = 0; y < CHUNKSIZE; y++) for (z = 0; z < CHUNKSIZE; z++) {
-			blockdata = (*chunkdata)[x][y][z];
-			savedata[x][y][z] =
-				(u64) blockdata.id << RSM_SAVE_IDSHIFT |
-				(u64) blockdata.variant << RSM_SAVE_VARIANTSHIFT |
-				(u64) blockdata.rotation << RSM_SAVE_ROTATIONSHIFT |
-				(u64) blockdata.metadata << RSM_SAVE_METADATASHIFT;
-		}
 
-		memcpy(s, &entry[0], sizeof(i64)); s += sizeof(i64); /* Chunk index */
+		u64 x, y, z;
+		u32 savedata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE]; /* To disk */
+		for (x = 0; x < CHUNKSIZE; x++) for (y = 0; y < CHUNKSIZE; y++) for (z = 0; z < CHUNKSIZE; z++) {
+			Blockdata blockdata;
+			blockdata = (*chunkdata)[x][y][z];
+
+			savedata[x][y][z] = 0
+				| (u32) blockdata.id << RSM_SAVE_IDSHIFT
+				| (u32) blockdata.variant << RSM_SAVE_VARIANTSHIFT
+				| (u32) blockdata.rotation << RSM_SAVE_ROTATIONSHIFT
+				| (u32) blockdata.metadata << RSM_SAVE_METADATASHIFT;
+		}
+		memcpy(s, &entry[0], sizeof(u64)); s += sizeof(u64); /* Chunkindex */
 		memcpy(s, savedata, sizeof(savedata)); s += sizeof(savedata); /* Chunk data */
 		n++; /* Saved chunk */
 	}
-	usf_mtxunlock(chunkmap_->lock); /* Unlock */
 
-	usf_btof(SAVEFILE, save, n * SAVESTRIDE); /* Only write chunks which exist */
-	free(save);
+	usf_mtxunlock(chunkmap_->lock); /* Thread-safe unlock */
+
+	usf_btof(SAVEFILE, save, RSM_SAVE_HEADERSZ + n * RSM_SAVE_CHUNKSTRIDE);
+	free(save); /* Free RAM representation of disk file */
 
 	fprintf(stderr, "Saved %"PRIu64" chunks to disk.\n", n);
 }
@@ -235,6 +254,9 @@ void client_frameEvent(GLFWwindow *window) {
 	rsm_updateWiremesh(); /* Update block outline & selection */
 	rsm_checkMeshes(); /* Check if new meshes have been remeshed asynchronously */
 }
+
+/* Termination free functions */
+void freecomponent(void *c);
 
 void client_terminate(void) {
 	/* Destroy all non-GL RSM allocations and processes */
@@ -274,16 +296,33 @@ void client_terminate(void) {
 	free(SPRITEIDS);
 	free(BOUNDINGBOXES);
 	free(PLAYERBBOFFSETS);
+	free(TEXTCHARS);
 
 	free(meshes_); /* Meshlist components free'd in hashmap deallocation */
 
 	/* Free structures */
 	usf_freeinthmfunc(chunkmap_, free);
 	usf_freeinthmfunc(meshmap_, free);
+	usf_mtxdestroy(graphlock_); free(graphlock_);
+	usf_freeinthmfunc(graphmap_, freecomponent);
 	usf_freeinthm(datamap_);
 	usf_freestrhm(namemap_);
 	usf_freestrhm(cmdmap_); /* Don't dealloc func pointers */
 	usf_freestrhm(varmap_); /* Idem rsmlayout pointers */
 	usf_freestrhm(aliasmap_); /* Idem string literals */
 	usf_freequeuefunc(meshqueue_, free);
+}
+
+void freecomponent(void *c) {
+	Component *component;
+	component = (Component *) c;
+	usf_freelistu8(component->buffer[0]);
+	usf_freelistu8(component->buffer[1]);
+	usf_freelistptrfunc(component->connections, free);
+	usf_freelistu64(component->visualdata->chunkindices);
+	free(component->visualdata->components);
+	free(component->visualdata->wires);
+	free(component->visualdata->wiredecays);
+	free(component->visualdata);
+	free(component);
 }

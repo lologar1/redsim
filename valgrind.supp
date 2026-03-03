@@ -1,0 +1,84 @@
+{
+   glfwInit suppressions
+   Memcheck:Leak
+   ...
+   fun:glfwInit
+   ...
+}
+{
+   dl suppressions
+   Memcheck:Leak
+   ...
+   fun:_dl_*
+   ...
+}
+{
+   X11 suppressions
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libX11*
+   ...
+}
+{
+   dbus suppressions
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libdbus*
+   ...
+}
+{
+   dl memalign 0
+   Memcheck:BadSize
+   fun:posix_memalign
+   obj:/usr/lib/x86_64-linux-gnu/libnvidia-glcore.so.580.126.09
+   obj:/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.580.126.09
+   obj:/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.580.126.09
+   obj:/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.580.126.09
+   fun:call_init
+   fun:_dl_init
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+}
+{
+   dl realloc 0
+   Memcheck:ReallocZero
+   fun:realloc
+   obj:/usr/lib/x86_64-linux-gnu/libnvidia-glcore.so.580.126.09
+   obj:/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.580.126.09
+   obj:/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.580.126.09
+   obj:/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.580.126.09
+   fun:call_init
+   fun:_dl_init
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+}
+{
+   I dont even know anymore
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:malloc
+   fun:allocate_dtv_entry
+   fun:allocate_and_init
+   fun:tls_get_addr_tail
+   fun:__tls_get_addr
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+}

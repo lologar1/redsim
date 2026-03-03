@@ -18,13 +18,20 @@ static Component *getcomponent(Blockdata *handle);
 
 void wf_findaffected(vec3 coords, Fillcontext *afcontext) {
 	/* Prepare afcontext with all the affected (need to be re-registered) components following the
-	 * block modification at coordinates coords. */
+	 * block modification at coordinates coords.
+	 *
+	 * A component marked RSM_LINKFLAG_READ will be registered as it presumably affects components
+	 * which sit on the changed wireline.
+	 * A component marked RSM_LINKFLAG_WRITE_* will have its input indices reset prior to registering by
+	 * registercontext, as all components which affect it will be registered in the same batch.
+	 *
+	 * Note: graphlock_ must be acquired during batch registering ! */
 
 	Blockdata *block;
 	block = cu_coordsToBlock(coords, NULL);
 
-	/* Put self in affected components */
 	if (wf_isregistrable(block->id)) {
+		/* Put self in affected components */
 		Linkinfo *linkinfo;
 		if ((linkinfo = usf_inthmget(afcontext->affected, (u64) block).p) == NULL) {
 			/* Only coords & linkflags used for affected, so rest is unset */
@@ -32,7 +39,13 @@ void wf_findaffected(vec3 coords, Fillcontext *afcontext) {
 			glm_vec3_copy(coords, linkinfo->coords);
 			usf_inthmput(afcontext->affected, (u64) block, USFDATAP(linkinfo)); /* Put */
 		}
-		linkinfo->linkflags |= RSM_LINKFLAG_READ;
+		linkinfo->linkflags |= RSM_LINKFLAG_READ; /* Set to be registered */
+
+		/* Reset input indices (all affected will re-register)
+		 * Write-to components' indices are reset in registercontext */
+		Component *component;
+		component = getcomponent(block);
+		memset(component->ninputs, 0, sizeof(component->ninputs));
 	}
 
 	Rotation rotation;
@@ -372,6 +385,7 @@ void wf_registercomponent(vec3 coords) {
 	Blockdata *block;
 	block = cu_coordsToBlock(coords, NULL);
 
+	//DEBUG printf("reg comp %lu\n", block->id);
 	Fillcontext *linkcontext;
 	linkcontext = wf_newcontext(RSM_KEEP_VISUAL_INFO);
 
@@ -407,7 +421,8 @@ void wf_registercomponent(vec3 coords) {
 
 #define SOFTOUTPUT(_ROT) \
 	outblock = cu_coordsToBlock(outcoords, NULL); \
-	if (outblock->id == RSM_BLOCK_WIRE || wf_iscomponent(outblock->id)) /* Only start if not hard-powering */ \
+	/* Don't electrify, and skip components' secondary inputs */ \
+	if (outblock->id == RSM_BLOCK_WIRE || (wf_iscomponent(outblock->id) && COLINROT(_ROT, outblock->rotation))) \
 		wf_componentconnect(outcoords, _ROT, linkcontext, 0);
 			FORORTHO(SOFTOUTPUT, outcoords, coords);
 #undef SOFTOUTPUT
@@ -438,38 +453,22 @@ void wf_registercomponent(vec3 coords) {
 	if ((component = usf_inthmget(graphmap_, (u64) block).p) == NULL)
 		usf_inthmput(graphmap_, (u64) block, USFDATAP(component = calloc(1, sizeof(Component))));
 
-	component->id = block->id;
-	component->metadata = (block->id == RSM_BLOCK_LIGHT_DIGITAL ? RSM_FLAG_FORCEVISUAL : 0);
+	component->id = (u8) block->id; /* All components' IDs < 255 */
+	component->metadata = 0;
 	component->runtime = 0;
-	memset(component->buffer, 0, sizeof(component->buffer));
+	/* ninputs already reset (in findaffected) if target is being registered too;
+	 * buffer set to 0 when link is established */
 	memset(component->state, 0, sizeof(component->state));
 
-	if (component->connections) usf_freelistptrfunc(component->connections, free);
+	usf_listptr *oldconnections; /* Used to retake old buffer indices */
+	oldconnections = component->connections;
+
 	if (component->visualdata) {
 		usf_freelistu64(component->visualdata->chunkindices);
 		free(component->visualdata->components);
 		free(component->visualdata->wires);
 		free(component->visualdata->wiredecays);
 		free(component->visualdata);
-	}
-	if (component->reassert) usf_freelistptr(component->reassert);
-
-	/* Set (hashmap) iterators */
-	u64 i, j;
-	usf_data *entry;
-
-	usf_listptr *reassert; /* To prime if any target is modified */
-	reassert = component->reassert = usf_newlistptr();
-	for (i = 0; (entry = usf_inthmnext(linkcontext->affected, &i));) { /* Filter affected */
-		Linkinfo *link;
-		if (!((link = entry[1].p)->linkflags & ~RSM_LINKFLAG_READ)) {
-			Blockdata *handle; /* Delete from affected and retrieve Blockdata * handle */
-			handle = ((Linkinfo *) usf_inthmdel(linkcontext->affected, entry[0].u).p)->block;
-
-			usf_listptradd(reassert, getcomponent(handle));
-
-			free(link); /* Free Linkinfo * as no longer free'd by freecontext */
-		}
 	}
 
 	usf_listptr *connections; /* List of Connection */
@@ -482,29 +481,61 @@ void wf_registercomponent(vec3 coords) {
 	visualdata->wires = malloc(linkcontext->wires->size * sizeof(Blockdata *));
 	visualdata->wiredecays = malloc(linkcontext->wires->size * sizeof(u8 *));
 
+	/* Set (hashmap) iterators */
+	u64 i, j;
+	usf_data *entry;
+
 	for (i = 0; (entry = usf_inthmnext(linkcontext->chunkindices, &i));) /* Copy chunk indices */
 		usf_listu64add(visualdata->chunkindices, entry[0].u); /* Chunk index is key */
 
 	for (i = j = 0; (entry = usf_inthmnext(linkcontext->wires, &i)); j++) { /* Copy wire data */
 		visualdata->wires[j] = entry[0].p;
 		visualdata->wiredecays[j] = (u8) entry[1].u;
+		//DEBUG printf("WR dcy %lu\n", entry[1].u);
 	}
 
 	for (i = j = 0; (entry = usf_inthmnext(linkcontext->affected, &i)); j++) { /* Perform handshakes */
 		Linkinfo *link;
 		link = (Linkinfo *) entry[1].p;
 
+		if (!(link->linkflags & ~RSM_LINKFLAG_READ)) continue; /* Wire only ever reads; don't connect */
+
 		Connection *connection;
 		connection = malloc(sizeof(Connection));
 		connection->component = getcomponent(link->block);
 		connection->linkflags = link->linkflags;
-		memcpy(connection->decay, link->decay, sizeof(link->decay));
+
+		/* Attempt to reuse already registered buffer index; if a component is destroyed, the index will
+		 * go dead until a graph optimization (rebuild) or it is replaced. */
+#define LINKWITH(_FLAG, _INDEX) \
+	if (link->linkflags & _FLAG) { \
+		if (oldconnections) { \
+			u64 k; \
+			for (k = 0; k < oldconnections->size; k++) { \
+				Connection *oldconnection; \
+				oldconnection = oldconnections->array[k]; \
+				if (oldconnection != connection) continue; /* Cannot use index of different connection */ \
+				if (!(oldconnection->linkflags & _FLAG)) break; /* Wasn't registered */ \
+				connection->index[_INDEX] = oldconnection->index[_INDEX]; /* Retake */ \
+				k = 0; /* Set flag to succeed */ \
+				break; \
+			} \
+			if (k) connection->index[_INDEX] = connection->component->ninputs[_INDEX]++; /* Didn't retake */ \
+		} else connection->index[_INDEX] = connection->component->ninputs[_INDEX]++; /* Reserve new index */ \
+	} else connection->index[_INDEX] = 0; /* Will not be used */
+		LINKWITH(RSM_LINKFLAG_WRITE_PRIMARY, 0);
+		LINKWITH(RSM_LINKFLAG_WRITE_SECONDARY, 1);
+#undef LINKWITH
+		memcpy(connection->decay, link->decay, sizeof(link->decay)); /* Copy link decays */
+
+		//DEBUG printf("LINKTO %u DCY %u BUFIND %u OTHER %u %u\n", link->block->id, link->decay[0], connection->index[0], link->decay[1], connection->index[1]);
 
 		usf_listptradd(connections, connection); /* Connection established */
 		visualdata->components[j] = link->block; /* For graphical update */
 	}
 
 	wf_freecontext(linkcontext);
+	usf_freelistptrfunc(oldconnections, free); /* Free last of old data */
 }
 
 Fillcontext *wf_newcontext(i32 discardvisual) {
@@ -550,7 +581,6 @@ void wf_registercoords(vec3 coords) {
 
 	wf_registercontext(afcontext);
 
-	graphchanged_ = 1; /* Prime all next tick */
 	usf_mtxunlock(graphlock_); /* Thread-safe unlock */
 
 	wf_freecontext(afcontext); /* Free parsed structure */
@@ -558,12 +588,15 @@ void wf_registercoords(vec3 coords) {
 
 void wf_registercontext(Fillcontext *context) {
 	/* Registers a precalculated (batched) Fillcontext. This Fillcontext must have been populated
-	 * by wf_findaffected so that it only contains components which the wire reads from. */
+	 * by wf_findaffected and contain only components which the wireline reads from.
+	 *
+	 * Note: graphlock_ must be acquired during batch registering! */
 
 	u64 i;
 	usf_data *entry;
 	for (i = 0; (entry = usf_inthmnext(context->affected, &i));)
 		wf_registercomponent(((Linkinfo *) entry[1].p)->coords);
+	graphchanged_ = 1; /* Prime all next tick */
 }
 
 
@@ -587,8 +620,12 @@ static Component *getcomponent(Blockdata *handle) {
 	 * Blockdata * handle and return it */
 
 	Component *component;
-	if ((component = usf_inthmget(graphmap_, (u64) handle).p) == NULL)
+	if ((component = usf_inthmget(graphmap_, (u64) handle).p) == NULL) {
 		usf_inthmput(graphmap_, (u64) handle, USFDATAP(component = calloc(1, sizeof(Component))));
+		/* Effectively arrays, resized on registering, never free'd */
+		component->buffer[0] = usf_newlistu8();
+		component->buffer[1] = usf_newlistu8();
+	}
 
 	return component;
 }

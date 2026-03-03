@@ -106,8 +106,8 @@ REDSIM RULES
 	be read from by wires and other components.
 
 	RSM_BLOCK_BUFFER (buffer_[type]_[state]): Is a component. Needs support from underneath.
-	Output is ss currently stored in the last serial storage buffer. All buffers shift forward to allow for
-	output and the first is overwritten by the primary input.
+	Output is 255 or 0 depending on state of last serial storage buffer. All buffers shift forward to allow for
+	output and the first is overwritten by the primary input, normalized to 255 or 0.
 	Can be set to 4 delay states (1 -> 2 -> 4 -> 8 ticks).
 
 	RSM_BLOCK_RESISTOR (resistor): Is a conductor. May support components.

@@ -61,6 +61,7 @@ extern f32 RSM_MOUSE_SENSITIVITY;
 #define RSM_FPS 240.0f
 #define FPS_CAP true
 #define VSYNC true
+#define RSM_MAX_PROCESSORS 512
 
 #define CHUNKSIZE 32
 extern f32 RSM_REACH;
@@ -73,6 +74,7 @@ extern f32 RSM_COMMAND_POS_X_PIXELS;
 extern f32 RSM_COMMAND_POS_Y_PIXELS;
 extern f32 RSM_COMMAND_TEXT_SIZE;
 
+extern f32 RSM_NOCLIP;
 extern f32 RSM_AIRPLACE;
 extern f32 RSM_VISUALSIM;
 extern f32 RSM_ENABLESIM;
@@ -110,14 +112,17 @@ extern f32 RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_MAX_COMMAND_LOG_LINES 32
 
 /* Pack Blockdata into uint64_t before saving to disk */
-#define RSM_SAVE_IDSHIFT 48
-#define RSM_SAVE_IDMASK 0xFFFF
-#define RSM_SAVE_VARIANTSHIFT 40
+#define RSM_SAVE_HEADERSZ (sizeof(vec3) + sizeof(u64 [RSM_HOTBAR_COUNT][RSM_HOTBAR_SLOTS][2]))
+#define RSM_SAVE_CHUNKSTRIDE (sizeof(u64) + CHUNKSIZE*CHUNKSIZE*CHUNKSIZE * sizeof(u32))
+#define RSM_SAVE_
+#define RSM_SAVE_IDSHIFT 24
+#define RSM_SAVE_IDMASK 0xFF
+#define RSM_SAVE_VARIANTSHIFT 16
 #define RSM_SAVE_VARIANTMASK 0xFF
-#define RSM_SAVE_ROTATIONSHIFT 32
+#define RSM_SAVE_ROTATIONSHIFT 8
 #define RSM_SAVE_ROTATIONMASK 0xFF
 #define RSM_SAVE_METADATASHIFT 0
-#define RSM_SAVE_METADATAMASK 0xFFFFFFFF
+#define RSM_SAVE_METADATAMASK 0xFF
 
 /* Block flags */
 #define RSM_BIT_COLLISION (U64(1) << 0) /* Collidable */
@@ -131,9 +136,10 @@ extern f32 RSM_DEFAULT_GUI_SCALING_FACTOR;
 
 /* Simulation */
 #define RSM_NATURAL_DECAY 1
-#define RSM_SIMSLEEP_TIMESPEC (&(struct timespec) { .tv_sec = 1 })
+#define RSM_SIMRETRY_TIMESPEC (&(struct timespec) { .tv_sec = 1 })
 #define RSM_WIREFILL_READONLY 1
-#define RSM_FLAG_FORCEVISUAL (U16(1) << 0) /* Force simulation to update this block */
+#define RSM_SIMFLAG_PRIMARY (U16(1) << 0)
+#define RSM_SIMFLAG_SECONDARY (U16(1) << 1)
 
 /* Floodfill flags */
 #define RSM_LINKFLAG_READ (U8(1) << 0)

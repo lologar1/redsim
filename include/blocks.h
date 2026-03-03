@@ -1,6 +1,7 @@
 #ifndef BLOCKS_H
 #define BLOCKS_H
 
+#include "usfatomic.h"
 #include "rsmlayout.h"
 
 #define VEC3(_X, _Y, _Z) ((vec3) {(_X), (_Y), (_Z)})
@@ -51,10 +52,10 @@ typedef struct Blockmesh {
 } Blockmesh;
 
 typedef struct Blockdata {
-	u16 id;
-	u8 variant;
+	u8 id;
+	u8 metadata;
 	Rotation rotation;
-	u32 metadata;
+	atomic_u8 variant; /* Simulation visual updates */
 } Blockdata;
 
 typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];
