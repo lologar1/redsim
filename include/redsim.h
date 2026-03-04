@@ -15,8 +15,6 @@
 #define ASUID(id, variant) ((u64) (((u64) id << 32) | ((u64) variant)))
 #define GETID(uid) ((u64) uid >> 32)
 #define GETVARIANT(uid) ((u64) uid & 0xFFFFFFFF)
-#define VECAPPLY(v, f) \
-	v[0] = f(v[0]); v[1] = f(v[1]); v[2] = f(v[2]);
 
 typedef enum Gamestate {
 	NORMAL,
@@ -33,12 +31,14 @@ typedef enum SpecialVariant {
 } SpecialVariant;
 
 extern Gamestate gamestate_;
-extern i64 ret_selection_[6];
-extern i64 ret_positions_[6];
+extern vec3 ret_selection_[2];
+extern vec3 ret_positions_[2];
 
 void rsm_move(vec3 position);
 void rsm_updateWiremesh(void);
 void rsm_interact(void);
+void rsm_placecoords(vec3 coords, vec3 adjacent);
+void rsm_breakcoords(vec3 coords);
 void rsm_checkMeshes(void);
 
 #endif

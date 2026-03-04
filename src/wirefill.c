@@ -25,7 +25,7 @@ void wf_findaffected(vec3 coords, Fillcontext *afcontext) {
 	 * A component marked RSM_LINKFLAG_WRITE_* will have its input indices reset prior to registering by
 	 * registercontext, as all components which affect it will be registered in the same batch.
 	 *
-	 * Note: graphlock_ must be acquired during batch registering ! */
+	 * Note: graph lock must be acquired during batch registering ! */
 
 	Blockdata *block;
 	block = cu_coordsToBlock(coords, NULL);
@@ -112,7 +112,7 @@ void wf_findaffected(vec3 coords, Fillcontext *afcontext) {
 		wf_componentconnect(coords, NONE, afcontext, RSM_WIREFILL_READONLY); /* Wire or solid block */
 	else { /* Special rules */
 		switch(block->id) {
-			case RSM_BLOCK_DIODE:
+			case RSM_BLOCK_DIODE: /* Resistor included in solid blocks above */
 				adjacent[1]++; /* Only wire on top will be affected */
 				wf_componentconnect(adjacent, UP, afcontext, RSM_WIREFILL_READONLY);
 				break;
@@ -158,7 +158,7 @@ void wf_componentconnect(vec3 coords, Rotation from, Fillcontext *fillcontext, u
 		wf_wirefill(adjacent, _ROT, 0, fillcontext, status);
 		FORORTHO(FILLDIR, adjacent, coords);
 #undef FILLDIR
-	}
+	} else return; /* Doesn't affect world */
 
 	while (fillcontext->next->size) { /* Breadth-first search */
 		Fillcandidate *candidate;
@@ -228,6 +228,23 @@ void wf_wirefill(vec3 coords, Rotation from, u8 decay, Fillcontext *fillcontext,
 				return;
 		}
 
+		/* Reset buffers of written-to components to avoid ghost signals persisting. Do this before the
+		 * READONLY check so every component on the wire is affected. This creates a false-positive for
+		 * diode connections, but is needed to avoid findaffected needing to be switch to READWRITE.
+		 *
+		 * When modifying the component graph, any components the wire writes to are momentarily reset
+		 * (power surge), meaning they lose their write-buffer contents (so in the next tick, they will
+		 * act as if they were not connected), but not their state.*/
+#define RESETBUF(_FLAG, _BUFFER) \
+	do { \
+		if (!(linkflags & _FLAG)) break; \
+		Component *COMPONENT_ = getcomponent(block); \
+		memset(COMPONENT_->buffer[_BUFFER], 0, COMPONENT_->ninputs[_BUFFER]); \
+	} while (0);
+		RESETBUF(RSM_LINKFLAG_WRITE_PRIMARY, 0);
+		RESETBUF(RSM_LINKFLAG_WRITE_SECONDARY, 1);
+#undef RESETBUF
+
 		if (status == RSM_WIREFILL_READONLY) linkflags &= RSM_LINKFLAG_READ; /* Remove writes on READONLY */
 		if (!linkflags) return; /* Component does not interact */
 
@@ -241,7 +258,7 @@ void wf_wirefill(vec3 coords, Rotation from, u8 decay, Fillcontext *fillcontext,
 		linkinfo->block = block;
 		glm_vec3_copy(coords, linkinfo->coords);
 
-		return; /* Constant source opaque can thus not be hard-powered */
+		return; /* Constant source opaque cannot be hard-powered */
 	}
 
 	/* If not wire, component or conductor: no impact on circuitry */
@@ -282,6 +299,8 @@ void wf_wirefill(vec3 coords, Rotation from, u8 decay, Fillcontext *fillcontext,
 	}
 
 	/* Wire handling */
+	usf_atmmst(&block->variant, 0, MEMORDER_RELAXED); /* Reset state to avoid disconnected garbage */
+
 	u8 resistance;
 	resistance = neighbors[DOWN]->id == RSM_BLOCK_RESISTOR ? neighbors[DOWN]->variant : 0;
 
@@ -388,12 +407,11 @@ void wf_registercomponent(vec3 coords) {
 	Blockdata *block;
 	block = cu_coordsToBlock(coords, NULL);
 
-	//DEBUG printf("reg comp %lu\n", block->id);
 	Fillcontext *linkcontext;
 	linkcontext = wf_newcontext(RSM_KEEP_VISUAL_INFO);
 
 	vec3 outcoords;
-	Blockdata *outblock; /* Used for multiple targets */
+	Blockdata *outblock;
 	glm_vec3_copy(coords, outcoords);
 	switch (block->id) {
 		/* Single hard-powered output */
@@ -491,7 +509,6 @@ void wf_registercomponent(vec3 coords) {
 	for (i = j = 0; (entry = usf_inthmnext(linkcontext->wires, &i)); j++) {
 		visualdata->wires[j] = entry[0].p;
 		visualdata->wiredecays[j] = (u8) entry[1].u;
-		//DEBUG printf("WR dcy %lu\n", entry[1].u);
 	}
 	visualdata->nwires = linkcontext->wires->size;
 	visualdata->blockdata = block;
@@ -518,7 +535,7 @@ void wf_registercomponent(vec3 coords) {
 			if (oldconnections) for (I_ = 0; I_ < oldconnections->size; I_++) { \
 				Connection *oldconnection; \
 				oldconnection = oldconnections->array[I_]; \
-				if (oldconnection != connection) continue; /* Not to same target */ \
+				if (oldconnection->component != connection->component) continue; /* Not to same target */ \
 				if (!(oldconnection->linkflags & _FLAG)) break; /* Wasn't registered */ \
 				\
 				CINDEX_ = oldconnection->index[_BUFFER]; /* Retake! */ \
@@ -539,13 +556,11 @@ void wf_registercomponent(vec3 coords) {
 		LINKWITH(RSM_LINKFLAG_WRITE_SECONDARY, 1);
 #undef LINKWITH
 
-		//DEBUG printf("LINKTO %u DCY %u BUFIND %u OTHER %u %u\n", link->block->id, link->decay[0], connection->index[0], link->decay[1], connection->index[1]);
-
 		usf_listptradd(connections, connection); /* Connection established */
 	}
 
+	usf_freelistptrfunc(oldconnections, free); /* Free the last of the old data */
 	wf_freecontext(linkcontext);
-	usf_freelistptrfunc(oldconnections, free); /* Free the last of old data */
 }
 
 Fillcontext *wf_newcontext(i32 discardvisual) {
@@ -580,29 +595,11 @@ void wf_freecontext(Fillcontext *context) {
 	free(context);
 }
 
-void wf_registercoords(vec3 coords) {
-	/* Registers a change to the world (at position coords) in the graph; If called after a change to
-	 * the circuitry, the component graph will accurately reflect that change when this function exits. */
-
-	usf_mtxlock(graphlock_); /* Thread-safe lock */
-
-	/* Find all affected components */
-	Fillcontext *afcontext;
-	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
-	wf_findaffected(coords, afcontext);
-
-	wf_registercontext(afcontext);
-
-	usf_mtxunlock(graphlock_); /* Thread-safe unlock */
-
-	wf_freecontext(afcontext); /* Free parsed structure */
-}
-
 void wf_registercontext(Fillcontext *context) {
 	/* Registers a precalculated (batched) Fillcontext. This Fillcontext must have been populated
 	 * by wf_findaffected and contain only components which the wireline reads from.
 	 *
-	 * Note: graphlock_ must be acquired during batch registering! */
+	 * Note: graph lock must be acquired during batch registering! */
 
 	u64 i;
 	usf_data *entry;
@@ -611,6 +608,19 @@ void wf_registercontext(Fillcontext *context) {
 	graphchanged_ = 1; /* Prime all next tick */
 }
 
+void wf_registercoords(vec3 coords) {
+	/* Registers a change to the world (at position coords) in the graph; If called after a change to
+	 * the circuitry, the component graph will accurately reflect that change when this function exits. */
+
+	usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
+	Fillcontext *afcontext;
+	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
+	wf_findaffected(coords, afcontext); /* Find */
+	wf_registercontext(afcontext); /* Register */
+	usf_mtxunlock(graphmap_->lock); /* Thread-safe unlock */
+
+	wf_freecontext(afcontext); /* Free transient data */
+}
 
 i32 wf_iscomponent(Blocktype id) {
 	/* Check if a given block ID is a component. A component has the following properties:

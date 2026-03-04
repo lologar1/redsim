@@ -112,10 +112,10 @@ void client_loaddata(void) {
 	u64 i;
 	for (i = RSM_SAVE_HEADERSZ; i < savesize; i += RSM_SAVE_CHUNKSTRIDE) {
 		u64 chunkindex;
-		chunkindex = *((u64 *) (save + i)); /* Get chunkindex header */
+		memcpy(&chunkindex, save + i, sizeof(u64)); /* Get chunkindex header */
 
-		u32 (*savedata)[CHUNKSIZE][CHUNKSIZE]; /* From disk */
-		savedata = (typeof(savedata)) (save + i + sizeof(u64)); /* Skip chunkindex header */
+		u32 savedata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE]; /* From disk */
+		memcpy(savedata, save + i + sizeof(u64), sizeof(savedata)); /* Skip chunkindex */
 
 		Chunkdata *chunkdata;
 		chunkdata = malloc(sizeof(Chunkdata)); /* Alloc chunk to be loaded */
@@ -153,7 +153,8 @@ void client_loaddata(void) {
 	/* Remesh after loading (batched access to chunkmap_, so manually acquire) */
 	usf_mtxlock(chunkmap_->lock); /* Thread-safe lock */
 	usf_data *entry; /* Jobs will need to wait until all are queued */
-	for (i = 0; (entry = usf_inthmnext(chunkmap_, &i));) cu_asyncRemeshChunk(entry[0].u);
+	for (i = 0; (entry = usf_inthmnext(chunkmap_, &i));)
+		cu_asyncRemeshChunk(entry[0].u);
 	usf_mtxunlock(chunkmap_->lock); /* Thread-safe unlock */
 
 	/* Register graph from loaded world */
@@ -165,10 +166,11 @@ void client_loaddata(void) {
 	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
 
 	/* Batched registering */
-	usf_mtxlock(graphlock_); /* Thread-safe lock */
-	for (i = 0; i < toregister->size; i++) wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
+	usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
+	for (i = 0; i < toregister->size; i++)
+		wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
 	wf_registercontext(afcontext);
-	usf_mtxunlock(graphlock_); /* Thread-safe unlock */
+	usf_mtxunlock(graphmap_->lock); /* Thread-safe unlock */
 
 	usf_freelistptrfunc(toregister, free); /* Free pending coordinates */
 	wf_freecontext(afcontext); /* Free batch context */
@@ -318,7 +320,6 @@ void client_terminate(void) {
 	/* Free structures */
 	usf_freeinthmfunc(chunkmap_, free);
 	usf_freeinthmfunc(meshmap_, free);
-	usf_mtxdestroy(graphlock_); free(graphlock_);
 	usf_freeinthmfunc(graphmap_, sim_freecomponent);
 	usf_freeinthm(datamap_);
 	usf_freestrhm(namemap_);

@@ -159,9 +159,11 @@ Blockdata *cu_coordsToBlock(vec3 coords, u64 *chunkindex) {
 			cu_chunkOffsetConvertFloat(coords[1]),
 			cu_chunkOffsetConvertFloat(coords[2]));
 
+	usf_mtxlock(chunkmap_->lock); /* Thread-safe lock (read-modify-write) */
 	Chunkdata *chunkdata;
 	if ((chunkdata = usf_inthmget(chunkmap_, index).p) == NULL) /* Alloc empty if uninitialized */
 		usf_inthmput(chunkmap_, index, USFDATAP(chunkdata = calloc(1, sizeof(Chunkdata))));
+	usf_mtxunlock(chunkmap_->lock); /* Thread-safe unlock */
 
 	if (chunkindex) *chunkindex = index;
 
@@ -268,7 +270,7 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	chunkindex = (*(u64 *) chunkindexptr);
 
 	Mesh *mesh;
-	mesh = usf_inthmget(meshmap_, chunkindex).p;
+	mesh = usf_inthmget(meshmap_, chunkindex).p; /* Thread-safe; must exist */
 	if (usf_atmflagtry(&mesh->remeshing, MEMORDER_ACQ_REL)) return 1; /* Taken */
 
 	i64 x, y, z; /* Get chunk position */
@@ -286,7 +288,7 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	memcpy(&chunk, chunkptr, sizeof(Chunkdata)); /* Safe since chunks cannot be deleted */
 	usf_mtxunlock(chunkmap_->lock);
 
-	f32 culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* culled is misnomer since it holds not-culled faces */
+	f32 culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* culled is a misnomer since it holds not-culled faces */
 	static const Rotation FROMNORTH[7] = { NORTH, NORTH, EAST, SOUTH, WEST, DOWN, UP };
 	static const Rotation FROMWEST[7] = { WEST, WEST, NORTH, EAST, SOUTH, WEST, WEST };
 	static const Rotation FROMSOUTH[7] = { SOUTH, SOUTH, WEST, NORTH, EAST, UP, DOWN };
@@ -312,8 +314,8 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	rawmesh = malloc(sizeof(Rawmesh));
 	rawmesh->chunkindex = chunkindex;
 
-	u8 *buffers; /* Single allocation */
-	buffers = malloc(OV_BUFSZ + TV_BUFSZ + OI_BUFSZ + TI_BUFSZ);
+	u8 *buffers; /* Single aligned allocation */
+	buffers = alalloc(alignof(f32), OV_BUFSZ + TV_BUFSZ + OI_BUFSZ + TI_BUFSZ);
 	f32 *ov_bufptr, *tv_bufptr;
 	ov_bufptr = rawmesh->opaqueVertexBuffer = (f32 *) (buffers);
 	tv_bufptr = rawmesh->transVertexBuffer = (f32 *) (buffers += OV_BUFSZ);
@@ -337,7 +339,7 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 					" at coordinates %"PRId64" %"PRId64" %"PRId64".\n",
 					block.id, block.variant, x * CHUNKSIZE + a, y * CHUNKSIZE + b, z * CHUNKSIZE + c);
 			memset(cu_posToBlock(x * CHUNKSIZE + a, y*CHUNKSIZE + b, z * CHUNKSIZE + c, NULL),
-					0, sizeof(Blockdata));
+					0, sizeof(Blockdata)); /* Thread-safe */
 			continue;
 		}
 

@@ -1,11 +1,11 @@
 #include "redsim.h"
 
 Gamestate gamestate_ = NORMAL;
-i64 ret_selection_[6] = {0, 0, 0, 1, 1, 1};
-i64 ret_positions_[6] = {0, 0, 0, 0, 0, 0};
+vec3 ret_selection_[2] = {VEC3(0, 0, 0), VEC3(1, 1, 1)};
+vec3 ret_positions_[2] = {VEC3(0, 0, 0), VEC3(0, 0, 0)};
 
 static vec3 lookingBlockCoords_, adjacentBlockCoords_;
-static i64 lookingAxis_, stepAxis_;
+static i64 lookingAxis_, stepAxis_; /* stepAxis_ is direction of lookingAxis_ */
 
 void rsm_move(vec3 position) {
 	/* Persistent momentum across multiple frames */
@@ -114,8 +114,8 @@ void rsm_updateWiremesh(void) {
 	 * The left side of the texture is the selection color while the right side is block highlighting. */
 
 	f32 sx, sy, sz, sa, sb, sc; /* Selection coords and dimensions */
-	sa = ret_selection_[0]; sb = ret_selection_[1]; sc = ret_selection_[2];
-	sx = ret_selection_[3]; sy = ret_selection_[4]; sz = ret_selection_[5];
+	sa = ret_selection_[0][0]; sb = ret_selection_[0][1]; sc = ret_selection_[0][2];
+	sx = ret_selection_[1][0]; sy = ret_selection_[1][1]; sz = ret_selection_[1][2];
 
 	/* Block highlighting coords and dimensions */
 	vec3 looking, pos;
@@ -209,13 +209,13 @@ void rsm_updateWiremesh(void) {
 }
 
 void rsm_interact(void) {
-	/* Place, destroy or interact with the block at lookingAt */
+	/* Place, destroy or interact with the world */
 
-	Blockdata *lookingAt, *lookingAdjacent;
-	lookingAt = cu_coordsToBlock(lookingBlockCoords_, NULL);
-	lookingAdjacent = cu_coordsToBlock(adjacentBlockCoords_, NULL);
+	Blockdata *lookingAt;
+	u64 lookingAtChunkindex;
+	lookingAt = cu_coordsToBlock(lookingBlockCoords_, &lookingAtChunkindex);
 
-	if (rsm_middleclick_) { /* Pipette tool */
+	if (rsm_middleclick_) { /* Pipette tool; using only lookingAt */
 		rsm_middleclick_ = 0;
 
 		hotbar_[hotbarIndex_][hotslotIndex_][0] = lookingAt->id;
@@ -227,32 +227,25 @@ void rsm_interact(void) {
 		return;
 	}
 
-	/* Held item */
-	u64 id, variant, uid;
-	id = hotbar_[hotbarIndex_][hotslotIndex_][0];
-	variant = hotbar_[hotbarIndex_][hotslotIndex_][1];
-	uid = ASUID(id, variant);
-
-	/* Tools */
-	switch (uid) {
+	/* Held item (tool checking) */
+	u64 helduid;
+	helduid = ASUID(hotbar_[hotbarIndex_][hotslotIndex_][0], hotbar_[hotbarIndex_][hotslotIndex_][1]);
+	switch (helduid) {
 		case ASUID(RSM_SPECIAL_ID, RSM_SPECIAL_SELECTIONTOOL): /* Selection tool */
-#define VTOI(_TO, _FROM) (_TO)[0] = (i64) (_FROM)[0]; (_TO)[1] = (i64) (_FROM)[1]; (_TO)[2] = (i64) (_FROM)[2];
-			if (rsm_leftclick_) {
-				rsm_leftclick_ = 0;
-				VTOI(ret_positions_, lookingBlockCoords_);
-			} else if (rsm_rightclick_) {
-				rsm_rightclick_ = 0;
-				VTOI(ret_positions_ + 3, lookingBlockCoords_);
-			}
-#undef VTOI
+#define SELECTCORNER(_INDICATOR, _POSINDEX) \
+	if (_INDICATOR) { \
+		_INDICATOR = 0; /* Reset indicator */ \
+		memcpy(ret_positions_[_POSINDEX], ASVEC3(lookingBlockCoords_), sizeof(vec3)); \
+	}
+			SELECTCORNER(rsm_leftclick_, 0);
+			SELECTCORNER(rsm_rightclick_, 1);
+#undef SELECTCORNER
 
-			i64 i, minpos, maxpos;
+			u64 i;
 			for (i = 0; i < 3; i++) { /* Create selection */
-				maxpos = USF_MAX(ret_positions_[i], ret_positions_[i + 3]);
-				minpos = USF_MIN(ret_positions_[i], ret_positions_[i + 3]);
-
-				ret_selection_[i] = minpos;
-				ret_selection_[i + 3] = maxpos - minpos + 1;
+				ret_selection_[0][i] = USF_MIN(ret_positions_[0][i], ret_positions_[1][i]);
+				ret_selection_[1][i] = USF_MAX(ret_positions_[0][i], ret_positions_[1][i]);
+				ret_selection_[1][i] = ret_selection_[1][i] - ret_selection_[0][i] + 1; /* Convert to size */
 			}
 			return;
 
@@ -266,135 +259,142 @@ void rsm_interact(void) {
 			return;
 	}
 
+	/* World-affecting */
 	if (rsm_leftclick_) { /* Block breaking */
 		rsm_leftclick_ = 0;
-
-		memset(lookingAt, 0, sizeof(Blockdata)); /* Reset to air */
-		wf_registercoords(lookingBlockCoords_); /* Sim sync */
-
-		/* Break dependent blocks */
-		vec3 dcoords;
-		Blockdata *dblock;
-#define TESTBLOCK(_DX, _DY, _DZ, _FLAG, _ROT) \
-	dcoords[0] = lookingBlockCoords_[0] + _DX; \
-	dcoords[1] = lookingBlockCoords_[1] + _DY; \
-	dcoords[2] = lookingBlockCoords_[2] + _DZ; \
-	dblock = cu_coordsToBlock(dcoords, NULL); \
-	if ((dblock->metadata & _FLAG) && (dblock->rotation == _ROT)) { \
-		memset(dblock, 0, sizeof(Blockdata)); /* Destroy */ \
-		wf_registercoords(dcoords); /* Sim sync */ \
-	}
-		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, UP);
-		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE);
-		TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, SOUTH);
-		TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, NORTH);
-		TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);
-		TESTBLOCK(1, 0, 0, RSM_BIT_SIDESUPPORTED, WEST);
-#undef TESTBLOCK
-		goto remesh;
-	}
-
-	/* Block placement & interaction */
-	u64 metadata; /* Metadata of block to place */
-	switch (id) { /* Special software-determined variants don't have all possible uids registered */
-		case RSM_BLOCK_RESISTOR:
-		case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
-		case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
-			metadata = usf_inthmget(datamap_, ASUID(id, 0)).u;
-			break;
-		default:
-			metadata = usf_inthmget(datamap_, uid).u; /* 0 if not specified */
-			break;
+		rsm_breakcoords(lookingBlockCoords_);
+		return;
 	}
 
 	if (rsm_rightclick_) {
 		rsm_rightclick_ = 0;
 
-		if (rsm_forceplace_) goto place;
+		if (rsm_forceplace_) goto place; /* Skip interactions */
 
-		switch (lookingAt->id) { /* Block interaction */
+		switch (lookingAt->id) { /* Interaction or placement */
 			case RSM_BLOCK_BUFFER:
-				lookingAt->variant = (lookingAt->variant + 2) % 8; /* Change delay (keep powered state) */
-				wf_registercoords(lookingBlockCoords_);
-				goto remesh;
+				lookingAt->variant = (lookingAt->variant + 2) % 8; /* Change delay, keep state */
+				break;
+
 			case RSM_BLOCK_AIR: /* Air placement */
 				if (RSM_AIRPLACE) {
-					lookingAdjacent = lookingAt; /* Place there instead */
+					/* Block placement works on adjacent */
 					glm_vec3_copy(lookingBlockCoords_, adjacentBlockCoords_);
 				} else return;
+				goto place;
+
+			default: goto place;
 		}
 
+		/* Interacted */
+		cu_asyncRemeshChunk(lookingAtChunkindex); /* Remesh only this chunk (interaction spans 1 block) */
+		wf_registercoords(lookingBlockCoords_); /* Register change with graph */
+		return;
+
+		/* Place */
 place:
-		if (lookingAdjacent == NULL) return; /* May happen right after init if spawned in a block */
-		if (id == 0) return; /* Shouldn't place air or tools */
-
-		switch (id) { /* Handle software-defined variants */
-			case RSM_BLOCK_RESISTOR:
-			case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
-			case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
-				lookingAdjacent->variant = sspower_;
-				break;
-
-			case RSM_BLOCK_INVERTER: /* Prevent placing in air and find appropriate variant */
-				if (lookingAt == lookingAdjacent || !(lookingAt->metadata & RSM_BIT_CULLFACES)) /* In air */
-					return;
-
-				lookingAdjacent->variant = lookingAxis_ == 1 ? 0 : 2; /* Fix variant & metadata */
-				metadata = usf_inthmget(datamap_, ASUID(id, lookingAdjacent->variant)).u;
-
-				switch (lookingAxis_) { /* Manual rotation since it is determined by looking block face */
-					case 0:
-						lookingAdjacent->rotation = stepAxis_ > 0 ? EAST : WEST;
-						break;
-					case 2:
-						lookingAdjacent->rotation = stepAxis_ > 0 ? SOUTH : NORTH;
-						break;
-					default:
-						lookingAdjacent->rotation = UP;
-						break;
-				}
-				break;
-
-			/* All topsupported blocks */
-			case RSM_BLOCK_TRANSISTOR_ANALOG:
-			case RSM_BLOCK_TRANSISTOR_DIGITAL:
-			case RSM_BLOCK_LATCH:
-			case RSM_BLOCK_WIRE:
-			case RSM_BLOCK_BUFFER:
-				if (lookingAxis_ != 1 || lookingAt==lookingAdjacent || !(lookingAt->metadata&RSM_BIT_CULLFACES))
-					return;
-				[[fallthrough]];
-			default:
-				lookingAdjacent->variant = variant;
-				break;
-		}
-
-		lookingAdjacent->id = id;
-		lookingAdjacent->metadata = metadata;
-
-		if (metadata & RSM_BIT_ROTATION) {
-			/* Block is rotatable so rotate it according to placement angle.
-			 * 45 degree offset because quadrants do not align with orientation placement fields. */
-			f32 rot = fmodf((yaw_ - 45.0f), 360.0f);
-			if (rot < 0.0f) rot = 360.0f - fabsf(rot);
-
-			if (rot < 90.0f) lookingAdjacent->rotation = WEST;
-			else if (rot < 180.0f) lookingAdjacent->rotation = NORTH;
-			else if (rot < 270.0f) lookingAdjacent->rotation = EAST;
-			else lookingAdjacent->rotation = SOUTH;
-		} /* Rotation NONE (zero) by default */
-
-		wf_registercoords(adjacentBlockCoords_); /* Sim sync */
-
-remesh:	/* 3x3 area */
-		usf_skiplist *toremesh;
-		toremesh = usf_newsk();
-
-		cu_deferArea(toremesh, lookingBlockCoords_[0], lookingBlockCoords_[1], lookingBlockCoords_[2]);
-		cu_doRemesh(toremesh);
-
-		usf_freesk(toremesh);
+		rsm_placecoords(adjacentBlockCoords_, lookingBlockCoords_);
+		return;
 	}
+}
+
+void rsm_placecoords(vec3 coords, vec3 adjacent) {
+	/* Places the currently held block at the specified position in the world */
+
+	Blockdata *block, *neighbor, template;
+	block = cu_coordsToBlock(coords, NULL);
+	neighbor = cu_coordsToBlock(adjacent, NULL);
+
+	u8 heldid, heldvariant; /* Held item */
+	heldid = hotbar_[hotbarIndex_][hotslotIndex_][0];
+	heldvariant = hotbar_[hotbarIndex_][hotslotIndex_][1];
+
+	/* Create template */
+	template.id = heldid;
+	template.rotation = NONE; /* Default */
+	switch (heldid) {
+		case RSM_BLOCK_RESISTOR:
+		case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
+		case RSM_BLOCK_CONSTANT_SOURCE_TRANS:
+			/* Use metadata of base type for software-defined variants */
+			template.metadata = usf_inthmget(datamap_, ASUID(heldid, 0)).u;
+			template.variant = sspower_;
+			break;
+
+		case RSM_BLOCK_INVERTER:
+			template.variant = lookingAxis_ == 1 ? 0 : 2; /* Kind depends on placement axis */
+			template.metadata = usf_inthmget(datamap_, ASUID(heldid, template.variant)).u;
+			/* Override rotation */
+			if (lookingAxis_ == 0) template.rotation = stepAxis_ > 0 ? EAST : WEST; /* X-aligned */
+			if (lookingAxis_ == 1) template.rotation = UP; /* Y-aligned */
+			if (lookingAxis_ == 2) template.rotation = stepAxis_ > 0 ? SOUTH : NORTH; /* Z-aligned */
+			break;
+
+		default:
+			template.metadata = usf_inthmget(datamap_, ASUID(heldid, heldvariant)).u;
+			template.variant = heldvariant;
+			break;
+	}
+
+	if (template.metadata & RSM_BIT_ROTATION) {
+		/* Block rotates on placement so rotate it according to angle.
+		 * 45 degree offset to align quadrants with orientation FOVs */
+		f32 rot = fmodf((yaw_ - 45.0f), 360.0f);
+		if (rot < 0.0f) rot = 360.0f - fabsf(rot);
+
+		if (rot < 90.0f) template.rotation = WEST;
+		else if (rot < 180.0f) template.rotation = NORTH;
+		else if (rot < 270.0f) template.rotation = EAST;
+		else template.rotation = SOUTH;
+	}
+
+	/* Prevent illegal placements (sidesupported already checks for axis in inverter template init */
+	if (template.metadata & RSM_BIT_SIDESUPPORTED) /* Air placement or placement on non-full block */
+		if (block == neighbor || !(neighbor->metadata & RSM_BIT_CULLFACES)) return;
+	if (template.metadata & RSM_BIT_TOPSUPPORTED) /* Same restrictions, but must place down */
+		if (lookingAxis_ != 1 || block == neighbor || !(neighbor->metadata & RSM_BIT_CULLFACES)) return;
+
+	memcpy(block, &template, sizeof(Blockdata)); /* Actualize */
+	wf_registercoords(adjacentBlockCoords_); /* Sim sync */
+
+	usf_skiplist *toremesh;
+	cu_deferArea(toremesh = usf_newsk(), coords[0], coords[1], coords[2]);
+	cu_doRemesh(toremesh); usf_freesk(toremesh);
+}
+
+void rsm_breakcoords(vec3 coords) {
+	/* Breaks the specified block in the world (replace with air) */
+
+	Blockdata *block;
+	block = cu_coordsToBlock(coords, NULL);
+
+	memset(block, 0, sizeof(Blockdata)); /* Reset to air */
+	wf_registercoords(coords); /* Sim sync */
+
+	/* Dependent blocks */
+#define TESTBLOCK(_DX, _DY, _DZ, _FLAG, _ROT) \
+	do { \
+		vec3 DCOORDS_; DCOORDS_[0] = (_DX); DCOORDS_[1] = (_DY); DCOORDS_[2] = (_DZ); \
+		glm_vec3_add(DCOORDS_, coords, DCOORDS_); /* Offset */ \
+		Blockdata *DBLOCK_ = cu_coordsToBlock(DCOORDS_, NULL); \
+		\
+		if ((DBLOCK_->metadata & _FLAG) && (DBLOCK_->rotation == _ROT)) { \
+			memset(DBLOCK_, 0, sizeof(Blockdata)); /* Reset to air */ \
+			wf_registercoords(DCOORDS_); /* Sim sync */ \
+		} \
+	} while (0);
+	TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, UP);
+	TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE);
+	TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, SOUTH);
+	TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, NORTH);
+	TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);
+	TESTBLOCK(1, 0, 0, RSM_BIT_SIDESUPPORTED, WEST);
+#undef TESTBLOCK
+
+	/* Remesh (dependent also remeshed as they are adjacent) */
+	usf_skiplist *toremesh;
+	cu_deferArea(toremesh = usf_newsk(), coords[0], coords[1], coords[2]);
+	cu_doRemesh(toremesh); usf_freesk(toremesh);
 }
 
 void rsm_checkMeshes(void) {

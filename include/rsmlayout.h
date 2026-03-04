@@ -126,7 +126,7 @@ extern f32 RSM_DEFAULT_GUI_SCALING_FACTOR;
 
 /* Block flags */
 #define RSM_BIT_COLLISION (U64(1) << 0) /* Collidable */
-#define RSM_BIT_ROTATION (U64(1) << 1) /* Rotatable */
+#define RSM_BIT_ROTATION (U64(1) << 1) /* Rotate on placement */
 #define RSM_BIT_CULLFACES (U64(1) << 2) /* Cull triangles if neighbors occlude (needs to match fullblock mesh) */
 #define RSM_BIT_CONDUCTOR (U64(1) << 3) /* Can be hard-powered */
 #define RSM_BIT_TOPSUPPORTED (U64(1) << 4) /* Needs support underneath */

@@ -15,6 +15,7 @@ static void command_setraw(u32 args, char *argv[]);
 static void command_selection(u32 args, char *argv[]);
 static void command_sspower(u32 args, char *argv[]);
 static void command_teleport(u32 args, char *argv[]);
+static void command_graphdebug(u32 args, char *argv[]);
 
 void cmd_init(void) {
 	/* Initialize cmdmap and varmap for use in cmd execution */
@@ -28,6 +29,7 @@ void cmd_init(void) {
 	ALIAS("selection", command_selection);
 	ALIAS("sspower", command_sspower);
 	ALIAS("teleport", command_teleport);
+	ALIAS("graphdebug", command_graphdebug);
 #undef ALIAS
 
 #define ALIAS(VARNAME, VAR) usf_strhmput(varmap_, VARNAME, USFDATAP(&VAR))
@@ -71,6 +73,7 @@ void cmd_init(void) {
 	ALIAS("sspower", "sspower");
 	ALIAS("teleport", "teleport")
 	ALIAS("tp", "teleport");
+	ALIAS("graphdebug", "graphdebug");
 
 	/* Variables */
 	ALIAS("RSM_FLY_ACCELERATION", "RSM_FLY_ACCELERATION");
@@ -293,6 +296,8 @@ static void command_help(u32 args, char *argv[]) {
 	} else if CASE(command_teleport) {
 		cmd_logf("Syntax: teleport [x] [y] [z]\n");
 		cmd_logf("Teleports to the specified absolute coordinates.\n");
+	} else if CASE(command_graphdebug) {
+		cmd_logf("Debug tool for component graph.\n");
 	}
 	/* Variables */
 	else if CASE(RSM_FLY_ACCELERATION) {
@@ -374,10 +379,11 @@ static void command_lookat(u32 args, char *argv[]) {
 }
 
 static void command_selection(u32 args, char *argv[]) {
+	/* Queries current selection position */
+
 	(void) args;
 	(void) argv;
 
-	/* Queries current selection position */
 	cmd_logf("Pos1: %"PRId64", %"PRId64", %"PRId64".", ret_positions_[0], ret_positions_[1], ret_positions_[2]);
 	cmd_logf("Pos2: %"PRId64", %"PRId64", %"PRId64".", ret_positions_[3], ret_positions_[4], ret_positions_[5]);
 }
@@ -420,9 +426,9 @@ static void command_setraw(u32 args, char *argv[]) {
 
 	Blockdata *blockdata;
 	i64 x, y, z, a = 0, b = 0, c = 0;
-	for (x = ret_selection_[0], a = 0; a < ret_selection_[3]; a++)
-	for (y = ret_selection_[1], b = 0; b < ret_selection_[4]; b++)
-	for (z = ret_selection_[2], c = 0; c < ret_selection_[5]; c++) {
+	for (x = ret_selection_[0][0], a = 0; a < ret_selection_[1][0]; a++)
+	for (y = ret_selection_[0][1], b = 0; b < ret_selection_[1][1]; b++)
+	for (z = ret_selection_[0][2], c = 0; c < ret_selection_[1][2]; c++) {
 		blockdata = cu_posToBlock(x+a, y+b, z+c, NULL);
 
 		blockdata->id = strtou32(argv[1], NULL, 10);
@@ -439,21 +445,18 @@ static void command_setraw(u32 args, char *argv[]) {
 	}
 	
 	/* Batch register to graph */
-	usf_mtxlock(graphlock_); /* Thread-safe lock */
-
 	u64 i;
 	Fillcontext *afcontext;
 	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
-	for (i = 0; i < toregister->size; i++) {
-		wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
-		free(toregister->array[i]); /* Free coords */
-	}
-	wf_registercontext(afcontext);
 
-	usf_mtxunlock(graphlock_); /* Thread-safe unlock */
+	usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
+	for (i = 0; i < toregister->size; i++)
+		wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
+	wf_registercontext(afcontext);
+	usf_mtxunlock(graphmap_->lock); /* Thread-safe unlock */
 
 	wf_freecontext(afcontext);
-	usf_freelistptr(toregister);
+	usf_freelistptrfunc(toregister, free);
 
 	/* Batch remesh chunks */
 	cu_doRemesh(toremesh);
@@ -483,4 +486,50 @@ static void command_teleport(u32 args, char *argv[]) {
 	position_[0] = strtof(argv[1], NULL);
 	position_[1] = strtof(argv[2], NULL);
 	position_[2] = strtof(argv[3], NULL);
+}
+
+static void command_graphdebug(u32 args, char *argv[]) {
+	/* Debug tool for component graph */
+
+	(void) args;
+	(void) argv;
+
+	printf("=== GRAPH STACKTRACE ===\n");
+	usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
+
+	u64 i, j;
+	usf_data *entry;
+	for (i = 0; (entry = usf_inthmnext(graphmap_, &i));) {
+		Component *component;
+		if ((component = entry[1].p)->id == 0) continue; /* Not in graph */
+
+		printf("DEBUG: Exploring component id %"PRIu8" variant %"PRIu8".\n", component->id, component->variant);
+
+		printf("DEBUG: Current input buffer (primary): ");
+		for (j = 0; j < component->ninputs[0]; j++) printf("%"PRIu8" ", component->buffer[0][j]);
+		printf("\n");
+
+		printf("DEBUG: Current input buffer (secondary): ");
+		for (j = 0; j < component->ninputs[1]; j++) printf("%"PRIu8" ", component->buffer[1][j]);
+		printf("\n");
+
+		printf("DEBUG: Current state buffer: ");
+		for (j = 0; j < 8; j++) printf("%"PRIu8" ", component->state[j]);
+		printf("\n");
+
+		for (j = 0; j < component->connections->size; j++) {
+			Connection *connection;
+			connection = component->connections->array[j];
+
+			printf("DEBUG: Has connection to id %"PRIu8" variant %"PRIu8" with buffers %"PRIu16"/%"PRIu16
+					" with decays %"PRIu8"/%"PRIu8" and linkflags %"PRIu8"\n",
+					connection->component->id,connection->component->variant,
+					connection->index[0], connection->index[1],
+					connection->decay[0], connection->decay[1], connection->linkflags);
+		}
+		printf("\n");
+	}
+	cmd_logf("Graph stacktrace printed to stdout.\n");
+
+	usf_mtxunlock(graphmap_->lock); /* Thread-safe unlock */
 }

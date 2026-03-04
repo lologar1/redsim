@@ -5,7 +5,6 @@ typedef struct Slice {
 	void *subarray;
 } Slice;
 
-usf_mutex *graphlock_;
 usf_hashmap *graphmap_; /* Blockdata * -> Component * */
 i32 graphchanged_; /* Set when the component graph is modified (will re-prime everything) */
 atomic_flag simstop_; /* Set on program termination */
@@ -14,21 +13,18 @@ static usf_listptr *primed_; /* Parallel read-only */
 static usf_hashmap *next_; /* Parallel write (batched) (thread-safe) */
 static usf_hashmap *chunkindices_; /* Parallel write (batched) (thread-safe) */
 
-static usf_compatibility_int zerothpass(void *args);
+static usf_compatibility_int cleanwires(void *args);
 static usf_compatibility_int firstpass(void *args);
 static usf_compatibility_int secondpass(void *args);
 
 void sim_init(void) {
 	/* Initialize simulation structures and start sim process */
 
-	graphlock_ = malloc(sizeof(usf_mutex));
-	usf_mtxinit(graphlock_, MTXINIT_PLAIN);
-	graphmap_ = usf_newhm();
-	graphchanged_ = 1;
-
+	graphmap_ = usf_newhm_ts();
 	primed_ = usf_newlistptr_ts();
 	next_ = usf_newhm_ts();
 	chunkindices_ = usf_newhm_ts();
+	graphchanged_ = 1; /* Initial world parsing */
 }
 
 usf_compatibility_int sim_run(void *) {
@@ -36,30 +32,33 @@ usf_compatibility_int sim_run(void *) {
 	lastTime = glfwGetTime();
 
 	while (usf_atmflagtry(&simstop_, MEMORDER_RELAXED)) {
-		if (!RSM_ENABLESIM) { /* Do not busy-wait if sim is off */
+		if (!RSM_ENABLESIM) { /* Wait for restart if sim is off */
 			usf_thrdsleep(RSM_SIMRETRY_TIMESPEC, NULL);
 			continue; /* Check again after specified delay */
 		}
 
+		/* Periodic delay */
 		f64 elapsed;
 		elapsed = glfwGetTime() - lastTime;
-		if (elapsed < 1.0f/RSM_TICKRATE) { /* Running at capacity! */
+		if (elapsed < 1.0f/RSM_TICKRATE) { /* Leeway left */
 			timespec tosleep = (timespec) {
 				.tv_sec = (time_t) (1.0f/RSM_TICKRATE - elapsed),
-				.tv_nsec = 1e9/RSM_TICKRATE - (elapsed - (i64) elapsed) * 1e9
+				.tv_nsec = 1e9/RSM_TICKRATE - floor(elapsed)*1e9
 			};
-
 			usf_thrdsleep(&tosleep, NULL); /* Wait until next tick */
 		}
 		lastTime = glfwGetTime();
 
 		/* Begin critical section */
-		usf_mtxlock(graphlock_); /* Thread-safe lock */
+		usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
+		if (RSM_VISUALSIM) usf_mtxlock(chunkmap_->lock); /* Visual modifies world */
+
+		u64 i; /* Hashmap iterators */
+		usf_data *entry;
 
 		if (graphchanged_) {
-			/* Prime all which exist; graphchanged_ forces update in the first pass. */
-			u64 i;
-			usf_data *entry;
+			/* Prime all which exist (update forced in first pass) */
+			primed_->size = 0; /* Reset */
 			for (i = 0; (entry = usf_inthmnext(graphmap_, &i));) {
 				Component *component;
 				if ((component = entry[1].p)->id == 0) continue; /* Not participating in graph */
@@ -83,8 +82,7 @@ usf_compatibility_int sim_run(void *) {
 			\
 			if (SLICELEN_ == 0) continue; /* No job for this subchunk */ \
 			\
-			Slice *SLICE_; /* Free'd by child thread */ \
-			SLICE_ = malloc(sizeof(Slice)); \
+			Slice *SLICE_ = malloc(sizeof(Slice)); /* Free'd by child thread */ \
 			SLICE_->len = SLICELEN_; \
 			SLICE_->subarray = SUBARRAY_; \
 			\
@@ -92,41 +90,40 @@ usf_compatibility_int sim_run(void *) {
 			threadactive[NCHUNK_] = 1; \
 		} /* Wait for completion after */ \
 		for (NCHUNK_ = 0; NCHUNK_ < NPROCS; NCHUNK_++) { /* Join if started */ \
-			if (threadactive[NCHUNK_]) usf_thrdjoin(threadids[NCHUNK_], NULL); \
+			if (!threadactive[NCHUNK_]) continue; /* Wasn't distributed */ \
+			usf_thrdjoin(threadids[NCHUNK_], NULL); \
 			threadactive[NCHUNK_] = 0; \
 		} \
 	} while(0);
-
-		/* Pass 0 (visual) */
-		if (RSM_VISUALSIM) DISTRIBUTE(primed_->array, primed_->size, zerothpass);
 
 		/* Pass 1 */
 		DISTRIBUTE(primed_->array, primed_->size, firstpass);
 		graphchanged_ = 0; /* Consume; everything beyond here is as normal */
 
+		/* Reset wirelines for all which emit a change */
+		if (RSM_VISUALSIM) DISTRIBUTE(primed_->array, primed_->size, cleanwires);
+
 		/* Pass 2 */
 		DISTRIBUTE(primed_->array, primed_->size, secondpass);
+#undef DISTRIBUTE
 
 		/* Queue up next primed */
 		primed_->size = 0; /* Clear primed_ (leave garbage data) */
-		u64 i;
-		usf_data *entry;
 		for (i = 0; (entry = usf_inthmnext(next_, &i));)
 			usf_listptradd(primed_, entry[0].p);
-		usf_hmclear(next_);
-#undef DISTRIBUTE
 
-		usf_mtxunlock(graphlock_);
+		if (RSM_VISUALSIM) usf_mtxunlock(chunkmap_->lock);
+		usf_mtxunlock(graphmap_->lock);
 		/* End critical section */
 
-		/* Pass 3 (visual) */
+		/* Remesh appropriate chunks */
 		if (RSM_VISUALSIM) {
-			u64 i;
-			usf_data *entry;
 			for (i = 0; (entry = usf_inthmnext(chunkindices_, &i));)
 				cu_asyncRemeshChunk(entry[0].u); /* Key is chunkindex */
 			usf_hmclear(chunkindices_);
 		}
+
+		usf_hmclear(next_); /* Clear candidates for next time */
 	}
 
 	/* Free static structures (graph free'd in client_terminate) */
@@ -138,24 +135,27 @@ usf_compatibility_int sim_run(void *) {
 	return 0;
 }
 
-static usf_compatibility_int zerothpass(void *args) {
-	/* Reset all wirelines' visual state */
-
-	/* Unpack arguments */
-	Slice *slice;
-	slice = (Slice *) args;
+#define UNPACKSLICE(_ARGS, _LENVAR, _ARRVAR) \
+	do { \
+		Slice *SLICE_; \
+		SLICE_ =  (Slice *) _ARGS; \
+		_LENVAR = (u64) SLICE_->len; \
+		_ARRVAR = (typeof(_ARRVAR)) SLICE_->subarray; \
+	} while (0);
+static usf_compatibility_int cleanwires(void *args) {
+	/* Reset all primed components' wireline's visual state for later overwriting
+	 * (Note: only called in visual mode) */
 
 	u64 nprimed;
-	nprimed = slice->len;
 	Component **primed;
-	primed = (Component **) slice->subarray;
+	UNPACKSLICE(args, nprimed, primed);
 	
-	/* Begin resetting */
 	u64 i, j;
 	for (i = 0; i < nprimed; i++) {
+		if (primed[i] == NULL) continue; /* Removed early */
+
 		Visualdata *visualdata;
 		visualdata = primed[i]->visualdata;
-
 		for (j = 0; j < visualdata->nwires; j++)
 			usf_atmmst(&visualdata->wires[j]->variant, 0, MEMORDER_RELEASE);
 	}
@@ -168,11 +168,9 @@ static usf_compatibility_int firstpass(void *args) {
 	/* Update state of candidate components and keep primed if it has changed */
 
 	/* Unpack arguments */
-	Slice *slice = (Slice *) args;
 	u64 nprimed;
-	nprimed = slice->len;
 	Component **primed;
-	primed = slice->subarray;
+	UNPACKSLICE(args, nprimed, primed);
 
 	/* Begin critical section */
 	u64 i;
@@ -184,10 +182,8 @@ static usf_compatibility_int firstpass(void *args) {
 		u8 primary, secondary;
 #define GETINPUT(_INPUT, _BUFFER) \
 	do { \
-		u8 *INPUTBUFFER_; \
-		INPUTBUFFER_ = component->buffer[_BUFFER]; \
-		\
-		u16 NINPUT_; \
+		u8 *INPUTBUFFER_ = component->buffer[_BUFFER]; \
+		u16 NINPUT_; /* Reset to zero, then begin search */ \
 		for (_INPUT = NINPUT_ = 0; NINPUT_ < component->ninputs[_BUFFER]; NINPUT_++) \
 			_INPUT = INPUTBUFFER_[NINPUT_] > _INPUT ? INPUTBUFFER_[NINPUT_] : _INPUT; /* Ternary max */ \
 	} while (0);
@@ -196,7 +192,7 @@ static usf_compatibility_int firstpass(void *args) {
 #undef GETINPUT
 
 		/* Actualize state */
-		u8 outstate, statechanged;
+		u8 outstate, statechanged, shiftby;
 		outstate = component->state[0]; /* Previous output */
 		switch (component->id) {
 			case RSM_BLOCK_TRANSISTOR_ANALOG:
@@ -213,26 +209,21 @@ static usf_compatibility_int firstpass(void *args) {
 
 			case RSM_BLOCK_LATCH:
 				statechanged =
-					(secondary ? component->state[0] : primary)
+					(component->state[0] = secondary ? component->state[0] : primary)
 					!= outstate;
 				break;
 
 			case RSM_BLOCK_INVERTER:
 				statechanged =
-					(primary ? 0 : RSM_MAX_SS)
+					(component->state[0] = primary ? 0 : RSM_MAX_SS)
 					!= outstate;
 				break;
 
 			case RSM_BLOCK_BUFFER:
-				u8 shiftby;
 				shiftby = (1 << (component->variant >> 1)) - 1;
-
 				memmove(&component->state[0], &component->state[1], shiftby); /* Shift buffer */
 				component->state[shiftby] = primary; /* Push input */
-
-				static const u8 zeroes[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-				statechanged = memcmp(component->state, zeroes, shiftby + 1);
-
+				statechanged = 1; /* Always keep preliminarily primed; selfprime or not in second pass */
 				break;
 
 			case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
@@ -255,11 +246,6 @@ static usf_compatibility_int firstpass(void *args) {
 
 		if (!statechanged && !graphchanged_) /* Change did not affect other components; discard (unless force) */
 			primed[i] = NULL;
-
-		if (RSM_VISUALSIM && wf_iscomponent(component->id)) { /* Set visual state */
-			if (component->state[0]) component->visualdata->blockdata->variant |= U8(1);
-			else component->visualdata->blockdata->variant &= ~U8(1);
-		}
 	}
 	/* End critical section */
 
@@ -272,30 +258,25 @@ static usf_compatibility_int secondpass(void *args) {
 	 * in turn, prime them. Also handle visual wire updates if visual mode is set. */
 
 	/* Unpack arguments */
-	Slice *slice;
-	slice = (Slice *) args;
-
 	u64 nprimed;
-	nprimed = slice->len;
 	Component **primed;
-	primed = (Component **) slice->subarray;
+	UNPACKSLICE(args, nprimed, primed);
 
-	usf_listptr *candidates; /* Affected (to prime) candidates */
+	/* Collect per-thread, then merge */
+	usf_listptr *candidates;
 	candidates = usf_newlistptr();
-
-	usf_listu64 *chunkcandidates; /* Collect chunk indices to remesh for each component */
-	chunkcandidates = RSM_VISUALSIM ? usf_newlistu64() : NULL;
+	usf_listu64 *toremesh;
+	toremesh = RSM_VISUALSIM ? usf_newlistu64() : NULL;
 
 	/* Begin critical section */
 	u64 i;
 	for (i = 0; i < nprimed; i++) {
 		Component *component;
-		if ((component = primed[i]) == NULL) continue; /* Removed; doesn't affect others */
+		if ((component = primed[i]) == NULL) continue; /* Removed early */
 
-		usf_listptr *connections; /* Targets */
+		usf_listptr *connections;
 		connections = component->connections;
-
-		Connection **targets; /* Faster access */
+		Connection **targets; /* Affected components */
 		targets = (Connection **) connections->array;
 
 		u64 output; /* Output always in first index */
@@ -307,18 +288,17 @@ static usf_compatibility_int secondpass(void *args) {
 			Connection *connection;
 			connection = targets[j];
 
-			usf_listptradd(candidates, connection->component); /* Affected */
-
-			u8 decay;
 #define WRITETO(_LINKFLAG, _BUFFER) \
 	if (connection->linkflags & (_LINKFLAG)) { \
-		decay = connection->decay[_BUFFER]; \
+		u8 DECAY_ = connection->decay[_BUFFER]; \
 		connection->component->buffer[_BUFFER][connection->index[_BUFFER]] \
-			= decay > output ? 0 : output - decay; /* Cap at 0 */ \
+			= DECAY_ > output ? 0 : output - DECAY_; /* Cap at 0 */ \
 	}
 			WRITETO(RSM_LINKFLAG_WRITE_PRIMARY, 0);
 			WRITETO(RSM_LINKFLAG_WRITE_SECONDARY, 1);
 #undef WRITETO
+
+			usf_listptradd(candidates, connection->component); /* May have changed */
 		}
 
 		if (!RSM_VISUALSIM) continue; /* Only visual handling from now */
@@ -326,7 +306,8 @@ static usf_compatibility_int secondpass(void *args) {
 		Visualdata *visualdata;
 		visualdata = component->visualdata;
 
-		for (j = 0; j < visualdata->nwires; j++) { /* Update wireline */
+		/* Update wireline */
+		for (j = 0; j < visualdata->nwires; j++) {
 			Blockdata *wire;
 			wire = visualdata->wires[j];
 
@@ -346,9 +327,15 @@ static usf_compatibility_int secondpass(void *args) {
 			}
 		}
 
+		/* Set visual state */
+		if (RSM_VISUALSIM && wf_iscomponent(component->id)) {
+			if (component->state[0]) component->visualdata->blockdata->variant |= U8(1);
+			else component->visualdata->blockdata->variant &= ~U8(1);
+		}
+
 		/* Add chunk indices */
 		if (RSM_VISUALSIM) for (j = 0; j < visualdata->chunkindices->size; j++)
-			usf_listu64add(chunkcandidates, visualdata->chunkindices->array[j]);
+			usf_listu64add(toremesh, visualdata->chunkindices->array[j]);
 	}
 
 	/* Batch elimination of candidate duplicates */
@@ -360,17 +347,18 @@ static usf_compatibility_int secondpass(void *args) {
 	/* Batch elimination of chunkindex duplicates */
 	if (RSM_VISUALSIM) {
 		usf_mtxlock(chunkindices_->lock); /* Thread-safe lock */
-		for (i = 0; i < chunkcandidates->size; i++)
-			usf_inthmput(chunkindices_, chunkcandidates->array[i], USFTRUE);
+		for (i = 0; i < toremesh->size; i++)
+			usf_inthmput(chunkindices_, toremesh->array[i], USFTRUE);
 		usf_mtxunlock(chunkindices_->lock); /* Thread-safe unlock */
 	}
 	/* End critical section */
 
 	usf_freelistptr(candidates);
-	usf_freelistu64(chunkcandidates); /* NULL if not in visual mode */
+	usf_freelistu64(toremesh); /* NULL if not in visual mode */
 	free(args);
 	return 0;
 }
+#undef UNPACKSLICE
 
 void sim_freecomponent(void *c) {
 	/* Frees a Component */

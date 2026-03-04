@@ -44,8 +44,8 @@ void wf_registercomponent(vec3 coords);
 
 Fillcontext *wf_newcontext(i32 discardvisual);
 void wf_freecontext(Fillcontext *context);
-void wf_registercoords(vec3 coords);
 void wf_registercontext(Fillcontext *context);
+void wf_registercoords(vec3 coords);
 
 i32 wf_iscomponent(Blocktype id);
 i32 wf_isregistrable(Blocktype id);

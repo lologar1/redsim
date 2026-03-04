@@ -37,7 +37,6 @@ typedef struct Connection {
 	u8 linkflags;
 } Connection;
 
-extern usf_mutex *graphlock_; /* graphmap_ mutex */
 extern usf_hashmap *graphmap_; /* Blockdata * -> Component * */
 extern i32 graphchanged_;
 extern atomic_flag simstop_;

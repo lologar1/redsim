@@ -5,6 +5,7 @@
 #include "rsmlayout.h"
 
 #define VEC3(_X, _Y, _Z) ((vec3) {(_X), (_Y), (_Z)})
+#define ASVEC3(_ARR) (VEC3((_ARR)[0], (_ARR)[1], (_ARR)[2]))
 
 #define CHUNKVOLUME (CHUNKSIZE * CHUNKSIZE * CHUNKSIZE)
 #define MESHCENTER ((vec3) {0.5f, 0.5f, 0.5f})
