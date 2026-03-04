@@ -184,7 +184,7 @@ static usf_compatibility_int firstpass(void *args) {
 	do { \
 		u8 *INPUTBUFFER_ = component->buffer[_BUFFER]; \
 		u16 NINPUT_; /* Reset to zero, then begin search */ \
-		for (_INPUT = NINPUT_ = 0; NINPUT_ < component->ninputs[_BUFFER]; NINPUT_++) \
+		for (_INPUT = NINPUT_ = 0; NINPUT_ < component->inputs[_BUFFER]->size; NINPUT_++) \
 			_INPUT = INPUTBUFFER_[NINPUT_] > _INPUT ? INPUTBUFFER_[NINPUT_] : _INPUT; /* Ternary max */ \
 	} while (0);
 		GETINPUT(primary, 0);
@@ -368,16 +368,15 @@ void sim_freecomponent(void *c) {
 	Component *component;
 	component = c;
 
-	usf_freelistptrfunc(component->connections, free);
 	free(component->buffer[0]);
 	free(component->buffer[1]);
-
-	if (component->visualdata) {
-		usf_freelistu64(component->visualdata->chunkindices);
-		free(component->visualdata->wires);
-		free(component->visualdata->wiredecays);
-		free(component->visualdata);
-	}
+	usf_freeinthm(component->inputs[0]);
+	usf_freeinthm(component->inputs[1]);
+	usf_freelistptrfunc(component->connections, free);
+	usf_freelistu64(component->visualdata->chunkindices);
+	free(component->visualdata->wires);
+	free(component->visualdata->wiredecays);
+	free(component->visualdata);
 
 	free(component);
 }

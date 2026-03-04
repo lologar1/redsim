@@ -24,8 +24,8 @@ typedef struct Component {
 	u8 id; /* Underlying block ID */
 	u8 variant; /* Underlying block variant */
 	u8 state[8]; /* Internal state; for buffer 8, max. is 8 bytes */
-	u16 ninputs[2]; /* Number of buffer inputs (primary, secondary) */
 	u8 *buffer[2]; /* Primary and secondary inputs */
+	usf_hashmap *inputs[2]; /* Blockdata * -> input offset (packed 32/32 primary/secondary) */
 	usf_listptr *connections; /* List of Connection */
 	Visualdata *visualdata; /* Visual updating */
 } Component;

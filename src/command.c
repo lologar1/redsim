@@ -506,11 +506,11 @@ static void command_graphdebug(u32 args, char *argv[]) {
 		printf("DEBUG: Exploring component id %"PRIu8" variant %"PRIu8".\n", component->id, component->variant);
 
 		printf("DEBUG: Current input buffer (primary): ");
-		for (j = 0; j < component->ninputs[0]; j++) printf("%"PRIu8" ", component->buffer[0][j]);
+		for (j = 0; j < component->inputs[0]->size; j++) printf("%"PRIu8" ", component->buffer[0][j]);
 		printf("\n");
 
 		printf("DEBUG: Current input buffer (secondary): ");
-		for (j = 0; j < component->ninputs[1]; j++) printf("%"PRIu8" ", component->buffer[1][j]);
+		for (j = 0; j < component->inputs[1]->size; j++) printf("%"PRIu8" ", component->buffer[1][j]);
 		printf("\n");
 
 		printf("DEBUG: Current state buffer: ");
