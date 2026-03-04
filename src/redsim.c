@@ -285,6 +285,7 @@ void rsm_interact(void) {
 		wf_registercoords(dcoords); /* Sim sync */ \
 	}
 		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, UP);
+		TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE);
 		TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, SOUTH);
 		TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, NORTH);
 		TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);
@@ -400,46 +401,12 @@ void rsm_checkMeshes(void) {
 	/* Check if there are new meshes to be sent to the GPU */
 
 	Rawmesh *rawmesh;
-	u64 chunkindex;
-	GLuint *mesh;
-	GLint VBO;
-	while ((rawmesh = (Rawmesh *) usf_dequeue(meshqueue_).p)) { /* For every new mesh this frame */
-		chunkindex = rawmesh->chunkindex;
+	while ((rawmesh = usf_dequeue(meshqueue_).p)) { /* For every new mesh this frame */
+		Mesh *mesh;
+		mesh = usf_inthmget(meshmap_, rawmesh->chunkindex).p;
 
-		if ((mesh = usf_inthmget(meshmap_, chunkindex).p) == NULL) { /* Load mesh and check its existence */
-			/* Initialize GL buffers for the mesh */
-			GLuint opaqueVAO, transVAO, opaqueVBO, transVBO, opaqueEBO, transEBO;
-			mesh = malloc(4 * sizeof(GLuint));
-
-			/* Generate buffers */
-			glGenVertexArrays(1, &opaqueVAO); glGenVertexArrays(1, &transVAO);
-			glGenBuffers(1, &opaqueVBO); glGenBuffers(1, &transVBO);
-			glGenBuffers(1, &opaqueEBO); glGenBuffers(1, &transEBO);
-
-			/* Set attributes */
-			glBindVertexArray(opaqueVAO);
-			glBindBuffer(GL_ARRAY_BUFFER, opaqueVBO); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, opaqueEBO);
-			glEnableVertexAttribArray(0); /* Vertex position */
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (0 * sizeof(f32)));
-			glEnableVertexAttribArray(1); /* Normals */
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (3 * sizeof(f32)));
-			glEnableVertexAttribArray(2); /* Texture mappings */
-			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (6 * sizeof(f32)));
-			glBindVertexArray(transVAO);
-			glBindBuffer(GL_ARRAY_BUFFER, transVBO); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, transEBO);
-			glEnableVertexAttribArray(0); /* Vertex position */
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (0 * sizeof(f32)));
-			glEnableVertexAttribArray(1); /* Normals */
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (3 * sizeof(f32)));
-			glEnableVertexAttribArray(2); /* Texture mappings */
-			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (6 * sizeof(f32)));
-
-			glBindVertexArray(0); /* Unbind to avoid modification */
-			mesh[0] = opaqueVAO; mesh[1] = transVAO;
-			usf_inthmput(meshmap_, chunkindex, USFDATAP(mesh)); /* Set mesh */
-		}
-
-		glBindVertexArray(mesh[0]); /* Opaque */
+		GLint VBO;
+		glBindVertexArray(mesh->opaqueVAO); /* Opaque */
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO); /* Query VBO */
 		glBindBuffer(GL_ARRAY_BUFFER, (GLuint) VBO);
 		glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) (rawmesh->nOV * sizeof(f32)),
@@ -447,7 +414,7 @@ void rsm_checkMeshes(void) {
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr) (rawmesh->nOI * sizeof(u32)),
 				rawmesh->opaqueIndexBuffer, GL_DYNAMIC_DRAW);
 
-		glBindVertexArray(mesh[1]); /* Trans */
+		glBindVertexArray(mesh->transVAO); /* Trans */
 		glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &VBO);
 		glBindBuffer(GL_ARRAY_BUFFER, (GLuint) VBO);
 		glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) (rawmesh->nTV * sizeof(f32)),
@@ -457,7 +424,8 @@ void rsm_checkMeshes(void) {
 		glBindVertexArray(0); /* Unbind */
 
 		/* Set mesh element counts */
-		mesh[2] = rawmesh->nOI; mesh[3] = rawmesh->nTI;
+		mesh->nOpaqueIndices = rawmesh->nOI;
+		mesh->nTransIndices = rawmesh->nTI;
 
 		/* Free scratchpad buffers */
 		free(rawmesh->opaqueVertexBuffer); /* All scratchpads stem from this one allocation */

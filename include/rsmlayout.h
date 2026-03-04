@@ -136,10 +136,9 @@ extern f32 RSM_DEFAULT_GUI_SCALING_FACTOR;
 
 /* Simulation */
 #define RSM_NATURAL_DECAY 1
+#define RSM_MAX_SS 255
 #define RSM_SIMRETRY_TIMESPEC (&(struct timespec) { .tv_sec = 1 })
 #define RSM_WIREFILL_READONLY 1
-#define RSM_SIMFLAG_PRIMARY (U16(1) << 0)
-#define RSM_SIMFLAG_SECONDARY (U16(1) << 1)
 
 /* Floodfill flags */
 #define RSM_LINKFLAG_READ (U8(1) << 0)

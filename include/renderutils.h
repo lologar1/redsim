@@ -2,10 +2,18 @@
 #define RENDERUTILS_H
 
 #include <glad/glad.h>
-#include "chunkutils.h"
+
 #include "usfstring.h"
 #include "usfio.h"
-#include "redsim.h"
+#include "usfatomic.h"
+
+#include "rsmlayout.h"
+
+typedef struct Mesh {
+	GLuint opaqueVAO, transVAO;
+	GLsizei nOpaqueIndices, nTransIndices;
+	atomic_flag remeshing;
+} Mesh;
 
 GLuint ru_createShader(GLenum shaderType, char *shaderSource);
 GLuint ru_createShaderProgram(GLuint vertexShader, GLuint fragmentShader);

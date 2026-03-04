@@ -167,8 +167,9 @@ void renderer_render(GLFWwindow *window) {
 		glUniformMatrix4fv(opaqueViewLocation, 1, GL_FALSE, (f32 *) view);
 		glUniformMatrix4fv(opaqueProjLocation, 1, GL_FALSE, (f32 *) perspective);
 		for (i = 0; i < nmeshes_; i++) {
-			glBindVertexArray(meshes_[i][0]);
-			if (meshes_[i][2]) glDrawElements(GL_TRIANGLES, (GLsizei) meshes_[i][2], GL_UNSIGNED_INT, 0);
+			glBindVertexArray(meshes_[i]->opaqueVAO);
+			if (meshes_[i]->nOpaqueIndices)
+				glDrawElements(GL_TRIANGLES, meshes_[i]->nOpaqueIndices, GL_UNSIGNED_INT, 0);
 		}
 
 		/* Wireframe (highlighting) rendering */
@@ -193,8 +194,9 @@ void renderer_render(GLFWwindow *window) {
 		glUniformMatrix4fv(transViewLocation, 1, GL_FALSE, (f32 *) view);
 		glUniformMatrix4fv(transProjLocation, 1, GL_FALSE, (f32 *) perspective);
 		for (i = 0; i < nmeshes_; i++) {
-			glBindVertexArray(meshes_[i][1]);
-			if (meshes_[i][3]) glDrawElements(GL_TRIANGLES, (GLsizei) meshes_[i][3], GL_UNSIGNED_INT, 0);
+			glBindVertexArray(meshes_[i]->transVAO);
+			if (meshes_[i]->nTransIndices)
+				glDrawElements(GL_TRIANGLES, meshes_[i]->nTransIndices, GL_UNSIGNED_INT, 0);
 		}
 
 		/* GUI rendering */

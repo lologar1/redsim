@@ -128,6 +128,9 @@ void wf_findaffected(vec3 coords, Fillcontext *afcontext) {
 				adjacent[1] = coords[1] + 1; FORSIDES(AFFECTWIRE, adjacent, coords); /* Up connections */
 				adjacent[1] = coords[1] - 1; FORSIDES(AFFECTWIRE, adjacent, coords); /* Down connections */
 #undef AFFECTWIRE
+
+				/* Mark possibly destroyed component so as to not prime it */
+				getcomponent(block)->id = 0;
 				break;
 
 			default: break; /* Will not affect circuitry */
@@ -448,94 +451,101 @@ void wf_registercomponent(vec3 coords) {
 			return;
 	}
 
-	/* Create or reinitialize component representation in graph */
 	Component *component;
-	if ((component = usf_inthmget(graphmap_, (u64) block).p) == NULL)
-		usf_inthmput(graphmap_, (u64) block, USFDATAP(component = calloc(1, sizeof(Component))));
+	component = getcomponent(block);
 
-	component->id = (u8) block->id; /* All components' IDs < 255 */
-	component->metadata = 0;
-	component->runtime = 0;
-	/* ninputs already reset (in findaffected) if target is being registered too;
-	 * buffer set to 0 when link is established */
+	component->id = block->id;
+	component->variant = block->variant;
 	memset(component->state, 0, sizeof(component->state));
+	/* ninputs reset in findaffected if block is being replaced. Otherwise, don't break others' connections
+	 * to this component.
+	 * Buffer (unknown length) is likewise managed by connections _to_ this component, where it is automatically
+	 * resized to accomodate for all writers. */
 
-	usf_listptr *oldconnections; /* Used to retake old buffer indices */
+	/* Old */
+	usf_listptr *oldconnections; /* Retrieved to retake old connection indices */
 	oldconnections = component->connections;
-
-	if (component->visualdata) {
+	if (component->visualdata) { /* Skip visualdata deallocation if component wasn't initialized before */
 		usf_freelistu64(component->visualdata->chunkindices);
-		free(component->visualdata->components);
 		free(component->visualdata->wires);
 		free(component->visualdata->wiredecays);
 		free(component->visualdata);
 	}
 
-	usf_listptr *connections; /* List of Connection */
+	/* New */
+	usf_listptr *connections; /* Connections to be built */
 	connections = component->connections = usf_newlistptr();
-
 	Visualdata *visualdata; /* Graphical information */
 	visualdata = component->visualdata = malloc(sizeof(Visualdata));
 	visualdata->chunkindices = usf_newlistu64();
-	visualdata->components = malloc(linkcontext->affected->size * sizeof(Blockdata *));
 	visualdata->wires = malloc(linkcontext->wires->size * sizeof(Blockdata *));
 	visualdata->wiredecays = malloc(linkcontext->wires->size * sizeof(u8 *));
 
-	/* Set (hashmap) iterators */
+	/* Building */
 	u64 i, j;
 	usf_data *entry;
 
-	for (i = 0; (entry = usf_inthmnext(linkcontext->chunkindices, &i));) /* Copy chunk indices */
-		usf_listu64add(visualdata->chunkindices, entry[0].u); /* Chunk index is key */
-
-	for (i = j = 0; (entry = usf_inthmnext(linkcontext->wires, &i)); j++) { /* Copy wire data */
+	/* Copy graphical data */
+	for (i = 0; (entry = usf_inthmnext(linkcontext->chunkindices, &i));)
+		usf_listu64add(visualdata->chunkindices, entry[0].u);
+	for (i = j = 0; (entry = usf_inthmnext(linkcontext->wires, &i)); j++) {
 		visualdata->wires[j] = entry[0].p;
 		visualdata->wiredecays[j] = (u8) entry[1].u;
 		//DEBUG printf("WR dcy %lu\n", entry[1].u);
 	}
+	visualdata->nwires = linkcontext->wires->size;
+	visualdata->blockdata = block;
 
-	for (i = j = 0; (entry = usf_inthmnext(linkcontext->affected, &i)); j++) { /* Perform handshakes */
+	/* Setup connections (handshakes) */
+	for (i = j = 0; (entry = usf_inthmnext(linkcontext->affected, &i)); j++) {
 		Linkinfo *link;
 		link = (Linkinfo *) entry[1].p;
 
-		if (!(link->linkflags & ~RSM_LINKFLAG_READ)) continue; /* Wire only ever reads; don't connect */
+		if (!(link->linkflags & ~RSM_LINKFLAG_READ)) continue; /* Does not write to */
 
 		Connection *connection;
 		connection = malloc(sizeof(Connection));
-		connection->component = getcomponent(link->block);
-		connection->linkflags = link->linkflags;
 
-		/* Attempt to reuse already registered buffer index; if a component is destroyed, the index will
-		 * go dead until a graph optimization (rebuild) or it is replaced. */
-#define LINKWITH(_FLAG, _INDEX) \
-	if (link->linkflags & _FLAG) { \
-		if (oldconnections) { \
-			u64 k; \
-			for (k = 0; k < oldconnections->size; k++) { \
+		connection->component = getcomponent(link->block); /* May forward-alloc (if not yet registered) */
+		connection->linkflags = link->linkflags;
+		memcpy(connection->decay, link->decay, sizeof(link->decay)); /* Copy link decays */
+#define LINKWITH(_FLAG, _BUFFER) \
+	do { \
+		u16 CINDEX_; \
+		if (link->linkflags & (_FLAG)) { \
+			u8 I_, RETOOK_; /* Found old slot? */ \
+			RETOOK_ = 0; /* Default not */ \
+			if (oldconnections) for (I_ = 0; I_ < oldconnections->size; I_++) { \
 				Connection *oldconnection; \
-				oldconnection = oldconnections->array[k]; \
-				if (oldconnection != connection) continue; /* Cannot use index of different connection */ \
+				oldconnection = oldconnections->array[I_]; \
+				if (oldconnection != connection) continue; /* Not to same target */ \
 				if (!(oldconnection->linkflags & _FLAG)) break; /* Wasn't registered */ \
-				connection->index[_INDEX] = oldconnection->index[_INDEX]; /* Retake */ \
-				k = 0; /* Set flag to succeed */ \
+				\
+				CINDEX_ = oldconnection->index[_BUFFER]; /* Retake! */ \
+				RETOOK_ = 1; /* Mark */ \
 				break; \
 			} \
-			if (k) connection->index[_INDEX] = connection->component->ninputs[_INDEX]++; /* Didn't retake */ \
-		} else connection->index[_INDEX] = connection->component->ninputs[_INDEX]++; /* Reserve new index */ \
-	} else connection->index[_INDEX] = 0; /* Will not be used */
+			/* Either 0 (on calloc init), or valid from other registrations */ \
+			if (!RETOOK_) CINDEX_ = connection->component->ninputs[_BUFFER]++; \
+		} else break; /* Leave as-is; not used */ \
+		connection->index[_BUFFER] = CINDEX_; /* Set target index */ \
+		\
+		u8 **INBUFPTR_ = &connection->component->buffer[_BUFFER]; \
+		u16 NINPUTS_ = connection->component->ninputs[_BUFFER]; \
+		*INBUFPTR_ = realloc(*INBUFPTR_, NINPUTS_); /* Ensure minimal size */ \
+		memset(*INBUFPTR_, 0, NINPUTS_); /* Ensure no leftover data */ \
+	} while (0);
 		LINKWITH(RSM_LINKFLAG_WRITE_PRIMARY, 0);
 		LINKWITH(RSM_LINKFLAG_WRITE_SECONDARY, 1);
 #undef LINKWITH
-		memcpy(connection->decay, link->decay, sizeof(link->decay)); /* Copy link decays */
 
 		//DEBUG printf("LINKTO %u DCY %u BUFIND %u OTHER %u %u\n", link->block->id, link->decay[0], connection->index[0], link->decay[1], connection->index[1]);
 
 		usf_listptradd(connections, connection); /* Connection established */
-		visualdata->components[j] = link->block; /* For graphical update */
 	}
 
 	wf_freecontext(linkcontext);
-	usf_freelistptrfunc(oldconnections, free); /* Free last of old data */
+	usf_freelistptrfunc(oldconnections, free); /* Free the last of old data */
 }
 
 Fillcontext *wf_newcontext(i32 discardvisual) {
@@ -559,11 +569,13 @@ Fillcontext *wf_newcontext(i32 discardvisual) {
 void wf_freecontext(Fillcontext *context) {
 	/* Frees a Fillcontext */
 
+	if (context == NULL) return;
+
 	usf_freequeuefunc(context->next, free); /* Free Fillcandidate * */
 	usf_freeinthmfunc(context->affected, free); /* Free Linkinfo * */
 	usf_freeinthm(context->seen); /* No allocated data associated */
-	if (context->wires) usf_freeinthm(context->wires); /* Idem */
-	if (context->chunkindices) usf_freeinthm(context->chunkindices); /* Idem */
+	usf_freeinthm(context->wires); /* Idem */
+	usf_freeinthm(context->chunkindices); /* Idem */
 
 	free(context);
 }
@@ -620,12 +632,8 @@ static Component *getcomponent(Blockdata *handle) {
 	 * Blockdata * handle and return it */
 
 	Component *component;
-	if ((component = usf_inthmget(graphmap_, (u64) handle).p) == NULL) {
+	if ((component = usf_inthmget(graphmap_, (u64) handle).p) == NULL)
 		usf_inthmput(graphmap_, (u64) handle, USFDATAP(component = calloc(1, sizeof(Component))));
-		/* Effectively arrays, resized on registering, never free'd */
-		component->buffer[0] = usf_newlistu8();
-		component->buffer[1] = usf_newlistu8();
-	}
 
 	return component;
 }

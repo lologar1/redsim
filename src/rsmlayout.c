@@ -28,4 +28,4 @@ f32 RSM_NOCLIP = 0.0f; /* If true, disable collision */
 f32 RSM_AIRPLACE = 0.0f; /* If true, allow air placement */
 f32 RSM_VISUALSIM = 1.0f; /* If true, update blocks with the simulation */
 f32 RSM_ENABLESIM = 1.0f; /* If true, execute simulation */
-f32 RSM_TICKRATE = 5.0f; /* Number of ticks to be executed per second */
+f32 RSM_TICKRATE = 3.0f; /* Number of ticks to be executed per second */

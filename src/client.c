@@ -13,12 +13,12 @@ vec3 position_;
 u8 sspower_ = 1;
 
 usf_hashmap *chunkmap_; /* Maps XYZ (21 bits) to corresponding chunk pointer */
-usf_hashmap *meshmap_; /* Maps XYZ (21 bits) to corresponding chunk mesh (array of 4) */
+usf_hashmap *meshmap_; /* Maps XYZ (21 bits) to corresponding chunk mesh (array of 4 + remeshing flag) */
 usf_hashmap *datamap_; /* Maps UID to default metadata values */
 usf_hashmap *namemap_; /* Maps name (string) to its corresponding UID */
 usf_queue *meshqueue_; /* Asynchronously remeshed chunks to be sent to GL buffers */
 
-GLuint **meshes_; /* Stores current meshmap pointers for rendering */
+Mesh **meshes_; /* Stores current meshmap pointers for rendering */
 u64 nmeshes_; /* How many meshes to render */
 GLuint wiremesh_[2]; /* Block highlight and selection (equivalent to one member of meshes_) */
 
@@ -29,7 +29,7 @@ void client_init(void) {
 
 	chunkmap_ = usf_newhm_ts(); /* Accessed async by remeshing */
 	meshqueue_ = usf_newqueue_ts();
-	meshmap_ = usf_newhm();
+	meshmap_ = usf_newhm_ts(); /* Accessed async by remeshing (check flag) */
 	datamap_ = usf_newhm();
 	namemap_ = usf_newhm();
 
@@ -255,11 +255,10 @@ void client_frameEvent(GLFWwindow *window) {
 	rsm_checkMeshes(); /* Check if new meshes have been remeshed asynchronously */
 }
 
-/* Termination free functions */
-void freecomponent(void *c);
-
 void client_terminate(void) {
 	/* Destroy all non-GL RSM allocations and processes */
+
+	u64 i, j;
 
 	/* Stop simulation */
 	i32 simreturn;
@@ -270,8 +269,24 @@ void client_terminate(void) {
 	/* Write world to disk */
 	client_savedata();
 
+	/* Wait for remeshing */
+	usf_data *meshentry;
+	for (i = 0; (meshentry = usf_inthmnext(meshmap_, &i));) {
+		Mesh *mesh;
+		mesh = meshentry[1].p;
+
+		/* Relaxed since no more calls will be issued; wait until existing ones have finished */
+		while (usf_atmflagtry(&mesh->remeshing, MEMORDER_ACQ_REL));
+	}
+
+	/* Drain remaining */
+	Rawmesh *leftover;
+	while ((leftover = usf_dequeue(meshqueue_).p)) {
+		free(leftover->opaqueVertexBuffer);
+		free(leftover);
+	}
+
 	/* Free */
-	u64 i, j;
 	for (i = 0; i < MAX_BLOCK_ID; i++) {
 		/* Free blockmesh templates */
 		Blockmesh *bm;
@@ -304,25 +319,11 @@ void client_terminate(void) {
 	usf_freeinthmfunc(chunkmap_, free);
 	usf_freeinthmfunc(meshmap_, free);
 	usf_mtxdestroy(graphlock_); free(graphlock_);
-	usf_freeinthmfunc(graphmap_, freecomponent);
+	usf_freeinthmfunc(graphmap_, sim_freecomponent);
 	usf_freeinthm(datamap_);
 	usf_freestrhm(namemap_);
 	usf_freestrhm(cmdmap_); /* Don't dealloc func pointers */
 	usf_freestrhm(varmap_); /* Idem rsmlayout pointers */
 	usf_freestrhm(aliasmap_); /* Idem string literals */
 	usf_freequeuefunc(meshqueue_, free);
-}
-
-void freecomponent(void *c) {
-	Component *component;
-	component = (Component *) c;
-	usf_freelistu8(component->buffer[0]);
-	usf_freelistu8(component->buffer[1]);
-	usf_freelistptrfunc(component->connections, free);
-	usf_freelistu64(component->visualdata->chunkindices);
-	free(component->visualdata->components);
-	free(component->visualdata->wires);
-	free(component->visualdata->wiredecays);
-	free(component->visualdata);
-	free(component);
 }

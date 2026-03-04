@@ -6,6 +6,43 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr);
 void cu_asyncRemeshChunk(u64 chunkindex) {
 	/* Asynchronously pushes a new rawmesh to be sent to the GPU */
 
+	if (usf_inthmget(meshmap_, chunkindex).p == NULL) { /* Initialize mesh */
+		Mesh *mesh;
+		mesh = malloc(sizeof(Mesh));
+
+		/* Generate buffers */
+		GLuint opaqueVAO, transVAO, opaqueVBO, transVBO, opaqueEBO, transEBO;
+		glGenVertexArrays(1, &opaqueVAO); glGenVertexArrays(1, &transVAO);
+		glGenBuffers(1, &opaqueVBO); glGenBuffers(1, &transVBO);
+		glGenBuffers(1, &opaqueEBO); glGenBuffers(1, &transEBO);
+
+		/* Set attributes */
+		glBindVertexArray(opaqueVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, opaqueVBO); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, opaqueEBO);
+		glEnableVertexAttribArray(0); /* Vertex position */
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (0 * sizeof(f32)));
+		glEnableVertexAttribArray(1); /* Normals */
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (3 * sizeof(f32)));
+		glEnableVertexAttribArray(2); /* Texture mappings */
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (6 * sizeof(f32)));
+		glBindVertexArray(transVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, transVBO); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, transEBO);
+		glEnableVertexAttribArray(0); /* Vertex position */
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (0 * sizeof(f32)));
+		glEnableVertexAttribArray(1); /* Normals */
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (3 * sizeof(f32)));
+		glEnableVertexAttribArray(2); /* Texture mappings */
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void *) (6 * sizeof(f32)));
+		glBindVertexArray(0); /* Unbind to avoid modification */
+
+		/* Register in mesh */
+		mesh->opaqueVAO = opaqueVAO; mesh->transVAO = transVAO;
+		mesh->nOpaqueIndices = mesh->nTransIndices = 0;
+		usf_atmflagclr(&mesh->remeshing, MEMORDER_RELEASE);
+
+		usf_inthmput(meshmap_, chunkindex, USFDATAP(mesh)); /* Set mesh */
+	}
+
 	u64 *arg;
 	arg = malloc(sizeof(u64)); /* Allow thread to operate separately; it cleans up its argument after */
 	*arg = chunkindex;
@@ -26,11 +63,11 @@ void cu_updateMeshlist(void) {
     /* Generate new required meshes since movement from lastPosition
      * and remove out of render distance ones */
 
-	GLuint **meshlist;
+	Mesh **meshlist;
 	meshlist = meshes_;
 	nmeshes_ = 0; /* Reset mesh count */
 
-	GLuint *mesh;
+	Mesh *mesh;
 	u64 chunkindex;
 	i64 i, j, k, chunk[3];
 	i64 pos[3] = {position_[0]/CHUNKSIZE, position_[1]/CHUNKSIZE, position_[2]/CHUNKSIZE };
@@ -228,7 +265,11 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	/* Push a new rawmesh to meshqueue for transfer to the GPU. Called asynchronously from cu_asyncRemeshChunk */
 
 	u64 chunkindex; /* Retrieve argument */
-	chunkindex = (* (u64 *) chunkindexptr);
+	chunkindex = (*(u64 *) chunkindexptr);
+
+	Mesh *mesh;
+	mesh = usf_inthmget(meshmap_, chunkindex).p;
+	if (usf_atmflagtry(&mesh->remeshing, MEMORDER_ACQ_REL)) return 1; /* Taken */
 
 	i64 x, y, z; /* Get chunk position */
 	x = SIGNED21CAST64(chunkindex >> 42);
@@ -477,6 +518,7 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	rawmesh->nTI = (u64) (ti_bufptr - rawmesh->transIndexBuffer);
 
 	usf_enqueue(meshqueue_, USFDATAP(rawmesh));
+	usf_atmflagclr(&mesh->remeshing, MEMORDER_RELEASE); /* Finished remeshing */
 
 	free(chunkindexptr); /* Cleanup argument; it was allocated to allow for thread detachment from callee */
 	return 0;

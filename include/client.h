@@ -34,7 +34,7 @@ extern usf_hashmap *datamap_;
 extern usf_hashmap *namemap_;
 extern usf_queue *meshqueue_;
 
-extern GLuint **meshes_;
+extern Mesh **meshes_;
 extern u64 nmeshes_;
 extern GLuint wiremesh_[2];
 
