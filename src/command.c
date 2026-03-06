@@ -55,6 +55,7 @@ void cmd_init(void) {
 	ALIAS("RSM_VISUALSIM", RSM_VISUALSIM);
 	ALIAS("RSM_ENABLESIM", RSM_ENABLESIM);
 	ALIAS("RSM_TICKRATE", RSM_TICKRATE);
+	ALIAS("RSM_TICKSTEP", RSM_TICKSTEP);
 #undef ALIAS
 
 #define ALIAS(ALIASNAME, TRUENAME) usf_strhmput(aliasmap_, ALIASNAME, USFDATAP(TRUENAME));
@@ -159,6 +160,11 @@ void cmd_init(void) {
 	ALIAS("RSM_TICKRATE", "RSM_TICKRATE");
 	ALIAS("tickrate", "RSM_TICKRATE");
 	ALIAS("tr", "RSM_TICKRATE");
+
+	ALIAS("RSM_TICKSTEP", "RSM_TICKSTEP");
+	ALIAS("tickstep", "RSM_TICKSTEP");
+	ALIAS("step", "RSM_TICKSTEP");
+	ALIAS("s", "RSM_TICKSTEP");
 #undef ALIAS
 }
 
@@ -227,12 +233,8 @@ void cmd_xeq(char *rawcmd) {
 			goto end;
 		}
 
-		f32 *rsmvar, value;
-		rsmvar = usf_strhmget(varmap_, cmdname).p;
-		value = strtof(argv[1], NULL);
-		*rsmvar = value;
-
-		cmd_logf("(Implicit) Set %s to %f.\n", cmdname, value);
+		char *confargv[3] = {"config", argv[0], argv[1]};
+		command_config(3, confargv);
 		goto end;
 	}
 
@@ -340,6 +342,8 @@ static void command_help(u32 args, char *argv[]) {
 		cmd_logf("Toggle whether the simulation should execute.\n");
 	} else if CASE(RSM_TICKRATE) {
 		cmd_logf("Number of simulation ticks per second.\n");
+	} else if CASE(RSM_TICKSTEP) {
+		cmd_logf("Steps the simulation by number of ticks forwards.\n");
 	}
 #undef CASE
 }
@@ -361,7 +365,12 @@ static void command_config(u32 args, char *argv[]) {
 	f32 *rsmvar, value;
 	rsmvar = usf_strhmget(varmap_, varname).p;
 	value = strtof(argv[2], NULL);
-	*rsmvar = value;
+
+	usf_mtxlock(graphmap_->lock);
+	*rsmvar = value; /* Could be asynchronously used during simulation */
+	usf_mtxunlock(graphmap_->lock);
+
+	usf_cndsignal(&tickstep_); /* Simulation may be ready to restart */
 
 	cmd_logf("Set %s to %f.\n", varname, value);
 }
@@ -384,8 +393,8 @@ static void command_selection(u32 args, char *argv[]) {
 	(void) args;
 	(void) argv;
 
-	cmd_logf("Pos1: %"PRId64", %"PRId64", %"PRId64".", ret_positions_[0], ret_positions_[1], ret_positions_[2]);
-	cmd_logf("Pos2: %"PRId64", %"PRId64", %"PRId64".", ret_positions_[3], ret_positions_[4], ret_positions_[5]);
+	cmd_logf("Pos1: %f, %f, %f.", ret_positions_[0][0], ret_positions_[0][1], ret_positions_[0][2]);
+	cmd_logf("Pos2: %f, %f, %f.", ret_positions_[1][0], ret_positions_[1][1], ret_positions_[1][2]);
 }
 
 static void command_set(u32 args, char *argv[]) {
@@ -497,38 +506,38 @@ static void command_graphdebug(u32 args, char *argv[]) {
 	printf("=== GRAPH STACKTRACE ===\n");
 	usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
 
-	u64 i, j;
-	usf_data *entry;
-	for (i = 0; (entry = usf_inthmnext(graphmap_, &i));) {
+	usf_hashiter iter;
+	for (usf_hmiterbegin(graphmap_, &iter); usf_hmiternext(&iter);) {
 		Component *component;
-		if ((component = entry[1].p)->id == 0) continue; /* Not in graph */
+		if ((component = iter.entry->value.p)->id == 0) continue; /* Not in graph */
 
 		printf("DEBUG: Exploring component id %"PRIu8" variant %"PRIu8".\n", component->id, component->variant);
 
+		u64 i;
 		printf("DEBUG: Current input buffer (primary): ");
-		for (j = 0; j < component->inputs[0]->size; j++) printf("%"PRIu8" ", component->buffer[0][j]);
+		for (i = 0; i < component->inputs[0]->size; i++) printf("%"PRIu8" ", component->buffer[0][i]);
 		printf("\n");
 
 		printf("DEBUG: Current input buffer (secondary): ");
-		for (j = 0; j < component->inputs[1]->size; j++) printf("%"PRIu8" ", component->buffer[1][j]);
+		for (i = 0; i < component->inputs[1]->size; i++) printf("%"PRIu8" ", component->buffer[1][i]);
 		printf("\n");
 
 		printf("DEBUG: Current state buffer: ");
-		for (j = 0; j < 8; j++) printf("%"PRIu8" ", component->state[j]);
+		for (i = 0; i < 8; i++) printf("%"PRIu8" ", component->state[i]);
 		printf("\n");
 
-		for (j = 0; j < component->connections->size; j++) {
+		for (i = 0; i < component->connections->size; i++) {
 			Connection *connection;
-			connection = component->connections->array[j];
+			connection = component->connections->array[i];
 
 			printf("DEBUG: Has connection to id %"PRIu8" variant %"PRIu8" with buffers %"PRIu16"/%"PRIu16
 					" with decays %"PRIu8"/%"PRIu8" and linkflags %"PRIu8"\n",
-					connection->component->id,connection->component->variant,
+					connection->component->id, connection->component->variant,
 					connection->index[0], connection->index[1],
 					connection->decay[0], connection->decay[1], connection->linkflags);
 		}
 		printf("\n");
-	}
+	} usf_hmiterend(&iter);
 	cmd_logf("Graph stacktrace printed to stdout.\n");
 
 	usf_mtxunlock(graphmap_->lock); /* Thread-safe unlock */

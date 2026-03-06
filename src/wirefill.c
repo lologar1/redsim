@@ -15,6 +15,8 @@
 	FORSIDES(_EFFECTOR, _COORDSCOPY, _COORDSORIGINAL);
 
 static Component *getcomponent(Blockdata *handle);
+static void clearbufferslots(Connection *connection);
+static void freeconnection(void *c);
 
 void wf_findaffected(vec3 coords, Fillcontext *afcontext) {
 	/* Prepare afcontext with all the affected (need to be re-registered) components following the
@@ -43,28 +45,17 @@ void wf_findaffected(vec3 coords, Fillcontext *afcontext) {
 			usf_inthmput(afcontext->affected, (u64) block, USFDATAP(linkinfo)); /* Put */
 		}
 		linkinfo->linkflags |= RSM_LINKFLAG_READ; /* Set to be registered */
-
-		/* Reset input indices (all affected will re-register)
-		 * Write-to components' indices are reset in registercontext */
-		usf_hmclear(component->inputs[0]);
-		usf_hmclear(component->inputs[1]);
 	}
+	/* Reset input indices (all affected will re-register)
+	 * Recipients' slots for this component are cleared below and retaken in registering */
+	usf_hmclear(component->inputs[0]);
+	usf_hmclear(component->inputs[1]);
 
 	usf_listptr *connections;
 	connections = component->connections;
 	u64 i; /* Reset all outgoing slots to 0 in case reregistering disconnects some of them */
-	for (i = 0; i < connections->size; i++) {
-		Connection *connection;
-		connection = connections->array[i];
+	for (i = 0; i < connections->size; i++) clearbufferslots(connections->array[i]);
 
-#define RESETSLOT(_FLAG, _BUFFER) \
-	if (connection->linkflags & _FLAG) \
-		connection->component->buffer[_BUFFER][connection->index[_BUFFER]] = 0;
-		RESETSLOT(RSM_LINKFLAG_WRITE_PRIMARY, 0);
-		RESETSLOT(RSM_LINKFLAG_WRITE_SECONDARY, 1);
-#undef RESETSLOT
-	}
-	
 	Rotation rotation;
 	rotation = block->rotation;
 
@@ -168,10 +159,14 @@ void wf_componentconnect(vec3 coords, Rotation from, Fillcontext *fillcontext, u
 
 		Blockdata *neighbor;
 #define FILLDIR(_ROT) \
-	neighbor = cu_coordsToBlock(adjacent, NULL); \
-	if (neighbor->id == RSM_BLOCK_WIRE /* Hard-power cannot soft-power blocks, nor connect to side inputs */ \
-			|| (wf_iscomponent(neighbor->id) && COLINROT(_ROT, neighbor->rotation))) \
-		wf_wirefill(adjacent, _ROT, 0, fillcontext, status);
+	do { \
+		neighbor = cu_coordsToBlock(adjacent, NULL); \
+		if (neighbor->id == RSM_BLOCK_WIRE || wf_iscomponent(neighbor->id)) { \
+			if (CARDROT(_ROT) && CARDROT(neighbor->rotation) && !COLINROT(_ROT, neighbor->rotation)) \
+				break; /* Prevent side-input powering */ \
+			wf_wirefill(adjacent, _ROT, 0, fillcontext, status); \
+		} \
+	} while (0);
 		FORORTHO(FILLDIR, adjacent, coords);
 #undef FILLDIR
 	} else return; /* Doesn't affect world */
@@ -263,12 +258,14 @@ void wf_wirefill(vec3 coords, Rotation from, u8 decay, Fillcontext *fillcontext,
 	/* If not wire, component or conductor: no impact on circuitry */
 	if (!(block->id == RSM_BLOCK_WIRE || block->metadata & RSM_BIT_CONDUCTOR)) return;
 
-	u64 lastdecay; /* Guarantee connection is higher priority (lower decay) than last */
+	u64 lastdecay, wbit; /* Guarantee connection is higher priority (lower decay) than last */
 	lastdecay = usf_inthmget(fillcontext->seen, (u64) block).u;
+	wbit = U64(1) << 63; /* Higher priority to write signals */
+	if (status == RSM_WIREFILL_READONLY) wbit = ~wbit;
 
 	/* If lastdecay is 0: untouched. Always put decay + 1 to differentiate */
-	if (lastdecay && lastdecay - 1 <= decay) return; /* Shorter path already found */
-	usf_inthmput(fillcontext->seen, (u64) block, USFDATAU((u64) decay + 1)); /* Visit */
+	if (lastdecay && lastdecay - 1 <= ((u64) decay & wbit)) return; /* Shorter path already found */
+	usf_inthmput(fillcontext->seen, (u64) block, USFDATAU(((u64) decay & wbit) + 1)); /* Visit */
 
 	/* Retrieve adjacent blocks (costly) */
 	Blockdata *neighbors[7]; /* (Unused), NORTH, WEST, SOUTH, EAST, UP, DOWN */
@@ -285,10 +282,9 @@ void wf_wirefill(vec3 coords, Rotation from, u8 decay, Fillcontext *fillcontext,
 	if (block->metadata & RSM_BIT_CONDUCTOR) {
 		Rotation direction;
 		for (direction = NORTH; direction < COMPLEX; direction++) { /* Iterate 6 rotations */
-			if (neighbors[direction]->rotation == PERPROT(direction) /* Disallow soft-power side inputs */
-					|| neighbors[direction]->rotation == INVROT(PERPROT(direction))
-					|| !wf_iscomponent(neighbors[direction]->id))
-				continue; /* Component sides do not interact through blocks (no soft/hard-powering) */
+			if (!wf_iscomponent(neighbors[direction]->id) || (CARDROT(neighbors[direction]->rotation)
+						&& !COLINROT(neighbors[direction]->rotation, direction))) /* Disallow soft-power sides */
+				continue;
 
 			/* Won't recurse since components terminate; okay to immediately wirefill without creating
 			 * a Fillcandidate for later */
@@ -298,7 +294,13 @@ void wf_wirefill(vec3 coords, Rotation from, u8 decay, Fillcontext *fillcontext,
 	}
 
 	/* Wire handling */
-	usf_atmmst(&block->variant, 0, MEMORDER_RELAXED); /* Reset state to avoid disconnected garbage */
+
+	/* Reset state to avoid garbage */
+	Component *wire = getcomponent(block);
+	wire->id = 0; /* Does not participate */
+	wire->visualdata->blockdata = block;
+	if (wire->buffer[0]) memset(wire->buffer[0], 0, wire->inputs[0]->size);
+	usf_atmmst(&block->variant, 0, MEMORDER_RELAXED);
 
 	u8 resistance;
 	resistance = neighbors[DOWN]->id == RSM_BLOCK_RESISTOR ? neighbors[DOWN]->variant : 0;
@@ -307,7 +309,8 @@ void wf_wirefill(vec3 coords, Rotation from, u8 decay, Fillcontext *fillcontext,
 	decay += resistance; /* New decay */
 
 	/* Log wire Blockdata * for visuals */
-	if (fillcontext->wires) usf_inthmput(fillcontext->wires, (u64) block, USFDATAU(decay));
+	if (fillcontext->wires && status == RSM_WIREFILL_READWRITE)
+		usf_inthmput(fillcontext->wires, (u64) wire, USFDATAU(decay));
 
 	/* Downwards soft-powering */
 	if (neighbors[DOWN]->metadata & RSM_BIT_CONDUCTOR) /* Again OK to recurse since will end locally */
@@ -403,8 +406,9 @@ void wf_registercomponent(vec3 coords) {
 	/* Register component at given coordinates and perform proper handshake procedure in graphmap_.
 	 * If targets do not exist, a placeholder is created assuming they will be, in turn, registered. */
 
+	u64 chunkindex;
 	Blockdata *block;
-	block = cu_coordsToBlock(coords, NULL);
+	block = cu_coordsToBlock(coords, &chunkindex);
 
 	Fillcontext *linkcontext;
 	linkcontext = wf_newcontext(RSM_KEEP_VISUAL_INFO);
@@ -431,19 +435,19 @@ void wf_registercomponent(vec3 coords) {
 					return;
 			}
 
-			wf_componentconnect(outcoords, block->rotation, linkcontext, 0);
+			wf_componentconnect(outcoords, block->rotation, linkcontext, RSM_WIREFILL_READWRITE);
 			break;
 
 		/* Single hard-powered + surrounding soft-powered outputs */
 		case RSM_BLOCK_INVERTER:
 			outcoords[1]++; /* Hard power up and reset outcoords for soft-powered outputs */
-			wf_componentconnect(outcoords, UP, linkcontext, 0); outcoords[1] = coords[1];
+			wf_componentconnect(outcoords, UP, linkcontext, RSM_WIREFILL_READWRITE); outcoords[1] = coords[1];
 
 #define SOFTOUTPUT(_ROT) \
 	outblock = cu_coordsToBlock(outcoords, NULL); \
 	/* Don't electrify, and skip components' secondary inputs */ \
 	if (outblock->id == RSM_BLOCK_WIRE || (wf_iscomponent(outblock->id) && COLINROT(_ROT, outblock->rotation))) \
-		wf_componentconnect(outcoords, _ROT, linkcontext, 0);
+		wf_componentconnect(outcoords, _ROT, linkcontext, RSM_WIREFILL_READWRITE);
 			FORORTHO(SOFTOUTPUT, outcoords, coords);
 #undef SOFTOUTPUT
 			break;
@@ -454,7 +458,7 @@ void wf_registercomponent(vec3 coords) {
 #define COMPOUTPUT(_ROT) \
 	outblock = cu_coordsToBlock(outcoords, NULL); \
 	if (wf_iscomponent(outblock->id)) /* Only start if component (constant source simulates soft-power) */ \
-		wf_componentconnect(outcoords, _ROT, linkcontext, 0);
+		wf_componentconnect(outcoords, _ROT, linkcontext, RSM_WIREFILL_READWRITE);
 			FORORTHO(COMPOUTPUT, outcoords, coords);
 #undef COMPOUTPUT
 			break;
@@ -478,7 +482,7 @@ void wf_registercomponent(vec3 coords) {
 	 * to the number of inputs registered. */
 
 	usf_listptr *connections; /* Connections to be built */
-	usf_freelistptrfunc(component->connections, free); /* Free old Connections, and realloc new list */
+	usf_freelistptrfunc(component->connections, freeconnection); /* Free old Connections, and realloc new list */
 	connections = component->connections = usf_newlistptr();
 	connections->size = 0;
 
@@ -486,57 +490,65 @@ void wf_registercomponent(vec3 coords) {
 	visualdata = component->visualdata;
 	visualdata->blockdata = block;
 	visualdata->chunkindices->size = 0;
-	visualdata->nwires = linkcontext->wires->size;
-	visualdata->wires = realloc(visualdata->wires, visualdata->nwires * sizeof(Blockdata *));
-	visualdata->wiredecays = realloc(visualdata->wiredecays, linkcontext->wires->size * sizeof(u8 *));
+	visualdata->nwires = linkcontext->wires->size; /* + 1 in realloc to avoid realloc(0) */
+	visualdata->wires = realloc(visualdata->wires, visualdata->nwires * sizeof(Blockdata *) + 1);
+	visualdata->wiredecays = realloc(visualdata->wiredecays, visualdata->nwires * sizeof(u8 *) + 1);
+	visualdata->wireindices = realloc(visualdata->wireindices, visualdata->nwires * sizeof(u16 *) + 1);
 
 	/* Building */
-	u64 i, j;
-	usf_data *entry;
+	usf_hashiter iter;
 
-	/* Copy graphical data */
-	for (i = 0; (entry = usf_inthmnext(linkcontext->chunkindices, &i));)
-		usf_listu64add(visualdata->chunkindices, entry[0].u);
-	for (i = j = 0; (entry = usf_inthmnext(linkcontext->wires, &i)); j++) {
-		visualdata->wires[j] = entry[0].p;
-		visualdata->wiredecays[j] = (u8) entry[1].u;
-	}
+	/* Copy chunk indices */
+	usf_listu64add(visualdata->chunkindices, chunkindex); /* At least register self, but not twice! */
+	for (usf_hmiterbegin(linkcontext->chunkindices, &iter); usf_hmiternext(&iter);)
+		if (iter.entry->key.u != chunkindex) usf_listu64add(visualdata->chunkindices, iter.entry->key.u);
+	usf_hmiterend(&iter);
 
-	/* Setup connections (handshakes) */
-	for (i = j = 0; (entry = usf_inthmnext(linkcontext->affected, &i)); j++) {
-		Linkinfo *link;
-		link = (Linkinfo *) entry[1].p;
+	/* Copy wire data */
+	u64 i;
+	for (i = 0, usf_hmiterbegin(linkcontext->wires, &iter); usf_hmiternext(&iter); i++) {
+		Component *wire;
+		visualdata->wires[i] = (wire = iter.entry->key.p);
+		visualdata->wiredecays[i] = (u8) iter.entry->value.u;
+
+		/* Only care about visualdata->blockdata & input buffer. Former is autoset in wirefill. */
+#define LINK(_COMPONENT, _BUFFER, _STORAGE) \
+	do { \
+		u16 BUFINDEX_; \
+		u16 NINPUTS_ = _COMPONENT->inputs[_BUFFER]->size; \
+		if ((BUFINDEX_ = usf_inthmget(_COMPONENT->inputs[_BUFFER], (u64) block).u) == 0) \
+			usf_inthmput(_COMPONENT->inputs[_BUFFER], (u64) block, USFDATAU((BUFINDEX_ = NINPUTS_++) + 1)); \
+		else BUFINDEX_--; /* Remove presence indicator */ \
+		_STORAGE = BUFINDEX_; \
+		/* Ensure buffer size */ \
+		u8 **INBUFPTR_ = &_COMPONENT->buffer[_BUFFER]; \
+		*INBUFPTR_ = realloc(*INBUFPTR_, NINPUTS_); \
+	} while (0);
+		LINK(wire, 0, visualdata->wireindices[i]);
+	} usf_hmiterend(&iter);
+
+	/* Setup component connections (handshakes) */
+	for (usf_hmiterbegin(linkcontext->affected, &iter); usf_hmiternext(&iter);) {
+		Linkinfo *link = (Linkinfo *) iter.entry->value.p;
 
 		if (!(link->linkflags & ~RSM_LINKFLAG_READ)) continue; /* Does not write to */
 
 		Connection *connection;
-		connection = malloc(sizeof(Connection));
+		connection = calloc(1, sizeof(Connection));
 
 		connection->component = getcomponent(link->block); /* May forward-alloc (if not yet registered) */
 		connection->linkflags = link->linkflags;
 		memcpy(connection->decay, link->decay, sizeof(link->decay)); /* Copy link decays */
 
-#define LINKWITH(_FLAG, _BUFFER) \
-	do { \
-		if (!(link->linkflags & _FLAG)) break; /* Unused */ \
-		u16 BUFINDEX_; /* Slot */ \
-		if ((BUFINDEX_ = usf_inthmget(connection->component->inputs[_BUFFER], (u64) block).u) == 0) \
-			usf_inthmput(connection->component->inputs[_BUFFER], (u64) block, /* + 1 to distinguish presence */ \
-					USFDATAU((BUFINDEX_ = connection->component->inputs[_BUFFER]->size) + 1)); \
-		else BUFINDEX_--; /* Remove presence indicator */ \
-		connection->index[_BUFFER] = BUFINDEX_; \
-		\
-		u8 **INBUFPTR_ = &connection->component->buffer[_BUFFER]; \
-		u16 NINPUTS_ = connection->component->inputs[_BUFFER]->size; \
-		*INBUFPTR_ = realloc(*INBUFPTR_, NINPUTS_); /* Ensure minimal size */ \
-		(*INBUFPTR_)[BUFINDEX_] = 0; /* Initialize slot to 0 */ \
-	} while(0);
-		LINKWITH(RSM_LINKFLAG_WRITE_PRIMARY, 0);
-		LINKWITH(RSM_LINKFLAG_WRITE_SECONDARY, 1);
-#undef LINKWITH
+		if (link->linkflags & RSM_LINKFLAG_WRITE_PRIMARY) LINK(connection->component, 0, connection->index[0]);
+		if (link->linkflags & RSM_LINKFLAG_WRITE_SECONDARY) LINK(connection->component, 1, connection->index[1]);
+#undef LINK
+		clearbufferslots(connection);
 
 		usf_listptradd(connections, connection); /* Connection established */
-	}
+	} usf_hmiterend(&iter);
+
+	/* Setup wire connections */
 
 	wf_freecontext(linkcontext);
 }
@@ -565,10 +577,10 @@ void wf_freecontext(Fillcontext *context) {
 	if (context == NULL) return;
 
 	usf_freequeuefunc(context->next, free); /* Free Fillcandidate * */
-	usf_freeinthmfunc(context->affected, free); /* Free Linkinfo * */
-	usf_freeinthm(context->seen); /* No allocated data associated */
-	usf_freeinthm(context->wires); /* Idem */
-	usf_freeinthm(context->chunkindices); /* Idem */
+	usf_freehmfunc(context->affected, free); /* Free Linkinfo * */
+	usf_freehm(context->seen); /* No allocated data associated */
+	usf_freehm(context->wires); /* Idem */
+	usf_freehm(context->chunkindices); /* Idem */
 
 	free(context);
 }
@@ -579,10 +591,11 @@ void wf_registercontext(Fillcontext *context) {
 	 *
 	 * Note: graph lock must be acquired during batch registering! */
 
-	u64 i;
-	usf_data *entry;
-	for (i = 0; (entry = usf_inthmnext(context->affected, &i));)
-		wf_registercomponent(((Linkinfo *) entry[1].p)->coords);
+	usf_hashiter iter;
+	for (usf_hmiterbegin(context->affected, &iter); usf_hmiternext(&iter);)
+		wf_registercomponent(((Linkinfo *) iter.entry->value.p)->coords);
+	usf_hmiterend(&iter);
+
 	graphchanged_ = 1; /* Prime all next tick */
 }
 
@@ -615,6 +628,13 @@ i32 wf_isregistrable(Blocktype id) {
 	return id != RSM_BLOCK_RESISTOR && id >= RSM_BLOCK_TRANSISTOR_ANALOG && id <= RSM_BLOCK_LIGHT_DIGITAL;
 }
 
+i32 wf_ispowerable(Blocktype id) {
+	/* Check if a given block ID is able to be powered */
+
+	return id >= RSM_BLOCK_TRANSISTOR_ANALOG && id <= RSM_BLOCK_LIGHT_DIGITAL
+		&& !(id >= RSM_BLOCK_RESISTOR && id <= RSM_BLOCK_CONSTANT_SOURCE_TRANS);
+}
+
 static Component *getcomponent(Blockdata *handle) {
 	/* Retrieve (or init placeholder pending registering) a Component * from its
 	 * Blockdata * handle and return it */
@@ -630,4 +650,20 @@ static Component *getcomponent(Blockdata *handle) {
 	}
 
 	return component;
+}
+
+static void clearbufferslots(Connection *connection) {
+	/* Clears the corresponding buffer slot through the connection */
+
+	if (connection->linkflags & RSM_LINKFLAG_WRITE_PRIMARY)
+		connection->component->buffer[0][connection->index[0]] = 0;
+	if (connection->linkflags & RSM_LINKFLAG_WRITE_SECONDARY)
+		connection->component->buffer[1][connection->index[1]] = 0;
+}
+
+static void freeconnection(void *c) {
+	/* Frees a connection while resetting its output buffer slot to 0 */
+
+	clearbufferslots(c);
+	free(c);
 }

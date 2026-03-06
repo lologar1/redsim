@@ -15,8 +15,9 @@
 typedef struct Visualdata {
 	Blockdata *blockdata; /* Self */
 	usf_listu64 *chunkindices; /* Unique chunk indices to remesh */
-	u64 nwires; /* Not using list for faster iteration (most costly in visual mode!) */
-	Blockdata **wires; /* Match with wiredecay */
+	u64 nwires;
+	struct Component **wires; /* Match with wiredecay */
+	u16 *wireindices;
 	u8 *wiredecays;
 } Visualdata;
 
@@ -25,7 +26,7 @@ typedef struct Component {
 	u8 variant; /* Underlying block variant */
 	u8 state[8]; /* Internal state; for buffer 8, max. is 8 bytes */
 	u8 *buffer[2]; /* Primary and secondary inputs */
-	usf_hashmap *inputs[2]; /* Blockdata * -> input offset (packed 32/32 primary/secondary) */
+	usf_hashmap *inputs[2]; /* Blockdata * -> input offset */
 	usf_listptr *connections; /* List of Connection */
 	Visualdata *visualdata; /* Visual updating */
 } Component;
@@ -40,6 +41,8 @@ typedef struct Connection {
 extern usf_hashmap *graphmap_; /* Blockdata * -> Component * */
 extern i32 graphchanged_;
 extern atomic_flag simstop_;
+extern usf_mutex ticklock_;
+extern usf_cond tickstep_;
 
 void sim_init(void);
 usf_compatibility_int sim_run(void *);

@@ -4,10 +4,13 @@ static i32 getBlockmesh(Blockmesh *blockmesh, u64 id, u64 variant, Rotation rota
 static usf_compatibility_int pushRawmesh(void *chunkindexptr);
 
 void cu_asyncRemeshChunk(u64 chunkindex) {
-	/* Asynchronously pushes a new rawmesh to be sent to the GPU */
+	/* Asynchronously pushes a new rawmesh to be sent to the GPU.
+	 * This function may be called concurrently. */
 
-	if (usf_inthmget(meshmap_, chunkindex).p == NULL) { /* Initialize mesh */
-		Mesh *mesh;
+	printf("Retrieved %lu\n", chunkindex);
+	Mesh *mesh;
+	usf_mtxlock(meshmap_->lock); /* Thread-safe lock */
+	if ((mesh = usf_inthmget(meshmap_, chunkindex).p) == NULL) { /* Initialize mesh */
 		mesh = malloc(sizeof(Mesh));
 
 		/* Generate buffers */
@@ -42,7 +45,11 @@ void cu_asyncRemeshChunk(u64 chunkindex) {
 
 		usf_inthmput(meshmap_, chunkindex, USFDATAP(mesh)); /* Set mesh */
 	}
+	usf_mtxunlock(meshmap_->lock); /* Thread-safe unlock */
 
+	if (usf_atmflagtry(&mesh->remeshing, MEMORDER_ACQ_REL)) return; /* Taken */
+
+	printf("Passed for %lu\n", chunkindex);
 	u64 *arg;
 	arg = malloc(sizeof(u64)); /* Allow thread to operate separately; it cleans up its argument after */
 	*arg = chunkindex;
@@ -268,10 +275,6 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 
 	u64 chunkindex; /* Retrieve argument */
 	chunkindex = (*(u64 *) chunkindexptr);
-
-	Mesh *mesh;
-	mesh = usf_inthmget(meshmap_, chunkindex).p; /* Thread-safe; must exist */
-	if (usf_atmflagtry(&mesh->remeshing, MEMORDER_ACQ_REL)) return 1; /* Taken */
 
 	i64 x, y, z; /* Get chunk position */
 	x = SIGNED21CAST64(chunkindex >> 42);
@@ -520,7 +523,7 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	rawmesh->nTI = (u64) (ti_bufptr - rawmesh->transIndexBuffer);
 
 	usf_enqueue(meshqueue_, USFDATAP(rawmesh));
-	usf_atmflagclr(&mesh->remeshing, MEMORDER_RELEASE); /* Finished remeshing */
+	usf_atmflagclr(&((Mesh *) usf_inthmget(meshmap_, chunkindex).p)->remeshing, MEMORDER_RELEASE);
 
 	free(chunkindexptr); /* Cleanup argument; it was allocated to allow for thread detachment from callee */
 	return 0;

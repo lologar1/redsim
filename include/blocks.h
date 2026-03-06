@@ -54,9 +54,9 @@ typedef struct Blockmesh {
 
 typedef struct Blockdata {
 	u8 id;
+	u8 variant;
 	u8 metadata;
 	Rotation rotation;
-	atomic_u8 variant; /* Simulation visual updates */
 } Blockdata;
 
 typedef Blockdata Chunkdata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE];

@@ -76,9 +76,11 @@ extern f32 RSM_COMMAND_TEXT_SIZE;
 
 extern f32 RSM_NOCLIP;
 extern f32 RSM_AIRPLACE;
+
 extern f32 RSM_VISUALSIM;
 extern f32 RSM_ENABLESIM;
 extern f32 RSM_TICKRATE;
+extern f32 RSM_TICKSTEP;
 
 #define PLAYER_BOUNDINGBOX_RELATIVE_CORNER ((vec3) {-0.3f, -1.6f, -0.3f})
 #define PLAYER_BOUNDINGBOX_DIMENSIONS ((vec3) {0.6f, 1.8f, 0.6f})
@@ -137,7 +139,7 @@ extern f32 RSM_DEFAULT_GUI_SCALING_FACTOR;
 /* Simulation */
 #define RSM_NATURAL_DECAY 1
 #define RSM_MAX_SS 255
-#define RSM_SIMRETRY_TIMESPEC (&(struct timespec) { .tv_sec = 1 })
+#define RSM_WIREFILL_READWRITE 0
 #define RSM_WIREFILL_READONLY 1
 
 /* Floodfill flags */

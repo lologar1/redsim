@@ -14,6 +14,7 @@
 #define INVROT(_ROT) (((_ROT) + 1) % 4 + 1)
 #define PERPROT(_ROT) ((_ROT) % 4 + 1)
 #define COLINROT(_ROT, _OTHER) (((_ROT) == (_OTHER)) || ((_ROT) == INVROT(_OTHER)))
+#define CARDROT(_ROT) ((_ROT) >= NORTH && (_ROT) <= EAST)
 
 typedef struct Linkinfo {
 	Blockdata *block;
@@ -26,7 +27,7 @@ typedef struct Fillcontext {
 	usf_queue *next; /* Blocks to check (may connect to this wireline) */
 	usf_hashmap *affected; /* Component Blockdata * -> Linkinfo * */
 	usf_hashmap *seen; /* Wire Blockdata * -> decay + 1 (hashmap inits to 0; used for unfilled) */
-	usf_hashmap *wires; /* (Optional, unset if NULL) Wire Blockdata * -> decay */
+	usf_hashmap *wires; /* (Optional, unset if NULL) Wire Component * -> decay */
 	usf_hashmap *chunkindices; /* (Optional, unset if NULL) Set of chunkindex */
 } Fillcontext;
 
@@ -49,5 +50,6 @@ void wf_registercoords(vec3 coords);
 
 i32 wf_iscomponent(Blocktype id);
 i32 wf_isregistrable(Blocktype id);
+i32 wf_ispowerable(Blocktype id);
 
 #endif

@@ -150,12 +150,11 @@ void client_loaddata(void) {
 	}
 	free(save); /* Free disk data buffer */
 
-	/* Remesh after loading (batched access to chunkmap_, so manually acquire) */
-	usf_mtxlock(chunkmap_->lock); /* Thread-safe lock */
-	usf_data *entry; /* Jobs will need to wait until all are queued */
-	for (i = 0; (entry = usf_inthmnext(chunkmap_, &i));)
-		cu_asyncRemeshChunk(entry[0].u);
-	usf_mtxunlock(chunkmap_->lock); /* Thread-safe unlock */
+	/* Remesh after loading */
+	usf_hashiter iter;
+	for (usf_hmiterbegin(chunkmap_, &iter); usf_hmiternext(&iter);)
+		cu_asyncRemeshChunk(iter.entry->key.u);
+	usf_hmiterend(&iter);
 
 	/* Register graph from loaded world */
 	f64 timestart;
@@ -180,8 +179,6 @@ void client_loaddata(void) {
 void client_savedata(void) {
 	/* Save world to disk */
 
-	usf_mtxlock(chunkmap_->lock); /* Thread-safe lock */
-
 	u8 *save, *s;
 	s = save = malloc(RSM_SAVE_HEADERSZ + chunkmap_->size * RSM_SAVE_CHUNKSTRIDE);
 
@@ -190,15 +187,16 @@ void client_savedata(void) {
 	memcpy(s, hotbar_, sizeof(hotbar_)); s += sizeof(hotbar_);
 
 	/* Save chunks */
-	u64 i, n;
-	usf_data *entry;
-	for (i = n = 0; (entry = usf_inthmnext(chunkmap_, &i));) {
+	u64 n;
+	usf_hashiter iter;
+	for (n = 0, usf_hmiterbegin(chunkmap_, &iter); usf_hmiternext(&iter);) {
 		GLuint *chunkmesh;
-		if ((chunkmesh = usf_inthmget(meshmap_, entry[0].u).p) == NULL || chunkmesh[2] + chunkmesh[3] == 0)
-			continue; /* Empty or uninitialized mesh (no blocks in chunk) */
+		if ((chunkmesh = usf_inthmget(meshmap_, iter.entry->key.u).p) == NULL /* Uninitialized mesh */
+				|| chunkmesh[2] + chunkmesh[3] == 0) /* Empty mesh */
+			continue;
 
 		Chunkdata *chunkdata;
-		chunkdata = entry[1].p;
+		chunkdata = iter.entry->value.p;
 
 		u64 x, y, z;
 		u32 savedata[CHUNKSIZE][CHUNKSIZE][CHUNKSIZE]; /* To disk */
@@ -212,12 +210,10 @@ void client_savedata(void) {
 				| (u32) blockdata.rotation << RSM_SAVE_ROTATIONSHIFT
 				| (u32) blockdata.metadata << RSM_SAVE_METADATASHIFT;
 		}
-		memcpy(s, &entry[0], sizeof(u64)); s += sizeof(u64); /* Chunkindex */
+		memcpy(s, &iter.entry->key, sizeof(u64)); s += sizeof(u64); /* Chunkindex */
 		memcpy(s, savedata, sizeof(savedata)); s += sizeof(savedata); /* Chunk data */
 		n++; /* Saved chunk */
-	}
-
-	usf_mtxunlock(chunkmap_->lock); /* Thread-safe unlock */
+	} usf_hmiterend(&iter);
 
 	usf_btof(SAVEFILE, save, RSM_SAVE_HEADERSZ + n * RSM_SAVE_CHUNKSTRIDE);
 	free(save); /* Free RAM representation of disk file */
@@ -264,7 +260,9 @@ void client_terminate(void) {
 
 	/* Stop simulation */
 	i32 simreturn;
-	usf_atmflagclr(&simstop_, MEMORDER_RELAXED);
+	usf_atmflagclr(&simstop_, MEMORDER_RELAXED); /* Kill signal */
+	RSM_TICKSTEP = 1.0f; /* If blocked, step once to exit */
+	usf_cndsignal(&tickstep_);
 	usf_thrdjoin(simthread_, &simreturn);
 	if (simreturn) fprintf(stderr, "Simulation returned with abnormal exit code %"PRId32".\n", simreturn);
 
@@ -272,14 +270,9 @@ void client_terminate(void) {
 	client_savedata();
 
 	/* Wait for remeshing */
-	usf_data *meshentry;
-	for (i = 0; (meshentry = usf_inthmnext(meshmap_, &i));) {
-		Mesh *mesh;
-		mesh = meshentry[1].p;
-
-		/* Relaxed since no more calls will be issued; wait until existing ones have finished */
-		while (usf_atmflagtry(&mesh->remeshing, MEMORDER_ACQ_REL));
-	}
+	usf_hashiter iter;
+	for (usf_hmiterskim(meshmap_, &iter); usf_hmiternext(&iter);)
+		while (usf_atmflagtry(&((Mesh *) iter.entry->value.p)->remeshing, MEMORDER_ACQ_REL));
 
 	/* Drain remaining */
 	Rawmesh *leftover;
@@ -318,13 +311,15 @@ void client_terminate(void) {
 	free(meshes_); /* Meshlist components free'd in hashmap deallocation */
 
 	/* Free structures */
-	usf_freeinthmfunc(chunkmap_, free);
-	usf_freeinthmfunc(meshmap_, free);
-	usf_freeinthmfunc(graphmap_, sim_freecomponent);
-	usf_freeinthm(datamap_);
-	usf_freestrhm(namemap_);
-	usf_freestrhm(cmdmap_); /* Don't dealloc func pointers */
-	usf_freestrhm(varmap_); /* Idem rsmlayout pointers */
-	usf_freestrhm(aliasmap_); /* Idem string literals */
+	usf_freehmfunc(chunkmap_, free);
+	usf_freehmfunc(meshmap_, free);
+	usf_freehmfunc(graphmap_, sim_freecomponent);
+	usf_mtxdestroy(&ticklock_);
+	usf_cnddestroy(&tickstep_);
+	usf_freehm(datamap_);
+	usf_freehm(namemap_);
+	usf_freehm(cmdmap_); /* Don't dealloc func pointers */
+	usf_freehm(varmap_); /* Idem rsmlayout pointers */
+	usf_freehm(aliasmap_); /* Idem string literals */
 	usf_freequeuefunc(meshqueue_, free);
 }
