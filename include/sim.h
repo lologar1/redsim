@@ -1,7 +1,11 @@
 #ifndef SIM_H
 #define SIM_H
 
+#define _GNU_SOURCE
 #include <cglm/cglm.h>
+#include <pthread.h>
+#include <sched.h> /* NON-PORTABLE */
+
 #include "usfstd.h"
 #include "usfatomic.h"
 #include "usflist.h"
@@ -25,11 +29,13 @@ typedef struct Component {
 	u8 id; /* Underlying block ID */
 	u8 variant; /* Underlying block variant */
 	u8 state[8]; /* Internal state; for buffer 8, max. is 8 bytes */
+	u32 metadata; /* Internal simulation metadata */
 	u8 *buffer[2]; /* Primary and secondary inputs */
 	usf_hashmap *inputs[2]; /* Blockdata * -> input offset */
 	usf_listptr *connections; /* List of Connection */
 	Visualdata *visualdata; /* Visual updating */
 } Component;
+static_assert(sizeof(Component) == 64, "redsim: Component struct size is not 64 bytes");
 
 typedef struct Connection {
 	Component *component;

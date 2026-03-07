@@ -61,7 +61,7 @@ extern f32 RSM_MOUSE_SENSITIVITY;
 #define RSM_FPS 240.0f
 #define FPS_CAP true
 #define VSYNC true
-#define RSM_MAX_PROCESSORS 512
+#define RSM_MAX_PROCESSORS 256
 
 #define CHUNKSIZE 32
 extern f32 RSM_REACH;
@@ -141,6 +141,8 @@ extern f32 RSM_DEFAULT_GUI_SCALING_FACTOR;
 #define RSM_MAX_SS 255
 #define RSM_WIREFILL_READWRITE 0
 #define RSM_WIREFILL_READONLY 1
+#define RSM_SIMFLAG_DISCARD (U32(1) << 0)
+#define RSM_SIMFLAG_REPRIME (U32(1) << 1)
 
 /* Floodfill flags */
 #define RSM_LINKFLAG_READ (U8(1) << 0)

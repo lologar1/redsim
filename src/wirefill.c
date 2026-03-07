@@ -27,7 +27,7 @@ void wf_findaffected(vec3 coords, Fillcontext *afcontext) {
 	 * A component marked RSM_LINKFLAG_WRITE_* will have its input indices reset prior to registering by
 	 * registercontext, as all components which affect it will be registered in the same batch.
 	 *
-	 * Note: graph lock must be acquired during batch registering ! */
+	 * Note: ticklock_ must be acquired during batch registering ! */
 
 	Blockdata *block;
 	block = cu_coordsToBlock(coords, NULL);
@@ -161,11 +161,9 @@ void wf_componentconnect(vec3 coords, Rotation from, Fillcontext *fillcontext, u
 #define FILLDIR(_ROT) \
 	do { \
 		neighbor = cu_coordsToBlock(adjacent, NULL); \
-		if (neighbor->id == RSM_BLOCK_WIRE || wf_iscomponent(neighbor->id)) { \
-			if (CARDROT(_ROT) && CARDROT(neighbor->rotation) && !COLINROT(_ROT, neighbor->rotation)) \
-				break; /* Prevent side-input powering */ \
+		if (neighbor->id == RSM_BLOCK_WIRE \
+				|| (wf_iscomponent(neighbor->id) && !SIDEROT(_ROT, neighbor->rotation))) /* No side inputs */ \
 			wf_wirefill(adjacent, _ROT, 0, fillcontext, status); \
-		} \
 	} while (0);
 		FORORTHO(FILLDIR, adjacent, coords);
 #undef FILLDIR
@@ -282,9 +280,8 @@ void wf_wirefill(vec3 coords, Rotation from, u8 decay, Fillcontext *fillcontext,
 	if (block->metadata & RSM_BIT_CONDUCTOR) {
 		Rotation direction;
 		for (direction = NORTH; direction < COMPLEX; direction++) { /* Iterate 6 rotations */
-			if (!wf_iscomponent(neighbors[direction]->id) || (CARDROT(neighbors[direction]->rotation)
-						&& !COLINROT(neighbors[direction]->rotation, direction))) /* Disallow soft-power sides */
-				continue;
+			if (!wf_iscomponent(neighbors[direction]->id) || SIDEROT(neighbors[direction]->rotation, direction))
+				continue; /* Disallow secondary inputs */
 
 			/* Won't recurse since components terminate; okay to immediately wirefill without creating
 			 * a Fillcandidate for later */
@@ -446,7 +443,7 @@ void wf_registercomponent(vec3 coords) {
 #define SOFTOUTPUT(_ROT) \
 	outblock = cu_coordsToBlock(outcoords, NULL); \
 	/* Don't electrify, and skip components' secondary inputs */ \
-	if (outblock->id == RSM_BLOCK_WIRE || (wf_iscomponent(outblock->id) && COLINROT(_ROT, outblock->rotation))) \
+	if (outblock->id == RSM_BLOCK_WIRE || (wf_iscomponent(outblock->id) && !SIDEROT(_ROT, outblock->rotation))) \
 		wf_componentconnect(outcoords, _ROT, linkcontext, RSM_WIREFILL_READWRITE);
 			FORORTHO(SOFTOUTPUT, outcoords, coords);
 #undef SOFTOUTPUT
@@ -589,7 +586,7 @@ void wf_registercontext(Fillcontext *context) {
 	/* Registers a precalculated (batched) Fillcontext. This Fillcontext must have been populated
 	 * by wf_findaffected and contain only components which the wireline reads from.
 	 *
-	 * Note: graph lock must be acquired during batch registering! */
+	 * Note: ticklock_ must be acquired during batch registering! */
 
 	usf_hashiter iter;
 	for (usf_hmiterbegin(context->affected, &iter); usf_hmiternext(&iter);)
@@ -603,12 +600,12 @@ void wf_registercoords(vec3 coords) {
 	/* Registers a change to the world (at position coords) in the graph; If called after a change to
 	 * the circuitry, the component graph will accurately reflect that change when this function exits. */
 
-	usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
+	usf_mtxlock(&ticklock_); /* Thread-safe lock */
 	Fillcontext *afcontext;
 	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
 	wf_findaffected(coords, afcontext); /* Find */
 	wf_registercontext(afcontext); /* Register */
-	usf_mtxunlock(graphmap_->lock); /* Thread-safe unlock */
+	usf_mtxunlock(&ticklock_); /* Thread-safe unlock */
 
 	wf_freecontext(afcontext); /* Free transient data */
 }

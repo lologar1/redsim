@@ -15,6 +15,7 @@
 #define PERPROT(_ROT) ((_ROT) % 4 + 1)
 #define COLINROT(_ROT, _OTHER) (((_ROT) == (_OTHER)) || ((_ROT) == INVROT(_OTHER)))
 #define CARDROT(_ROT) ((_ROT) >= NORTH && (_ROT) <= EAST)
+#define SIDEROT(_ROT, _OTHER) (CARDROT(_ROT) && CARDROT(_OTHER) && !COLINROT(_ROT, _OTHER))
 
 typedef struct Linkinfo {
 	Blockdata *block;

@@ -1,134 +1,135 @@
 #include "sim.h"
 
-typedef struct Slice {
-	u64 len;
-	Component **subarray;
-} Slice;
+typedef enum Threadflag : atomic_u32 {
+	WAIT,
+	UPDATE,
+	PROPAGATE,
+	WIRE,
+	TERMINATE
+} Threadflag;
 
-usf_hashmap *graphmap_; /* Blockdata * -> Component * */
-i32 graphchanged_; /* Set when the component graph is modified (will re-prime everything) */
-atomic_flag simstop_; /* Set on program termination */
+typedef struct Slice {
+	alignas(64) u64 len;
+	usf_hashentry *array;
+	Threadflag flag;
+	atomic_flag wait;
+} Slice;
+static_assert(sizeof(Slice) == 64, "redsim: thread slice size is not 64");
+
 usf_mutex ticklock_;
 usf_cond tickstep_;
+usf_hashmap *graphmap_; /* Protected by ticklock_ */
+i32 graphchanged_; /* Protected by ticklock_ */
+atomic_flag simstop_; /* Set on program termination */
 
-static usf_listptr *primed_;
-static usf_listptr *primedwires_;
+static usf_hashmap *primed_;
 static usf_hashmap *candidates_;
 static usf_hashmap *candidatewires_;
 static usf_hashmap *candidatechunks_;
 
-static usf_compatibility_int update(void *args);
-static usf_compatibility_int updatewires(void *args);
-static void cleartoprimed(void *c);
-static void cleartoprimedwires(void *c);
-static void cleartoremesh(void *c);
+static atomic_u64 running_;
+static usf_thread threads[RSM_MAX_PROCESSORS];
+static Slice jobs[RSM_MAX_PROCESSORS];
+
+static usf_compatibility_int startworker(void *n);
+static void distribute(usf_hashentry *array, u64 len, Threadflag threadflag);
+static void tickwait(timespec *start, timespec *end);
+
+static void update(u64 nproc);
+static void propagate(u64 nproc);
+static void wire(u64 nproc);
 
 void sim_init(void) {
 	/* Initialize simulation structures and start sim process */
 
-	graphmap_ = usf_newhm_ts();
-	usf_mtxinit(&ticklock_, MTXINIT_PLAIN);
+	graphmap_ = usf_newhm(); /* Protected by ticklock_ */
+	usf_mtxinit(&ticklock_, MTXINIT_RECURSIVE);
 	usf_cndinit(&tickstep_);
 
-	primed_ = usf_newlistptr();
-	primedwires_ = usf_newlistptr();
-	candidates_ = usf_newhm_ts();
-	candidatewires_ = usf_newhm_ts();
-	candidatechunks_ = usf_newhm_ts();
+	primed_ = usf_newhm();
+	candidates_ = usf_newhm();
+	candidatewires_ = usf_newhm();
+	candidatechunks_ = usf_newhm();
+
+	u64 i;
+	for (i = 1; i < NPROCS; i++) {
+		usf_atmflagtry(&jobs[i].wait, MEMORDER_RELEASE); /* Set at first */
+		usf_thrdcreate(&threads[i], startworker, (void *) i);
+	}
 
 	graphchanged_ = 1; /* Initial world parsing */
 }
 
 usf_compatibility_int sim_run(void *) {
-	static f64 lastTime;
-	lastTime = glfwGetTime();
+	/* Starts the simulation */
 
-	while (usf_atmflagtry(&simstop_, MEMORDER_RELAXED)) {
-		if (!RSM_ENABLESIM) {
-			usf_mtxlock(&ticklock_);
-			while (!RSM_TICKSTEP && !RSM_ENABLESIM) usf_cndwait(&tickstep_, &ticklock_);
-			RSM_TICKSTEP = USF_MAX(RSM_TICKSTEP - 1, 0); /* Consume */
-			usf_mtxunlock(&ticklock_);
-		}
+	/* Profiling */
+	u64 nsimticks;
+	timespec simstart, simend, simelapsed;
+	clock_gettime(CLOCK_MONOTONIC, &simstart);
 
-		/* Periodic delay */
-		f64 elapsed, diff;
-		elapsed = glfwGetTime() - lastTime;
-		if (elapsed < 1.0f/RSM_TICKRATE) { /* Leeway left */
-			diff = 1.0f/RSM_TICKRATE - elapsed; /* To sleep */
-			timespec tosleep = (timespec) {
-				.tv_sec = (time_t) diff,
-				.tv_nsec = 1000000000 * (diff - trunc(diff))
-			};
-			usf_thrdsleep(&tosleep, NULL); /* Wait until next tick */
-		}
-		lastTime = glfwGetTime();
+	usf_hashiter iter;
+	timespec start, end;
+	for (nsimticks = 0; usf_atmflagtry(&simstop_, MEMORDER_RELAXED); nsimticks++) {
+		usf_mtxlock(&ticklock_); /* Thread-safe lock */
+		if (RSM_TICKRATE) clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
 
-		/* Begin critical section */
-		usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
-
-		usf_hashiter iter;
-		if (graphchanged_) { /* Reset and prime all */
-			primedwires_->size = 0;
-			primed_->size = 0;
-			for (usf_hmiterskim(graphmap_, &iter); usf_hmiternext(&iter);) { /* Skim safe: lock acquired */
+		if (graphchanged_) {
+			usf_hmclear(primed_); /* Reset */
+			for (usf_hmiterskim(graphmap_, &iter); usf_hmiternext(&iter);) {
 				Component *component;
 				if ((component = iter.entry->value.p)->id == 0) continue; /* Not participating in graph */
-				usf_listptradd(primed_, component);
+				usf_inthmput(primed_, (u64) component, USFTRUE);
 			}
 		}
 
-		/* Update */
-		usf_thread threadids[RSM_MAX_PROCESSORS];
-		u8 threadactive[RSM_MAX_PROCESSORS] = {0};
-#define DISTRIBUTE(_ARRAY, _ARRAYLEN, _FUNCTION) \
-	do { \
-		u64 CHUNKLEN_, NCHUNK_; \
-		for (CHUNKLEN_ = (_ARRAYLEN) / NPROCS, NCHUNK_ = 0; NCHUNK_ < NPROCS; NCHUNK_++) { \
-			Component **SUBARRAY_; \
-			SUBARRAY_ = (Component **) _ARRAY + (NCHUNK_ * CHUNKLEN_); \
-			\
-			u64 SLICELEN_; /* If last slice, add truncated extra */ \
-			SLICELEN_ = (NCHUNK_ == NPROCS - 1) \
-				? CHUNKLEN_ + (_ARRAYLEN) % NPROCS \
-				: CHUNKLEN_; \
-			\
-			if (SLICELEN_ == 0) continue; /* No job for this subchunk */ \
-			\
-			Slice *SLICE_ = malloc(sizeof(Slice)); /* Free'd by child thread */ \
-			SLICE_->len = SLICELEN_; \
-			SLICE_->subarray = SUBARRAY_; \
-			\
-			usf_thrdcreate(&threadids[NCHUNK_], _FUNCTION, (void *) SLICE_); \
-			threadactive[NCHUNK_] = 1; \
-		} /* Wait for completion after */ \
-		for (NCHUNK_ = 0; NCHUNK_ < NPROCS; NCHUNK_++) { /* Join if started */ \
-			if (!threadactive[NCHUNK_]) continue; /* Wasn't distributed */ \
-			usf_thrdjoin(threadids[NCHUNK_], NULL); \
-			threadactive[NCHUNK_] = 0; \
-		} \
-	} while(0);
-		DISTRIBUTE(primed_->array, primed_->size, update);
-		graphchanged_ = 0; /* Consume */
+		/* Begin critical section */
+		/* Pass 1: candidatewires_ & candidatechunks_ */
+		distribute(primed_->array, primed_->capacity, UPDATE); graphchanged_ = 0; /* Consume */
 
-		if (RSM_VISUALSIM) DISTRIBUTE(primedwires_->array, primedwires_->size, updatewires);
-#undef DISTRIBUTE
-		usf_mtxunlock(graphmap_->lock);
-		/* End critical section (potential garbage data below is reset by graphchanged_ flag) */
+		/* Pass 1.5: visual */
+		if (RSM_VISUALSIM) {
+			distribute(candidatewires_->array, candidatewires_->capacity, WIRE);
+			candidatewires_->size = 0; /* Cleared */
+		}
 
-		/* Consolidate */
-		primed_->size = 0;
-		usf_hmclearfunc(candidates_, cleartoprimed);
+		/* Pass 2: candidates_ */
+		distribute(primed_->array, primed_->capacity, PROPAGATE);
+		primed_->size = 0; USF_SWAP(primed_, candidates_); /* Cleared; recycle */
+		/* End critical section */
 
-		if (!RSM_VISUALSIM) continue; /* Only visual mode updates beyond this point */
-		primedwires_->size = 0;
-		usf_hmclearfunc(candidatewires_, cleartoprimedwires);
-		usf_hmclearfunc(candidatechunks_, cleartoremesh);
+		for (usf_hmiterskim(candidatechunks_, &iter); usf_hmiternext(&iter);) {
+			cu_asyncRemeshChunk(iter.entry->key.u);
+			memset(iter.entry, 0, sizeof(usf_hashentry));
+		}
+		candidatechunks_->size = 0; /* Cleared */
+
+		if (!RSM_ENABLESIM) {
+			while (!RSM_TICKSTEP && !RSM_ENABLESIM) usf_cndwait(&tickstep_, &ticklock_);
+			RSM_TICKSTEP = USF_MAX(RSM_TICKSTEP - 1, 0); /* Consume */
+		} else if (RSM_TICKRATE) {
+			usf_mtxunlock(&ticklock_);
+			clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
+			tickwait(&start, &end);
+			usf_mtxlock(&ticklock_);
+		}
+
+		usf_mtxunlock(&ticklock_); /* Thread-safe unlock */
 	}
 
-	/* Free static structures (graph free'd in client_terminate) */
-	usf_freelistptr(primed_);
-	usf_freelistptr(primedwires_);
+	/* Profiling */
+	clock_gettime(CLOCK_MONOTONIC, &simend);
+	usf_tsdiff(&simend, &simstart, &simelapsed);
+	printf("Avg. nanoseconds per tick: %f\n", (1e9 * simelapsed.tv_sec + simelapsed.tv_nsec) / (f64) nsimticks);
+
+	/* Simulation thread termination */
+	u64 i;
+	for (i = 1; i < NPROCS; i++) {
+		jobs[i].flag = TERMINATE;
+		usf_atmflagclr(&jobs[i].wait, MEMORDER_RELEASE);
+		usf_thrdjoin(threads[i], NULL);
+	}
+	usf_freehm(primed_);
 	usf_freehm(candidates_);
 	usf_freehm(candidatewires_);
 	usf_freehm(candidatechunks_);
@@ -137,31 +138,91 @@ usf_compatibility_int sim_run(void *) {
 	return 0;
 }
 
-#define UNPACKSLICE(_ARGS, _LENVAR, _ARRVAR) \
-	do { \
-		Slice *SLICE_; \
-		SLICE_ =  (Slice *) _ARGS; \
-		_LENVAR = (u64) SLICE_->len; \
-		_ARRVAR = (Component **) SLICE_->subarray; \
-	} while (0);
-static usf_compatibility_int update(void *args) {
-	/* Update state of primed components and, on change, transmit it to its connections and mark them
-	 * as candidates for next tick.
-	 *
+static void distribute(usf_hashentry *array, u64 len, Threadflag threadflag) {
+	/* Distributes a graph evaluation job to threads */
+
+	u64 chunklen = len / NPROCS;
+	u64 chunkremainder = len % NPROCS;
+
+	u64 nproc;
+	for (nproc = 0; nproc < NPROCS; nproc++) {
+		u64 slicelen = chunklen + (nproc == NPROCS - 1 ? chunkremainder : 0);
+		if (slicelen == 0) break; /* No more */
+
+		usf_hashentry *subarray = array + nproc * chunklen;
+		jobs[nproc].len = slicelen;
+		jobs[nproc].array = subarray;
+		jobs[nproc].flag = threadflag;
+
+		if (nproc) { /* Dispatch to other workers */
+			usf_atmaddi(&running_, 1, MEMORDER_ACQ_REL);
+			usf_atmflagclr(&jobs[nproc].wait, MEMORDER_RELEASE);
+		}
+	}
+
+	/* Block 0 work */
+	if (jobs[0].len) {
+		switch (threadflag) {
+			case WAIT: break; /* Nothing to do this tick */
+			case UPDATE: update(0); break;
+			case PROPAGATE: propagate(0); break;
+			case WIRE: wire(0); break;
+			case TERMINATE: return;
+		}
+	}
+
+	while (usf_atmmld(&running_, MEMORDER_ACQUIRE));
+}
+
+static void tickwait(timespec *start, timespec *end) {
+	/* Waits until end of current tick */
+	timespec diff;
+	usf_tsdiff(end, start, &diff);
+
+	i64 pertick = 1000000000 / RSM_TICKRATE;
+	i64 elapsed = diff.tv_sec * 1000000000 + diff.tv_nsec;
+	if (elapsed >= pertick) return; /* At capacity */
+
+	i64 towait = pertick - elapsed;
+	diff.tv_sec = towait / 1000000000;
+	diff.tv_nsec = towait % 1000000000;
+	usf_thrdsleep(&diff, NULL);
+}
+
+static usf_compatibility_int startworker(void *n) {
+	/* Starts a thread to evaluate graph slices */
+
+	u64 nproc = (u64) n;
+
+	for (;;) {
+		while (usf_atmflagtry(&jobs[nproc].wait, MEMORDER_ACQ_REL));
+
+		switch (jobs[nproc].flag) {
+			case WAIT: unreachable(); break;
+			case UPDATE: update(nproc); break;
+			case PROPAGATE: propagate(nproc); break;
+			case WIRE: wire(nproc); break;
+			case TERMINATE: return 0;
+		}
+
+		jobs[nproc].flag = WAIT;
+		usf_atmsubi(&running_, 1, MEMORDER_ACQ_REL);
+	}
+}
+
+static void update(u64 nproc) {
+	/* Update state of primed components.
 	 * Visual mode: synchronize components' visual state.
 	 * Visual mode: add connection wires to candidatewires.
 	 * Visual mode: add chunks to toremesh. */
 
-	usf_hashmap *threadcandidates = usf_newhm();
-	usf_hashmap *threadcandidatewires = RSM_VISUALSIM ? usf_newhm() : NULL;
-	usf_hashmap *threadcandidatechunks = RSM_VISUALSIM ? usf_newhm() : NULL;
+	u64 nprimed = jobs[nproc].len;
+	usf_hashentry *primed = (usf_hashentry *) jobs[nproc].array;
 
-	u64 nprimed, i;
-	Component **primed;
-	UNPACKSLICE(args, nprimed, primed);
+	u64 i;
 	for (i = 0; i < nprimed; i++) {
-		Component *component;
-		component = primed[i];
+		if (primed[i].flag != USF_HASHMAP_KEY_INTEGER) continue;
+		Component *component = primed[i].key.p;
 
 		/* Get inputs */
 		u8 primary, secondary, n, *buffer, ninputs;
@@ -210,7 +271,7 @@ static usf_compatibility_int update(void *args) {
 
 				static u8 zeroes[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 				if (memcmp(component->state, zeroes, shiftby + 1))
-					usf_inthmput(threadcandidates, (u64) component, USFTRUE); /* Prime self if not empty */
+					component->metadata |= RSM_SIMFLAG_REPRIME;
 				break;
 
 			case RSM_BLOCK_CONSTANT_SOURCE_OPAQUE:
@@ -232,45 +293,36 @@ static usf_compatibility_int update(void *args) {
 				break;
 		}
 
-		if (!statechanged && !graphchanged_) continue; /* No effect from this point */
+		if (!statechanged && !graphchanged_) {
+			component->metadata |= RSM_SIMFLAG_DISCARD;
+			continue; /* No effect later on */
+		}
 		outstate = component->state[0]; /* Now outstate is actualized output */
 
-		/* Propagate and find candidates */
-		usf_listptr *connections = component->connections;
-		Connection **targets = (Connection **) connections->array;
 		Visualdata *visualdata = component->visualdata;
-
-		u64 j;
-		for (j = 0; j < connections->size; j++) {
-			Connection *connection = targets[j];
-			Component *target = connection->component;
-
-#define WRITE(_INBUF, _INDEX, _DECAY) \
-	_INBUF[_INDEX] = _DECAY > outstate ? 0 : outstate - _DECAY;
-#define WRITECOMP(_FLAG, _BUFFER) \
-	if (connection->linkflags & _FLAG) \
-		WRITE(target->buffer[_BUFFER], connection->index[_BUFFER], connection->decay[_BUFFER]);
-			WRITECOMP(RSM_LINKFLAG_WRITE_PRIMARY, 0);
-			WRITECOMP(RSM_LINKFLAG_WRITE_SECONDARY, 1);
-#undef WRITECOMP
-			usf_inthmput(threadcandidates, (u64) target, USFTRUE);
-		}
-
-		if (!RSM_VISUALSIM) { /* If light, directly insert in global chunkindices */
+		if (!RSM_VISUALSIM) {
+			/* Special case for lights; always update visually */
 			if (component->id == RSM_BLOCK_LIGHT_DIGITAL) {
+				if (outstate) visualdata->blockdata->variant |= 0x01;
+				else visualdata->blockdata->variant &= 0xFE;
 				u64 selfchunkindex = visualdata->chunkindices->array[0];
-				usf_inthmput(candidatechunks_, selfchunkindex, USFDATAU(selfchunkindex));
+				usf_inthmput(candidatechunks_, selfchunkindex, USFTRUE);
 			}
 			continue;
 		}
 
+		/* Visual updates */
 		Component **wires = visualdata->wires;
 		u16 *wireindices = visualdata->wireindices;
 		u8 *wiredecays = visualdata->wiredecays;
+
+		/* Affect wireline */
+		u64 j;
 		for (j = 0; j < visualdata->nwires; j++) {
+#define WRITE(_INBUF, _INDEX, _DECAY) \
+	_INBUF[_INDEX] = _DECAY > outstate ? 0 : outstate - _DECAY;
 			WRITE(wires[j]->buffer[0], wireindices[j], wiredecays[j]);
-			usf_inthmput(threadcandidatewires, (u64) wires[j], USFTRUE);
-#undef WRITE
+			usf_inthmput(candidatewires_, (u64) wires[j], USFTRUE);
 		}
 
 		/* Set visual state */
@@ -282,71 +334,67 @@ static usf_compatibility_int update(void *args) {
 		/* To remesh */
 		usf_listu64 *chunkindices = visualdata->chunkindices;
 		for (j = 0; j < chunkindices->size; j++) /* Values copied to on shunt */
-			usf_inthmput(threadcandidatechunks, chunkindices->array[j], USFTRUE);
+			usf_inthmput(candidatechunks_, chunkindices->array[j], USFTRUE);
 	}
-
-	/* Shunt to main structures */
-	usf_hashiter iter;
-#define SHUNT(_MAINMAP, _THREADMAP) \
-	usf_mtxlock(_MAINMAP->lock); \
-	for (usf_hmiterskim(_THREADMAP, &iter); usf_hmiternext(&iter);) \
-		usf_inthmput(_MAINMAP, iter.entry->key.u, iter.entry->key); \
-	usf_mtxunlock(_MAINMAP->lock);
-
-	SHUNT(candidates_, threadcandidates);
-	if (RSM_VISUALSIM) {
-		SHUNT(candidatewires_, threadcandidatewires);
-		SHUNT(candidatechunks_, threadcandidatechunks);
-	}
-#undef SHUNT
-	/* End critical section */
-
-	usf_freehm(threadcandidates);
-	usf_freehm(threadcandidatewires);
-	usf_freehm(threadcandidatechunks);
-	free(args);
-	return 0;
 }
 
-static usf_compatibility_int updatewires(void *args) {
+static void propagate(u64 nproc) {
+	/* Propagate primed components' changes to next tick */
+
+	u64 nprimed = jobs[nproc].len;
+	usf_hashentry *primed = (usf_hashentry *) jobs[nproc].array;
+
+	u64 i;
+	for (i = 0; i < nprimed; i++) {
+		if (primed[i].flag != USF_HASHMAP_KEY_INTEGER) continue;
+		Component *component = primed[i].key.p;
+
+		u32 metadata = component->metadata; component->metadata = 0; /* Consume */
+		if (metadata & RSM_SIMFLAG_REPRIME) usf_inthmput(candidates_, (u64) component, USFTRUE);
+		if (metadata & RSM_SIMFLAG_DISCARD) continue;
+
+		usf_listptr *connections = component->connections;
+		Connection **targets = (Connection **) connections->array;
+		u8 outstate = component->state[0];
+
+		u64 j;
+		for (j = 0; j < connections->size; j++) {
+			Connection *connection = targets[j];
+			Component *target = connection->component;
+
+#define WRITECOMP(_FLAG, _BUFFER) \
+	if (connection->linkflags & _FLAG) \
+		WRITE(target->buffer[_BUFFER], connection->index[_BUFFER], connection->decay[_BUFFER]);
+			WRITECOMP(RSM_LINKFLAG_WRITE_PRIMARY, 0);
+			WRITECOMP(RSM_LINKFLAG_WRITE_SECONDARY, 1);
+#undef WRITE
+#undef WRITECOMP
+			usf_inthmput(candidates_, (u64) target, USFTRUE);
+		}
+
+		memset(primed + i, 0, sizeof(usf_hashentry)); /* Clear */
+	}
+}
+
+static void wire(u64 nproc) {
 	/* Visual mode: update state of wires.
 	 * Remeshing already queued by update if in visual mode. */
 
-	u64 nwires, i;
-	Component **wires;
-	UNPACKSLICE(args, nwires, wires);
-	for (i = 0; i < nwires; i++) {
-		Component *wire = wires[i];
-		u8 *buffer = wire->buffer[0];
+	u64 nwires = jobs[nproc].len;
+	usf_hashentry *subarray = (usf_hashentry *) jobs[nproc].array;
 
-		u8 wirepower, n;
-		for (wirepower = n = 0; n < wire->inputs[0]->size; n++, buffer++) \
+	u64 i;
+	for (i = 0; i < nwires; i++) {
+		if (subarray[i].flag != USF_HASHMAP_KEY_INTEGER) continue;
+		Component *wire = subarray[i].key.p;
+
+		u8 *buffer, wirepower, n;
+		for (buffer = wire->buffer[0], wirepower = n = 0; n < wire->inputs[0]->size; n++, buffer++) \
 			wirepower = *buffer > wirepower ? *buffer : wirepower; /* Ternary max */
 		wire->visualdata->blockdata->variant = wirepower; /* Set visual state */
+
+		memset(subarray + i, 0, sizeof(usf_hashentry)); /* Clear */
 	}
-
-	free(args);
-	return 0;
-}
-#undef UNPACKSLICE
-
-void cleartoprimed(void *c) {
-	/* Registers a candidate to be primed */
-
-	usf_listptradd(primed_, (Component *) c);
-}
-
-void cleartoprimedwires(void *c) {
-	/* Registers a candidate wire to be primed */
-
-	usf_listptradd(primedwires_, (Component *) c);
-}
-
-void cleartoremesh(void *c) {
-	/* Remeshes a queued chunk index */
-
-	printf("ASYNC %lu\n", (u64) c);
-	cu_asyncRemeshChunk((u64) c);
 }
 
 void sim_freecomponent(void *c) {

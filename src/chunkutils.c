@@ -7,7 +7,6 @@ void cu_asyncRemeshChunk(u64 chunkindex) {
 	/* Asynchronously pushes a new rawmesh to be sent to the GPU.
 	 * This function may be called concurrently. */
 
-	printf("Retrieved %lu\n", chunkindex);
 	Mesh *mesh;
 	usf_mtxlock(meshmap_->lock); /* Thread-safe lock */
 	if ((mesh = usf_inthmget(meshmap_, chunkindex).p) == NULL) { /* Initialize mesh */
@@ -49,7 +48,6 @@ void cu_asyncRemeshChunk(u64 chunkindex) {
 
 	if (usf_atmflagtry(&mesh->remeshing, MEMORDER_ACQ_REL)) return; /* Taken */
 
-	printf("Passed for %lu\n", chunkindex);
 	u64 *arg;
 	arg = malloc(sizeof(u64)); /* Allow thread to operate separately; it cleans up its argument after */
 	*arg = chunkindex;

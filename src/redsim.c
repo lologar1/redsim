@@ -262,7 +262,9 @@ void rsm_interact(void) {
 	/* World-affecting */
 	if (rsm_leftclick_) { /* Block breaking */
 		rsm_leftclick_ = 0;
+		usf_mtxlock(&ticklock_); /* Thread-safe lock */
 		rsm_breakcoords(lookingBlockCoords_);
+		usf_mtxunlock(&ticklock_); /* Thread-safe unlock */
 		return;
 	}
 
@@ -293,7 +295,9 @@ void rsm_interact(void) {
 
 		/* Place */
 place:
+		usf_mtxlock(&ticklock_); /* Thread-safe lock */
 		rsm_placecoords(adjacentBlockCoords_, lookingBlockCoords_);
+		usf_mtxunlock(&ticklock_); /* Thread-safe unlock */
 		return;
 	}
 }
@@ -378,13 +382,12 @@ void rsm_breakcoords(vec3 coords) {
 		glm_vec3_add(DCOORDS_, coords, DCOORDS_); /* Offset */ \
 		Blockdata *DBLOCK_ = cu_coordsToBlock(DCOORDS_, NULL); \
 		\
-		if ((DBLOCK_->metadata & _FLAG) && (DBLOCK_->rotation == _ROT)) { \
+		if ((DBLOCK_->metadata & _FLAG) && (_ROT == NONE || DBLOCK_->rotation == _ROT)) { \
 			memset(DBLOCK_, 0, sizeof(Blockdata)); /* Reset to air */ \
 			wf_registercoords(DCOORDS_); /* Sim sync */ \
 		} \
 	} while (0);
-	TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, UP);
-	TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE);
+	TESTBLOCK(0, 1, 0, RSM_BIT_TOPSUPPORTED, NONE); /* NONE means ALL */
 	TESTBLOCK(0, 0, -1, RSM_BIT_SIDESUPPORTED, SOUTH);
 	TESTBLOCK(0, 0, 1, RSM_BIT_SIDESUPPORTED, NORTH);
 	TESTBLOCK(-1, 0, 0, RSM_BIT_SIDESUPPORTED, EAST);

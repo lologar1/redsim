@@ -366,11 +366,9 @@ static void command_config(u32 args, char *argv[]) {
 	rsmvar = usf_strhmget(varmap_, varname).p;
 	value = strtof(argv[2], NULL);
 
-	usf_mtxlock(graphmap_->lock);
+	usf_mtxlock(&ticklock_);
 	*rsmvar = value; /* Could be asynchronously used during simulation */
-	usf_mtxunlock(graphmap_->lock);
-
-	usf_cndsignal(&tickstep_); /* Simulation may be ready to restart */
+	usf_mtxunlock(&ticklock_);
 
 	cmd_logf("Set %s to %f.\n", varname, value);
 }
@@ -433,6 +431,7 @@ static void command_setraw(u32 args, char *argv[]) {
 	usf_listptr *toregister;
 	toregister = usf_newlistptr();
 
+	usf_mtxlock(&ticklock_); /* Thread-safe lock */
 	Blockdata *blockdata;
 	i64 x, y, z, a = 0, b = 0, c = 0;
 	for (x = ret_selection_[0][0], a = 0; a < ret_selection_[1][0]; a++)
@@ -458,11 +457,10 @@ static void command_setraw(u32 args, char *argv[]) {
 	Fillcontext *afcontext;
 	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
 
-	usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
 	for (i = 0; i < toregister->size; i++)
 		wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
 	wf_registercontext(afcontext);
-	usf_mtxunlock(graphmap_->lock); /* Thread-safe unlock */
+	usf_mtxunlock(&ticklock_); /* Thread-safe unlock */
 
 	wf_freecontext(afcontext);
 	usf_freelistptrfunc(toregister, free);
@@ -504,7 +502,7 @@ static void command_graphdebug(u32 args, char *argv[]) {
 	(void) argv;
 
 	printf("=== GRAPH STACKTRACE ===\n");
-	usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
+	usf_mtxlock(&ticklock_); /* Thread-safe lock */
 
 	usf_hashiter iter;
 	for (usf_hmiterbegin(graphmap_, &iter); usf_hmiternext(&iter);) {
@@ -540,5 +538,5 @@ static void command_graphdebug(u32 args, char *argv[]) {
 	} usf_hmiterend(&iter);
 	cmd_logf("Graph stacktrace printed to stdout.\n");
 
-	usf_mtxunlock(graphmap_->lock); /* Thread-safe unlock */
+	usf_mtxunlock(&ticklock_); /* Thread-safe unlock */
 }

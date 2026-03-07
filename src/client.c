@@ -27,9 +27,12 @@ static usf_thread simthread_; /* Thread ID for the simulation coroutine */
 void client_init(void) {
 	fprintf(stderr, "Initializing client...\n");
 
-	chunkmap_ = usf_newhm_ts(); /* Accessed async by remeshing */
+	NPROCS = USF_MIN(usf_nprocsonln(), RSM_MAX_PROCESSORS); /* Number of logical cores */
+	fprintf(stderr, "Concurrency: using %"PRIu64" threads for simulation.\n", NPROCS);
+
+	chunkmap_ = usf_newhm_mtx(); /* Accessed async by remeshing */
 	meshqueue_ = usf_newqueue_ts();
-	meshmap_ = usf_newhm_ts(); /* Accessed async by remeshing (check flag) */
+	meshmap_ = usf_newhm_mtx(); /* Accessed async by remeshing (check flag) */
 	datamap_ = usf_newhm();
 	namemap_ = usf_newhm();
 
@@ -83,9 +86,6 @@ void client_init(void) {
 
 	gui_updateGUI(); /* Rescale and properly show GUI */
 
-	NPROCS = USF_MIN(usf_nprocsonln(), RSM_MAX_PROCESSORS); /* Number of logical cores */
-	fprintf(stderr, "Concurrency: using %"PRIu64" threads for simulation.\n", NPROCS);
-
 	usf_atmflagtry(&simstop_, MEMORDER_RELAXED); /* Flag is set */
 
 	if (usf_thrdcreate(&simthread_, &sim_run, NULL) == THRD_ERROR) {
@@ -109,6 +109,7 @@ void client_loaddata(void) {
 	usf_listptr *toregister; /* Pending component graph registration */
 	toregister = usf_newlistptr();
 
+	usf_mtxlock(&ticklock_); /* Thread-safe lock */
 	u64 i;
 	for (i = RSM_SAVE_HEADERSZ; i < savesize; i += RSM_SAVE_CHUNKSTRIDE) {
 		u64 chunkindex;
@@ -165,11 +166,10 @@ void client_loaddata(void) {
 	afcontext = wf_newcontext(RSM_DISCARD_VISUAL_INFO);
 
 	/* Batched registering */
-	usf_mtxlock(graphmap_->lock); /* Thread-safe lock */
 	for (i = 0; i < toregister->size; i++)
 		wf_findaffected(*(vec3 *) toregister->array[i], afcontext);
 	wf_registercontext(afcontext);
-	usf_mtxunlock(graphmap_->lock); /* Thread-safe unlock */
+	usf_mtxunlock(&ticklock_); /* Thread-safe unlock */
 
 	usf_freelistptrfunc(toregister, free); /* Free pending coordinates */
 	wf_freecontext(afcontext); /* Free batch context */

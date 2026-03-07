@@ -10,9 +10,9 @@ LIB_OBJ_DIR := $(LIB_DIR)/obj
 CC := gcc
 CFLAGS := -Wall -Wextra -Wunused-macros -Wcast-align -Wduplicated-branches -Wduplicated-cond \
 		  -Wformat-signedness -Wjump-misses-init -Wlogical-op -Wsign-conversion -Wcast-qual \
-		  -O0 -g -std=c23
-	#	  -no-pie -fno-omit-frame-pointer -fno-inline \
-	#	  -fsanitize=address,undefined,leak
+		  -O2 -std=gnu23 -g
+#		  -no-pie -fno-omit-frame-pointer -fno-inline \
+#		  -fsanitize=address,undefined,leak
 LINKS := -lm -lGL -lglfw -lpthread -lfreetype
 INCLUDES := -I$(INC_DIR) -I$(LIB_INC_DIR)
 
