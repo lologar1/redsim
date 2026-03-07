@@ -28,6 +28,7 @@ void client_init(void) {
 	fprintf(stderr, "Initializing client...\n");
 
 	NPROCS = USF_MIN(usf_nprocsonln(), RSM_MAX_PROCESSORS); /* Number of logical cores */
+	NPROCS = 1;
 	fprintf(stderr, "Concurrency: using %"PRIu64" threads for simulation.\n", NPROCS);
 
 	chunkmap_ = usf_newhm_mtx(); /* Accessed async by remeshing */

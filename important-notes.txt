@@ -1,0 +1,31 @@
+Major problem concerning the simulation:
+	The goal is to have a very high throughput (<1000ns per tick), low latency simulation.
+	The simulation needs two passes over the to-prime component array.
+
+	First solution: create new threads each time to go over the array, join them in the main thread.
+	Outcome: not performant, overhead kills performance, ~25000ns / tick for 1 update/second
+
+	Second solution: use condvars to wake worker threads
+	Outcome: better, 5000 ns/tick, but majority of time is spent waiting on condvars from both sides.
+
+	Third solution: spinlocks for every thread
+	Outcome: at first, extremely slow (>5000000 ns/tick), but when switching to main thread taking block 0
+	(so there are as many spinlocking threads as there are cores), best performance yet... with a catch:
+		- The performance heavily depends on the number of threads.
+		- Limiting to 6 threads, ~2000 ns/tick for a single component.
+		- Limiting to 1 thread (single-threaded, everything done by main), *** ~35 ns/tick ***
+
+		But when increasing the number of updates/second to ~64:
+		- Extremely poor performance on 12 threads (48000 ns/tick)
+		- Better with 6 threads (why? contention? Shared hashmaps invalidate cache lines?) (18000 ns/tick)
+		- Single-threaded *always* the best: ~2000 ns/tick. This number grows linearly with updates/tick.
+
+	What to do?
+		- Clearly, cannot use any methods which talk to the kernel (too much overhead) since we want to
+		maximize ticks/second.
+
+		- Force single-threading?
+			Pros: could optimize much further. No cache invalidations/hard to track behavior.
+			Cons: large builds (many updates/second) would suffer greatly. I want to fully utilize my CPU.
+
+		- ??? I need to find another solution to this problem.
