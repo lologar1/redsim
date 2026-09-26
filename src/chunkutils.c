@@ -286,7 +286,9 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	}
 	/* Get local copy independent of chunkmap_ */
 	usf_mtxlock(chunkmap_->lock);
+	usf_mtxlock(&ticklock_);
 	memcpy(&chunk, chunkptr, sizeof(Chunkdata)); /* Safe since chunks cannot be deleted */
+	usf_mtxunlock(&ticklock_);
 	usf_mtxunlock(chunkmap_->lock);
 
 	f32 culled[4 * NMEMB_VERTEX * 6], *cullbuf; /* culled is a misnomer since it holds not-culled faces */
@@ -315,8 +317,7 @@ static usf_compatibility_int pushRawmesh(void *chunkindexptr) {
 	rawmesh = malloc(sizeof(Rawmesh));
 	rawmesh->chunkindex = chunkindex;
 
-	u8 *buffers; /* Single aligned allocation */
-	buffers = alalloc(alignof(f32), OV_BUFSZ + TV_BUFSZ + OI_BUFSZ + TI_BUFSZ);
+	u32 *buffers = alalloc(alignof(f32), OV_BUFSZ + TV_BUFSZ + OI_BUFSZ + TI_BUFSZ);
 	f32 *ov_bufptr, *tv_bufptr;
 	ov_bufptr = rawmesh->opaqueVertexBuffer = (f32 *) (buffers);
 	tv_bufptr = rawmesh->transVertexBuffer = (f32 *) (buffers += OV_BUFSZ);

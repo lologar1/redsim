@@ -31,9 +31,9 @@ void client_init(void) {
 	NPROCS = 1;
 	fprintf(stderr, "Concurrency: using %"PRIu64" threads for simulation.\n", NPROCS);
 
-	chunkmap_ = usf_newhm_mtx(); /* Accessed async by remeshing */
+	chunkmap_ = usf_newhm_ts(); /* Accessed async by remeshing */
 	meshqueue_ = usf_newqueue_ts();
-	meshmap_ = usf_newhm_mtx(); /* Accessed async by remeshing (check flag) */
+	meshmap_ = usf_newhm_ts(); /* Accessed async by remeshing (check flag) */
 	datamap_ = usf_newhm();
 	namemap_ = usf_newhm();
 
